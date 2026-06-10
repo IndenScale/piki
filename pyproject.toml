@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "piki"
+version = "0.1.0"
+description = "工程设计的挑剔伙伴。在提交评审和交底前，把问题找出来。"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [
+    {name = "IndenScale", email = "dev@indenscale.com"},
+]
+keywords = [
+    "engineering",
+    "validation",
+    "yaml",
+    "design-check",
+    "rule-engine",
+    "sdm",
+    "folder-db",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/indenscale/piki"
+Documentation = "https://github.com/indenscale/piki/tree/main/docs"
+Repository = "https://github.com/indenscale/piki.git"
+Issues = "https://github.com/indenscale/piki/issues"
+Changelog = "https://github.com/indenscale/piki/blob/main/CHANGELOG.md"
+
+[project.scripts]
+piki = "piki.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

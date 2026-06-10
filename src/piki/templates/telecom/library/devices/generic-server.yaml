@@ -1,0 +1,7 @@
+model: generic-server
+family: ServerFamily
+
+height_u: 2
+tdp_w: 300
+psu_count: 1
+psu_redundancy: false

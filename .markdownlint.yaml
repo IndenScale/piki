@@ -1,0 +1,24 @@
+# https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+
+# Default state for all rules
+default: true
+
+# MD013/line-length - Line length
+# Chinese docs need longer lines; disable globally
+MD013:
+  line_length: 120
+  heading_line_length: 120
+  code_block_line_length: 120
+
+# MD024/no-duplicate-heading - Multiple headings with the same content
+# Teaching docs repeat "问题"/"规则代码"/"运行结果" as pattern; allow siblings only
+MD024:
+  siblings_only: true
+
+# MD040/fenced-code-language - Fenced code blocks should have a language specified
+# Console output blocks intentionally have no language
+MD040: false
+
+# MD060/table-column-style - Table column style
+# Compact tables (no alignment) are fine for readability
+MD060: false
