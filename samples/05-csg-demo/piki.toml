@@ -1,0 +1,9 @@
+[project]
+name = "csg-demo"
+description = "CSG 几何演示 —— 防火门、走线架"
+
+[plugins]
+enabled = ["datacenter"]
+
+[generators]
+enabled = ["usd-scene"]

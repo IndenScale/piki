@@ -17,13 +17,18 @@ from .query import QuerySet, _match
 logger = logging.getLogger(__name__)
 
 
-def _flatten(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
-    """把嵌套 dict 扁平化，例如 {'physical': {'height_u': 2}} -> {'physical.height_u': 2}。"""
+def _flatten(data: dict[str, Any], prefix: str = "", preserve_keys: set[str] | None = None) -> dict[str, Any]:
+    """把嵌套 dict 扁平化，例如 {'physical': {'height_u': 2}} -> {'physical.height_u': 2}。
+
+    Args:
+        preserve_keys: 这些键保持嵌套，不扁平化（如 'assets'）。
+    """
     out: dict[str, Any] = {}
+    preserve = preserve_keys or set()
     for key, value in data.items():
         full = f"{prefix}.{key}" if prefix else key
-        if isinstance(value, dict):
-            out.update(_flatten(value, full))
+        if isinstance(value, dict) and key not in preserve:
+            out.update(_flatten(value, full, preserve))
         else:
             out[full] = value
     return out
@@ -171,9 +176,9 @@ class Registry:
         if model_id:
             model = self.get_model(model_id)
             if model:
-                base = _flatten(model.data)
+                base = _flatten(model.data, preserve_keys={"assets"})
 
-        overrides = _flatten(instance.data)
+        overrides = _flatten(instance.data, preserve_keys={"assets"})
         merged = {**base, **overrides}
         # 确保 id 在合并数据中
         merged["id"] = instance.id

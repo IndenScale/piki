@@ -78,3 +78,18 @@ class ResolvedInstance:
     def resolved(self) -> Any:
         """返回支持属性访问的嵌套命名空间对象（兼容文档中的 d.resolved.x）。"""
         return _make_namespace(_unflatten(self._resolved))
+
+    @property
+    def assets(self) -> "GeometryAssets | None":
+        """返回解析后的几何资产对象（如果存在）。"""
+        from .geometry import GeometryAssets
+
+        raw_assets = self._resolved.get("assets")
+        if raw_assets is None:
+            return None
+        if isinstance(raw_assets, dict):
+            try:
+                return GeometryAssets.model_validate(raw_assets)
+            except Exception:
+                return None
+        return None

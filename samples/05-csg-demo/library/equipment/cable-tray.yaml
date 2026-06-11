@@ -1,0 +1,32 @@
+model: cable-tray
+family: EquipmentFamily
+equipment_type: other
+length_mm: 2000
+width_mm: 300
+height_mm: 100
+weight_kg: 15
+
+assets:
+  usd:
+    procedural:
+      type: difference
+      operands:
+        - type: primitive
+          primitive:
+            type: box
+            size:
+              x: 2.0
+              y: 0.1
+              z: 0.3
+        - type: primitive
+          primitive:
+            type: box
+            size:
+              x: 1.9
+              y: 0.08
+              z: 0.28
+          transform:
+            translation:
+              x: 0.0
+              y: 0.01
+              z: 0.0

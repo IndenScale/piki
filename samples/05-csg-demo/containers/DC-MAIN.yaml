@@ -1,0 +1,11 @@
+id: DC-MAIN
+name: 主数据中心方舱
+family: ContainerFamily
+container_type: air-cooling
+standard: 40ft
+length_mm: 12192
+width_mm: 2438
+height_mm: 2896
+max_weight_kg: 30480
+power_capacity_kw: 1000
+cooling_capacity_kw: 1100

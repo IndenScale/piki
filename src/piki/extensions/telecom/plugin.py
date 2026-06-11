@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from piki.core.engine.checker import Checker, rule
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
+from piki.core.models.geometry import GeometryAssets
 from piki.core.plugin import Plugin
 
 
@@ -21,6 +22,12 @@ class RackFamily(BaseModel):
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
     depth_mm: float = Field(default=0, ge=0)   # 机柜深度
     width_mm: float = Field(default=0, ge=0)   # 机柜宽度
+    # 3D 空间定位（毫米）
+    position_x_mm: float = Field(default=0.0)
+    position_y_mm: float = Field(default=0.0)
+    position_z_mm: float = Field(default=0.0)
+    # 几何资产（可选）
+    assets: GeometryAssets | None = Field(default=None)
 
 
 class PduFamily(BaseModel):
@@ -46,7 +53,14 @@ class ServerFamily(BaseModel):
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
     depth_mm: float = Field(default=0, ge=0)   # 设备深度
     width_mm: float = Field(default=0, ge=0)   # 设备宽度
+    height_mm: float = Field(default=0, ge=0)  # 设备高度（1U ≈ 44.45mm，但这里用实际物理高度）
     weight_kg: float = Field(default=0, ge=0)  # 设备重量
+    # 3D 空间定位（毫米，相对于机柜原点）
+    position_x_mm: float = Field(default=0.0)
+    position_y_mm: float = Field(default=0.0)
+    position_z_mm: float = Field(default=0.0)
+    # 几何资产（可选）
+    assets: GeometryAssets | None = Field(default=None)
 
 
 class TelecomPlugin(Plugin):
@@ -68,6 +82,7 @@ class TelecomPlugin(Plugin):
         checker.add_rule("TELECOM-RACK-001", "U 位冲突检查", check_rack_space, priority=5, severity=Severity.ERROR)
         checker.add_rule("TELECOM-RACK-002", "机柜容量检查", check_rack_capacity, priority=5, severity=Severity.ERROR)
         checker.add_rule("TELECOM-RACK-003", "设备物理尺寸与机柜匹配检查", check_device_physical_fit, priority=3, severity=Severity.WARNING)
+        checker.add_rule("TELECOM-COLLISION-001", "机柜内设备 3D 碰撞检测", check_rack_3d_collision, priority=5, severity=Severity.ERROR)
         checker.add_rule("TELECOM-FK-001", "外键完整性检查", check_foreign_keys, priority=10, severity=Severity.WARNING)
 
     def register_generators(self, checker: Checker) -> None:
@@ -244,6 +259,36 @@ def check_foreign_keys(ctx):
         assert pdu.rack_id in racks, (
             f"PDU {pdu.id} 引用的机柜 {pdu.rack_id} 不存在"
         )
+    ctx.clear_current_file()
+
+
+def check_rack_3d_collision(ctx):
+    """检查同一机柜内设备的 3D 空间碰撞。
+
+    使用 AABB 包围盒进行 O(n²) 碰撞检测。
+    无尺寸信息的设备自动跳过。
+    """
+    from piki.ext.geometry import build_aabb_from_instance, find_collisions
+
+    for rack in ctx.query("racks"):
+        devices = ctx.query("devices", rack_id=rack.id)
+        items: list[tuple[str, "AABB"]] = []
+
+        for device in devices:
+            aabb = build_aabb_from_instance(device)
+            if aabb is not None:
+                items.append((device.id, aabb))
+
+        if len(items) < 2:
+            continue
+
+        collisions = find_collisions(items)
+        if collisions:
+            ctx.set_current_file(str(rack.source))
+            pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
+            assert False, (
+                f"机柜 {rack.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
+            )
     ctx.clear_current_file()
 
 

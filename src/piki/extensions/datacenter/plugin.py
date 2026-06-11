@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from piki.core.engine.checker import Checker, rule
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
+from piki.core.models.geometry import GeometryAssets, Vec3
 from piki.core.plugin import Plugin
 
 
@@ -42,6 +43,12 @@ class ContainerFamily(BaseModel):
     cooling_capacity_kw: float = Field(default=0, ge=0)  # 制冷容量（kW）
     location: str = Field(default="")         # 场地位置描述
     status: str = Field(default="planned")    # planned | installed | operating | retired
+    # 3D 空间定位（毫米）
+    position_x_mm: float = Field(default=0.0)
+    position_y_mm: float = Field(default=0.0)
+    position_z_mm: float = Field(default=0.0)
+    # 几何资产（可选）
+    assets: GeometryAssets | None = Field(default=None)
 
 
 class PowerUnitFamily(BaseModel):
@@ -75,6 +82,12 @@ class EquipmentFamily(BaseModel):
     width_mm: float = Field(default=0, ge=0)   # 设备宽度（左右方向）
     height_mm: float = Field(default=0, ge=0)  # 设备高度（上下方向）
     depth_mm: float = Field(default=0, ge=0)   # 设备深度（与 length_mm 等价，优先使用 length_mm）
+    # 3D 空间定位（毫米，相对于方舱原点）
+    position_x_mm: float = Field(default=0.0)
+    position_y_mm: float = Field(default=0.0)
+    position_z_mm: float = Field(default=0.0)
+    # 几何资产（可选）
+    assets: GeometryAssets | None = Field(default=None)
     # 液冷设备特有
     liquid_cooled: bool = Field(default=False)
     coolant_flow_lpm: float = Field(default=0, ge=0)  # 冷却液流量 L/min
@@ -117,6 +130,7 @@ class DatacenterPlugin(Plugin):
         checker.add_rule("DC-COOLING-001", "液冷方舱制冷容量检查", check_liquid_cooling_capacity, priority=10, severity=Severity.ERROR)
         checker.add_rule("DC-WEIGHT-001", "方舱总重检查", check_container_weight, priority=5, severity=Severity.ERROR)
         checker.add_rule("DC-SPACE-001", "方舱内设备空间边界检查", check_equipment_container_fit, priority=5, severity=Severity.WARNING)
+        checker.add_rule("DC-COLLISION-001", "方舱内设备 3D 碰撞检测", check_equipment_3d_collision, priority=5, severity=Severity.ERROR)
         checker.add_rule("DC-CONN-001", "连接完整性检查", check_connection_integrity, priority=10, severity=Severity.ERROR)
         checker.add_rule("DC-CONN-002", "连接容量检查", check_connection_capacity, priority=5, severity=Severity.WARNING)
         checker.add_rule("DC-FK-001", "外键完整性检查", check_dc_foreign_keys, priority=10, severity=Severity.WARNING)
@@ -257,6 +271,38 @@ def check_equipment_container_fit(ctx):
             assert False, (
                 f"设备 {device.id} 高度 {dev_height}mm 超过方舱 {container.id} "
                 f"高度 {cnt_height}mm，无法容纳。"
+            )
+    ctx.clear_current_file()
+
+
+def check_equipment_3d_collision(ctx):
+    """检查同一方舱内设备的 3D 空间碰撞。
+
+    使用 AABB 包围盒进行 O(n²) 碰撞检测。
+    无尺寸或位置信息的设备自动跳过。
+    """
+    from piki.ext.geometry import build_aabb_from_instance, find_collisions
+
+    containers = {c.id: c for c in ctx.query("containers")}
+
+    for container in ctx.query("containers"):
+        devices = ctx.query("equipment", container_id=container.id)
+        items: list[tuple[str, "AABB"]] = []
+
+        for device in devices:
+            aabb = build_aabb_from_instance(device)
+            if aabb is not None:
+                items.append((device.id, aabb))
+
+        if len(items) < 2:
+            continue
+
+        collisions = find_collisions(items)
+        if collisions:
+            ctx.set_current_file(str(container.source))
+            pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
+            assert False, (
+                f"方舱 {container.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
             )
     ctx.clear_current_file()
 

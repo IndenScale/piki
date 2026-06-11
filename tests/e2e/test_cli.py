@@ -121,7 +121,7 @@ def test_json_format(demo_project: Path) -> None:
     data = json.loads(result.stdout)
     assert data["passed"] is True
     assert data["error_count"] == 0
-    assert len(data["results"]) == 6
+    assert len(data["results"]) == 7  # 6 original + TELECOM-COLLISION-001
 
 
 def test_init_refuses_overwrite(tmp_path: Path) -> None:
