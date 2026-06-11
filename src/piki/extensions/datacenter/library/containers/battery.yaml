@@ -1,0 +1,11 @@
+model: battery
+family: ContainerFamily
+
+container_type: battery
+standard: 20ft
+length_mm: 6058
+width_mm: 2438
+height_mm: 2591
+max_weight_kg: 24000
+power_capacity_kw: 1000
+cooling_capacity_kw: 50

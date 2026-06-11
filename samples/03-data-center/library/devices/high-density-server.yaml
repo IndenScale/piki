@@ -1,0 +1,7 @@
+model: high-density-server
+family: ServerFamily
+
+height_u: 4
+tdp_w: 800
+psu_count: 2
+psu_redundancy: true

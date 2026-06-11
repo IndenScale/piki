@@ -1,0 +1,15 @@
+[project]
+name = "03-data-center"
+version = "1.0.0"
+description = "多机柜数据中心：自定义规则 + 报告生成"
+
+[plugins]
+enabled = ["telecom"]
+
+[plugins.telecom]
+power_threshold = 0.7
+rack_usage_threshold = 0.8
+
+[rules]
+# 项目自定义规则配置
+min_pdu_redundancy = true

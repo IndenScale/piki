@@ -1,0 +1,7 @@
+id: SRV-B01-01
+name: 计算节点-B01-01
+model: generic-server
+status: planned
+rack_id: RACK-B01
+position_u: 10
+pdu_id: PDU-B01-L1

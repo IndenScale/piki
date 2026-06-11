@@ -1,6 +1,9 @@
 # 核心概念
 
-> 理解 piki 的五个核心概念：Family（型号族）、Model（型号）、Instance（实例）、Rule（规则）、Plugin（行业插件）。
+> 理解 piki 声明式建模的五个核心概念：Family（型号族）、Model（型号）、Instance（实例）、Rule（规则）、Plugin（行业插件）。
+>
+> 就像 Kubernetes 用 YAML 声明 Pod 配置，piki 用 YAML 声明工程对象。你写"要什么"，piki 负责"对不对"。
+
 
 ## 1. Family：型号族
 
@@ -20,7 +23,7 @@ class ServerFamily(BaseModel):
     psu_count: int = Field(default=1, ge=1)
 ```
 
-Family 只约束结构，不提供具体数值。具体数值由 Model 提供。
+Family 只**声明**约束结构，不提供具体数值。具体数值由 Model 提供。
 
 ### 嵌套继承
 
@@ -135,13 +138,21 @@ tdp_w: 250  # 覆盖 Model 默认值 300
 
 Instance 只写**决策字段**（放哪、接哪个 PDU），规格字段（height_u、默认 tdp_w）从 Model 自动补齐。
 
-### 三层结构总结
+### 三层结构总结：声明式建模的核心
 
 ```text
-Family（约束结构）
-  └── Model（默认值）
-        └── Instance（实际值，可覆盖）
+Family（声明约束结构）
+  └── Model（声明默认值）
+        └── Instance（声明实际部署值，可覆盖）
 ```
+
+这三层共同构成 piki 的**声明式建模**机制：
+
+- **Family** 声明"这类对象有什么属性、什么约束"
+- **Model** 声明"这个型号的默认值是什么"
+- **Instance** 声明"这个具体实例的部署决策"
+
+就像声明式基础设施（Terraform / Kubernetes）中，你用 YAML 声明期望状态，系统负责实现和校验。piki 中，你用 YAML 声明设计意图，规则引擎负责校验合理性。
 
 | 层级 | 定义位置 | 内容 | 示例 |
 |------|---------|------|------|

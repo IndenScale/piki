@@ -1,0 +1,7 @@
+model: cpu-server
+family: EquipmentFamily
+
+equipment_type: compute
+power_kw: 3
+weight_kg: 25
+liquid_cooled: false

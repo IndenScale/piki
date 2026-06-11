@@ -1,0 +1,8 @@
+model: lithium-battery
+family: PowerUnitFamily
+
+unit_type: battery
+capacity_kw: 250
+redundancy_n: 2
+phase: three-phase
+efficiency: 0.95

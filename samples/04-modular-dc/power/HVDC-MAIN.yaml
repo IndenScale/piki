@@ -1,0 +1,9 @@
+id: HVDC-MAIN
+name: 主路 HVDC
+model: hvdc-module
+unit_type: hvdc
+container_id: POWER-01
+capacity_kw: 500
+redundancy_n: 2
+phase: three-phase
+efficiency: 0.97

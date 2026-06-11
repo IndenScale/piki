@@ -1,0 +1,8 @@
+model: hvdc-module
+family: PowerUnitFamily
+
+unit_type: hvdc
+capacity_kw: 500
+redundancy_n: 2
+phase: three-phase
+efficiency: 0.97

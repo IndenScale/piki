@@ -1,0 +1,7 @@
+id: SRV-A01-03
+name: 存储节点-A01-03
+model: high-density-server
+status: installed
+rack_id: RACK-A01
+position_u: 4
+pdu_id: PDU-A01-L2

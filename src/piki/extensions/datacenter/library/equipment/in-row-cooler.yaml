@@ -1,0 +1,9 @@
+model: in-row-cooler
+family: EquipmentFamily
+
+equipment_type: cooling
+power_kw: 8
+weight_kg: 120
+liquid_cooled: true
+coolant_flow_lpm: 80
+coolant_inlet_temp_c: 35

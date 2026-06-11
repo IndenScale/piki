@@ -1,0 +1,7 @@
+id: BAT-01
+name: 锂电储能方舱-01
+model: battery
+status: operating
+location: A1区-储能区
+power_capacity_kw: 1000
+cooling_capacity_kw: 50

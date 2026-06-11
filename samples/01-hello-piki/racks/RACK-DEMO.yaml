@@ -1,0 +1,5 @@
+id: RACK-DEMO
+family: RackFamily
+name: 演示机柜
+total_u: 42
+power_capacity_w: 2000

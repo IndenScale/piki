@@ -1,0 +1,7 @@
+id: POWER-01
+name: 配电方舱-01
+model: power-distribution
+status: operating
+location: A1区-配电区
+power_capacity_kw: 2000
+cooling_capacity_kw: 30

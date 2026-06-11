@@ -1,0 +1,6 @@
+id: RACK-B01
+family: RackFamily
+name: 主列头柜-B01
+location: 机房A-B列
+total_u: 42
+power_capacity_w: 5000

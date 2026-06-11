@@ -1,0 +1,9 @@
+id: CPU-G01-01
+name: 通算节点-G01-01
+model: cpu-server
+equipment_type: compute
+container_id: GEN-AIR-01
+power_unit_id: HVDC-MAIN
+power_kw: 3
+weight_kg: 25
+status: installed

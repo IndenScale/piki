@@ -1,0 +1,7 @@
+model: storage-node
+family: EquipmentFamily
+
+equipment_type: storage
+power_kw: 1.5
+weight_kg: 35
+liquid_cooled: false

@@ -1,0 +1,12 @@
+id: COOL-A01-01
+name: 列间空调-A01-01
+model: in-row-cooler
+equipment_type: cooling
+container_id: AI-LIQUID-01
+power_unit_id: HVDC-MAIN
+power_kw: 8
+weight_kg: 120
+liquid_cooled: true
+coolant_flow_lpm: 80
+coolant_inlet_temp_c: 35
+status: installed

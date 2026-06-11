@@ -1,0 +1,12 @@
+id: GPU-A01-02
+name: 智算节点-A01-02
+model: gpu-server
+equipment_type: compute
+container_id: AI-LIQUID-01
+power_unit_id: HVDC-MAIN
+power_kw: 12
+weight_kg: 85
+liquid_cooled: true
+coolant_flow_lpm: 15
+coolant_inlet_temp_c: 40
+status: installed

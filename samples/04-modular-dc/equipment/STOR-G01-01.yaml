@@ -1,0 +1,9 @@
+id: STOR-G01-01
+name: 存储节点-G01-01
+model: storage-node
+equipment_type: storage
+container_id: GEN-AIR-01
+power_unit_id: HVDC-BACKUP
+power_kw: 1.5
+weight_kg: 35
+status: installed

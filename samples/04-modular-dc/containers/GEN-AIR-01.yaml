@@ -1,0 +1,7 @@
+id: GEN-AIR-01
+name: 通算风冷方舱-01
+model: air-cooling
+status: operating
+location: A1区-副列
+power_capacity_kw: 300
+cooling_capacity_kw: 320

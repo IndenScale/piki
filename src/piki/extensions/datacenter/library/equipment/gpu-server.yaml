@@ -1,0 +1,9 @@
+model: gpu-server
+family: EquipmentFamily
+
+equipment_type: compute
+power_kw: 12
+weight_kg: 85
+liquid_cooled: true
+coolant_flow_lpm: 15
+coolant_inlet_temp_c: 40

@@ -399,6 +399,7 @@ encryption_key_file = ".piki_key"  # —— 规划中
 
 > 以下文档为规划内容，尚未编写：
 >
+> - [AI Readiness](05-ai-readiness.md) — Text-Native + 开源如何为 AI 参与工程设计奠定基础
 > - [Family 设计指南](../reference/family-design.md)
 > - [插件开发指南](../reference/plugin-development.md)
 > - [API 参考](../reference/api.md)

@@ -1,0 +1,6 @@
+id: PDU-B01-L1
+family: PduFamily
+name: B01-主路-L1
+rack_id: RACK-B01
+phase: L1
+capacity_w: 3000

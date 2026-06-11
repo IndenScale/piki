@@ -1,0 +1,5 @@
+id: PDU-DEMO
+family: PduFamily
+name: 演示 PDU
+rack_id: RACK-DEMO
+capacity_w: 2000

@@ -1,0 +1,11 @@
+[project]
+name = "02-telecom-rack"
+version = "1.0.0"
+description = "电信机架示例：PDU 功率检查 + U 位冲突检查"
+
+[plugins]
+enabled = ["telecom"]
+
+[plugins.telecom]
+power_threshold = 0.4
+rack_usage_threshold = 0.8

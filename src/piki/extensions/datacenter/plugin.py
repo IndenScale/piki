@@ -1,0 +1,320 @@
+"""piki-datacenter 内置插件：模块化数据中心 / 方舱式部署。
+
+面向场景：
+- 集装箱式模块化机房（智算液冷方舱、通算/存储风冷方舱）
+- 锂电储能方舱、配电方舱
+- 方舱间管线连接（液冷管路、电缆、光纤）
+- 方舱级 PUE / 负载率 / 冗余检查
+
+与 telecom 插件的区别：
+- telecom：机柜(Rack) + PDU + 服务器(Server) — 传统机房微观视角
+- datacenter：方舱(Container) + 配电单元(PowerUnit) + 设备(Equipment) — 模块化宏观视角
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from pydantic import BaseModel, Field
+
+from piki.core.engine.checker import Checker, rule
+from piki.core.engine.registry import Registry
+from piki.core.models.diagnostic import Severity
+from piki.core.plugin import Plugin
+
+
+# ---------------------------------------------------------------------------
+# Family 定义
+# ---------------------------------------------------------------------------
+
+class ContainerFamily(BaseModel):
+    """方舱 / 集装箱式模块化机房。"""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    container_type: str = Field(...)          # liquid-cooling | air-cooling | battery | power-distribution
+    standard: str = Field(default="20ft")     # 20ft | 40ft | custom
+    length_mm: float = Field(default=6058, gt=0)   # 标准 20ft = 6058mm
+    width_mm: float = Field(default=2438, gt=0)    # 标准 = 2438mm
+    height_mm: float = Field(default=2591, gt=0)   # 标准 = 2591mm
+    max_weight_kg: float = Field(default=24000, gt=0)  # 最大总重（kg）
+    power_capacity_kw: float = Field(default=0, ge=0)  # 配电容量（kW）
+    cooling_capacity_kw: float = Field(default=0, ge=0)  # 制冷容量（kW）
+    location: str = Field(default="")         # 场地位置描述
+    status: str = Field(default="planned")    # planned | installed | operating | retired
+
+
+class PowerUnitFamily(BaseModel):
+    """配电单元：UPS、HVDC、锂电储能、柴油发电机等。"""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    unit_type: str = Field(...)               # ups | hvdc | battery | diesel | solar | pdu-rack
+    container_id: str = Field(...)            # 所属方舱
+    capacity_kw: float = Field(..., gt=0)     # 额定容量（kW）
+    redundancy_n: int = Field(default=1, ge=1)  # N+几冗余，1=N, 2=N+1
+    phase: str = Field(default="L1")          # L1 | L2 | L3 | three-phase
+    efficiency: float = Field(default=0.95, ge=0, le=1)  # 转换效率
+    status: str = Field(default="planned")
+
+
+class EquipmentFamily(BaseModel):
+    """设备：IT 设备（服务器、存储、网络）和基础设施设备（空调、冷却塔）。"""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    model: str = Field(default="")
+    equipment_type: str = Field(...)          # compute | storage | network | cooling | other
+    container_id: str = Field(...)            # 所在方舱
+    power_unit_id: str = Field(...)           # 供电来源
+    power_kw: float = Field(default=5, gt=0)  # 额定功耗（kW）
+    weight_kg: float = Field(default=100, gt=0)  # 重量（kg）
+    status: str = Field(default="planned")
+    # 液冷设备特有
+    liquid_cooled: bool = Field(default=False)
+    coolant_flow_lpm: float = Field(default=0, ge=0)  # 冷却液流量 L/min
+    coolant_inlet_temp_c: float = Field(default=0, ge=0)  # 进水温度 °C
+
+
+class ConnectionFamily(BaseModel):
+    """方舱间连接：液冷管路、电缆、光纤。"""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    connection_type: str = Field(...)         # liquid | power | fiber
+    from_container: str = Field(...)
+    to_container: str = Field(...)
+    capacity: float = Field(default=0, ge=0)  # 容量：kW(电缆) / L/min(液冷) / Gbps(光纤)
+    length_m: float = Field(default=0, ge=0)  # 长度（米）
+    status: str = Field(default="planned")
+
+
+# ---------------------------------------------------------------------------
+# Plugin
+# ---------------------------------------------------------------------------
+
+class DatacenterPlugin(Plugin):
+    name = "datacenter"
+    version = "0.1.0"
+
+    @property
+    def library_dir(self) -> Path:
+        return Path(__file__).parent / "library"
+
+    def register_families(self, registry: Registry) -> None:
+        registry.add_family("ContainerFamily", ContainerFamily)
+        registry.add_family("PowerUnitFamily", PowerUnitFamily)
+        registry.add_family("EquipmentFamily", EquipmentFamily)
+        registry.add_family("ConnectionFamily", ConnectionFamily)
+
+    def register_rules(self, checker: Checker) -> None:
+        checker.add_rule("DC-POWER-001", "方舱功率预算检查", check_container_power_budget, priority=10, severity=Severity.ERROR)
+        checker.add_rule("DC-COOLING-001", "液冷方舱制冷容量检查", check_liquid_cooling_capacity, priority=10, severity=Severity.ERROR)
+        checker.add_rule("DC-WEIGHT-001", "方舱总重检查", check_container_weight, priority=5, severity=Severity.ERROR)
+        checker.add_rule("DC-CONN-001", "连接完整性检查", check_connection_integrity, priority=10, severity=Severity.ERROR)
+        checker.add_rule("DC-CONN-002", "连接容量检查", check_connection_capacity, priority=5, severity=Severity.WARNING)
+        checker.add_rule("DC-FK-001", "外键完整性检查", check_dc_foreign_keys, priority=10, severity=Severity.WARNING)
+        checker.add_rule("DC-REDUNDANCY-001", "配电冗余检查", check_power_redundancy, priority=5, severity=Severity.WARNING)
+
+    def register_generators(self, checker: Checker) -> None:
+        checker.add_generator("dc-bom-csv", "数据中心 BOM CSV 导出", generate_dc_bom_csv)
+
+
+# ---------------------------------------------------------------------------
+# 规则实现
+# ---------------------------------------------------------------------------
+
+def check_container_power_budget(ctx):
+    """检查每个方舱内设备总功耗不超过方舱配电容量。"""
+    threshold = ctx.config.get("power_threshold", 0.8)
+
+    for container in ctx.query("containers"):
+        ctx.set_current_file(str(container.source))
+        cap = container.power_capacity_kw
+        if cap <= 0:
+            continue
+
+        devices = ctx.query("equipment", container_id=container.id)
+        total = sum(d.power_kw for d in devices)
+        ratio = total / cap
+
+        assert ratio <= threshold, (
+            f"方舱 {container.id} 功率负载率 {ratio:.1%}（{total:.1f}kW / {cap:.1f}kW），"
+            f"超过项目阈值 {threshold:.1%}。"
+            f"已部署设备: {', '.join(d.id for d in devices)}"
+        )
+    ctx.clear_current_file()
+
+
+def check_liquid_cooling_capacity(ctx):
+    """检查液冷方舱的制冷容量是否满足液冷设备需求。"""
+    for container in ctx.query("containers", container_type="liquid-cooling"):
+        ctx.set_current_file(str(container.source))
+        cooling_cap = container.cooling_capacity_kw
+        if cooling_cap <= 0:
+            continue
+
+        devices = ctx.query("equipment", container_id=container.id, liquid_cooled=True)
+        total_heat = sum(d.power_kw for d in devices)
+
+        assert total_heat <= cooling_cap, (
+            f"液冷方舱 {container.id} 热负荷 {total_heat:.1f}kW 超过制冷容量 {cooling_cap:.1f}kW。"
+            f"液冷设备: {', '.join(d.id for d in devices)}"
+        )
+    ctx.clear_current_file()
+
+
+def check_container_weight(ctx):
+    """检查方舱内设备总重不超过方舱最大承重。"""
+    for container in ctx.query("containers"):
+        ctx.set_current_file(str(container.source))
+        max_w = container.max_weight_kg
+        if max_w <= 0:
+            continue
+
+        devices = ctx.query("equipment", container_id=container.id)
+        total = sum(d.weight_kg for d in devices)
+
+        assert total <= max_w, (
+            f"方舱 {container.id} 设备总重 {total:.0f}kg 超过最大承重 {max_w:.0f}kg"
+        )
+    ctx.clear_current_file()
+
+
+def check_connection_integrity(ctx):
+    """检查所有连接的两端方舱和容量引用是否有效。"""
+    containers = {c.id: c for c in ctx.query("containers")}
+
+    for conn in ctx.query("connections"):
+        ctx.set_current_file(str(conn.source))
+        assert conn.from_container in containers, (
+            f"连接 {conn.id} 的源方舱 {conn.from_container} 不存在"
+        )
+        assert conn.to_container in containers, (
+            f"连接 {conn.id} 的目标方舱 {conn.to_container} 不存在"
+        )
+        assert conn.from_container != conn.to_container, (
+            f"连接 {conn.id} 的源方舱和目标方舱不能相同"
+        )
+    ctx.clear_current_file()
+
+
+def check_connection_capacity(ctx):
+    """检查连接的容量是否满足传输需求。"""
+    for conn in ctx.query("connections"):
+        ctx.set_current_file(str(conn.source))
+        cap = conn.capacity
+        if cap <= 0:
+            continue
+
+        # 液冷连接：检查流量需求
+        if conn.connection_type == "liquid":
+            # 获取目标方舱内所有液冷设备的流量需求
+            target_devices = ctx.query("equipment", container_id=conn.to_container, liquid_cooled=True)
+            total_flow = sum(d.coolant_flow_lpm for d in target_devices)
+            if total_flow > 0:
+                assert cap >= total_flow, (
+                    f"液冷连接 {conn.id} 容量 {cap}L/min 小于需求 {total_flow}L/min"
+                )
+
+        # 电力连接：检查功率需求
+        elif conn.connection_type == "power":
+            target_devices = ctx.query("equipment", container_id=conn.to_container)
+            total_power = sum(d.power_kw for d in target_devices)
+            if total_power > 0:
+                assert cap >= total_power, (
+                    f"电力连接 {conn.id} 容量 {cap}kW 小于需求 {total_power}kW"
+                )
+    ctx.clear_current_file()
+
+
+def check_dc_foreign_keys(ctx):
+    """检查设备引用的方舱和配电单元是否存在。"""
+    containers = {c.id: c for c in ctx.query("containers")}
+    power_units = {p.id: p for p in ctx.query("power")}
+
+    for device in ctx.query("equipment"):
+        ctx.set_current_file(str(device.source))
+        assert device.container_id in containers, (
+            f"设备 {device.id} 引用的方舱 {device.container_id} 不存在"
+        )
+        assert device.power_unit_id in power_units, (
+            f"设备 {device.id} 引用的配电单元 {device.power_unit_id} 不存在"
+        )
+
+    for pu in ctx.query("power"):
+        ctx.set_current_file(str(pu.source))
+        assert pu.container_id in containers, (
+            f"配电单元 {pu.id} 引用的方舱 {pu.container_id} 不存在"
+        )
+    ctx.clear_current_file()
+
+
+def check_power_redundancy(ctx):
+    """检查配电单元的冗余配置是否满足项目要求。"""
+    min_redundancy = ctx.config.get("min_redundancy_n", 1)
+
+    for pu in ctx.query("power"):
+        ctx.set_current_file(str(pu.source))
+        assert pu.redundancy_n >= min_redundancy, (
+            f"配电单元 {pu.id} 冗余配置为 N+{pu.redundancy_n - 1}，"
+            f"低于项目要求的 N+{min_redundancy - 1}"
+        )
+    ctx.clear_current_file()
+
+
+# ---------------------------------------------------------------------------
+# 生成器
+# ---------------------------------------------------------------------------
+
+def generate_dc_bom_csv(ctx, config):
+    """生成数据中心 BOM CSV。"""
+    import csv
+    import io
+    from pathlib import Path
+
+    containers = ctx.query("containers").list()
+    equipment = ctx.query("equipment").list()
+    power = ctx.query("power").list()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # 方舱清单
+    writer.writerow(["=== 方舱清单 ==="])
+    writer.writerow(["ID", "Type", "Standard", "Power_kW", "Cooling_kW", "Status"])
+    for c in containers:
+        writer.writerow([
+            c.id, c.container_type, c.standard,
+            c.power_capacity_kw, c.cooling_capacity_kw, c.status,
+        ])
+
+    writer.writerow([])
+
+    # 设备清单
+    writer.writerow(["=== 设备清单 ==="])
+    writer.writerow(["ID", "Type", "Model", "Container", "Power_kW", "Weight_kg", "LiquidCooled", "Status"])
+    for d in equipment:
+        writer.writerow([
+            d.id, d.equipment_type, d.model or "",
+            d.container_id, d.power_kw, d.weight_kg,
+            d.liquid_cooled, d.status,
+        ])
+
+    writer.writerow([])
+
+    # 配电清单
+    writer.writerow(["=== 配电清单 ==="])
+    writer.writerow(["ID", "Type", "Container", "Capacity_kW", "Redundancy", "Status"])
+    for p in power:
+        writer.writerow([
+            p.id, p.unit_type, p.container_id,
+            p.capacity_kw, f"N+{p.redundancy_n - 1}", p.status,
+        ])
+
+    content = output.getvalue()
+    out_path = config.get("output")
+    if out_path:
+        Path(out_path).write_text(content, encoding="utf-8")
+    else:
+        print(content)

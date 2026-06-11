@@ -1,4 +1,4 @@
-"""piki: 工程设计的挑剔伙伴。
+"""piki: Text-Native CAD — 设计的本质是决策，不是画图。
 
 公共 API 从 core 透传，便于用户写规则时 `from piki import rule, Context`。
 """

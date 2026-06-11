@@ -1,0 +1,7 @@
+id: AI-LIQUID-01
+name: 智算液冷方舱-01
+model: liquid-cooling
+status: operating
+location: A1区-主列
+power_capacity_kw: 500
+cooling_capacity_kw: 550

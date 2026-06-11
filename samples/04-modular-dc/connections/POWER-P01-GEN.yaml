@@ -1,0 +1,9 @@
+id: POWER-P01-GEN
+family: ConnectionFamily
+name: 供电电缆-配电→通算
+connection_type: power
+from_container: POWER-01
+to_container: GEN-AIR-01
+capacity: 400
+length_m: 25
+status: installed

@@ -1,6 +1,8 @@
 # piki 文档
 
-> 工程设计的挑剔伙伴。在提交评审和交底前，把问题找出来。
+> **Text-Native CAD** — 设计的本质是决策，不是画图。
+>
+> 用文本定义工程对象，用规则检查设计合理性，用 Git 管理设计演进。
 
 ## 快速开始
 
@@ -11,6 +13,17 @@
 3. **[核心概念](concepts/02-core-concepts.md)** — Family（型号族）、Plugin（行业插件）、Registry（注册表）、Rule（规则）
 4. **[编写检查规则](concepts/03-writing-rules.md)** — 从实际问题出发，学习写规则
 5. **[高级用法](concepts/04-advanced.md)** — CI/CD 集成、多插件协作、性能优化
+6. **[AI Readiness](concepts/05-ai-readiness.md)** — 为什么 Text-Native + 开源是 AI 参与工程设计的前提
+
+## 架构决策记录 (ADR)
+
+记录 piki 的关键技术决策及其理由：
+
+- **[ADR-001: 几何引擎与物理引擎](adr/001-geometry-and-physics-engine.md)** — 为什么引入 OpenUSD、在工具链的什么位置集成、范围边界
+- **[ADR-002: 文本格式与一实例一文件](adr/002-text-native-and-file-per-instance.md)** — 为什么使用 YAML、为什么每个实例/型号独立文件
+- **[ADR-003: 插件架构](adr/003-plugin-architecture.md)** — 为什么用插件管理领域知识，而非硬编码或配置驱动
+- **[ADR-004: 多级质量检查](adr/004-multi-level-quality-checks.md)** — 从 L0 格式检查到 L6 AI 评估的分层体系
+- **[ADR-005: LSP 兼容诊断](adr/005-lsp-compatible-diagnostics.md)** — 为什么诊断格式与 Language Server Protocol 对齐
 
 ## 参考文档
 

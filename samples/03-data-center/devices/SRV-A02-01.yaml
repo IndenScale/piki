@@ -1,0 +1,7 @@
+id: SRV-A02-01
+name: 计算节点-A02-01
+model: generic-server
+status: installed
+rack_id: RACK-A02
+position_u: 10
+pdu_id: PDU-A02-L1
