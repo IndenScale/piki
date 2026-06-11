@@ -2,6 +2,6 @@ id: SRV-01
 name: 服务器-01
 model: generic-server
 status: installed
-rack_id: RACK-A01
-position_u: 10
-pdu_id: PDU-A
+depth_mm: 700
+width_mm: 438
+height_mm: 88

@@ -1,4 +1,10 @@
-"""Registry：Family / Model / Instance 注册和解析。"""
+"""Registry：Family / Model / Instance 注册和解析。
+
+支持：
+- Instance 与 Layout 分离（ADR-008）
+- 嵌套项目和跨项目 Instance 引用（ADR-009）
+- Tag 机制（ADR-009）
+"""
 
 from __future__ import annotations
 
@@ -10,6 +16,8 @@ from pydantic import BaseModel, ValidationError
 
 from ..models.base import Instance, Model, ResolvedInstance, _unflatten
 from ..models.diagnostic import Diagnostic, Location, Range, Severity
+from ..models.layout import Layout, LayoutEntry
+from ..parsing.layout_loader import find_layout_file, load_layout_file
 from ..parsing.loaders import load_yaml
 from ..parsing.yaml_source import SourceTrackedDict, get_field_location
 from .query import QuerySet, _match
@@ -17,11 +25,15 @@ from .query import QuerySet, _match
 logger = logging.getLogger(__name__)
 
 
-def _flatten(data: dict[str, Any], prefix: str = "", preserve_keys: set[str] | None = None) -> dict[str, Any]:
+def _flatten(
+    data: dict[str, Any],
+    prefix: str = "",
+    preserve_keys: set[str] | None = None,
+) -> dict[str, Any]:
     """把嵌套 dict 扁平化，例如 {'physical': {'height_u': 2}} -> {'physical.height_u': 2}。
 
     Args:
-        preserve_keys: 这些键保持嵌套，不扁平化（如 'assets'）。
+        preserve_keys: 这些键保持嵌套，不扁平化（如 'assets', 'tags'）。
     """
     out: dict[str, Any] = {}
     preserve = preserve_keys or set()
@@ -34,6 +46,38 @@ def _flatten(data: dict[str, Any], prefix: str = "", preserve_keys: set[str] | N
     return out
 
 
+# ---------------------------------------------------------------------------
+# 跨项目引用解析
+# ---------------------------------------------------------------------------
+
+class PathResolver:
+    """解析 Instance 引用路径。
+
+    支持：
+    - 当前项目内的 Instance ID
+    - $PROJECT_ROOT 变量跨仓库引用
+    - 嵌套项目的父/子 Instance 查找
+    """
+
+    def __init__(self, root: Path, parent: "Registry | None" = None):
+        self.root = root
+        self.parent = parent
+
+    def resolve_instance(self, instance_ref: str) -> ResolvedInstance | None:
+        """解析 Instance 引用。
+
+        展开后按当前项目 -> 父项目 -> 根项目的顺序查找。
+        """
+        # TODO: 实现 $PROJECT_ROOT 变量展开 和 submodule 支持
+        # 当前仅支持按 Instance ID 查找
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Registry
+# ---------------------------------------------------------------------------
+
+
 class Registry:
     """运行时中央注册表。"""
 
@@ -41,10 +85,23 @@ class Registry:
         self._families: dict[str, type[BaseModel]] = {}
         self._models: dict[str, Model] = {}
         self._instances: dict[str, ResolvedInstance] = {}
-        # 按集合名分组，集合名 = 目录名（如 racks, devices）
+        # Layout（每个项目一个）
+        self._layout: Layout | None = None
+        # 按集合名分组，集合名 = 目录名（如 instances, racks, devices）
         self._collections: dict[str, dict[str, ResolvedInstance]] = {}
-        # 诊断收集器：Schema 校验失败等诊断信息
+        # 诊断收集器
         self._diagnostics: list[Diagnostic] = []
+        # 嵌套项目支持
+        self._parent: Registry | None = None
+        self._children: dict[str, Registry] = {}
+        # 项目标签约束（piki.toml 中定义的允许 Tag 键）
+        self._allowed_tags: set[str] = set()
+        # 项目根
+        self._root: Path | None = None
+
+    # ------------------------------------------------------------------
+    # Family / Model
+    # ------------------------------------------------------------------
 
     def add_family(self, name: str, cls: type[BaseModel]) -> None:
         self._families[name] = cls
@@ -58,14 +115,102 @@ class Registry:
     def get_model(self, model_id: str) -> Model | None:
         return self._models.get(model_id)
 
+    # ------------------------------------------------------------------
+    # 嵌套项目
+    # ------------------------------------------------------------------
+
+    def set_parent(self, parent: Registry) -> None:
+        """设置父项目的 Registry，用于 Instance 继承查找。"""
+        self._parent = parent
+
+    @property
+    def parent(self) -> Registry | None:
+        return self._parent
+
+    def add_child(self, name: str, child: Registry) -> None:
+        """注册子项目 Registry。"""
+        self._children[name] = child
+        child.set_parent(self)
+
+    @property
+    def children(self) -> dict[str, Registry]:
+        return dict(self._children)
+
+    def find_instance(self, instance_id: str) -> ResolvedInstance | None:
+        """在项目树中查找 Instance。
+
+        搜索顺序：当前项目 → 父项目 → 根项目。
+        """
+        if instance_id in self._instances:
+            return self._instances[instance_id]
+        if self._parent:
+            return self._parent.find_instance(instance_id)
+        return None
+
+    def find_model(self, model_id: str) -> Model | None:
+        """在项目树中查找 Model。"""
+        if model_id in self._models:
+            return self._models[model_id]
+        if self._parent:
+            return self._parent.find_model(model_id)
+        return None
+
+    # ------------------------------------------------------------------
+    # Tag 机制
+    # ------------------------------------------------------------------
+
+    def set_allowed_tags(self, tags: list[str]) -> None:
+        """设置项目允许的 Tag 键（从 piki.toml 读取）。"""
+        self._allowed_tags = set(tags)
+
+    @property
+    def allowed_tags(self) -> set[str]:
+        return set(self._allowed_tags)
+
+    # ------------------------------------------------------------------
+    # Layout
+    # ------------------------------------------------------------------
+
+    def load_layout(self, project_root: Path) -> Layout | None:
+        """加载项目的 Layout 文件。
+
+        每个项目只有一个 Layout 文件（ADR-008）。
+        """
+        path = find_layout_file(project_root)
+        if path is None:
+            return None
+        self._layout = load_layout_file(path, name=project_root.name)
+        return self._layout
+
+    @property
+    def layout(self) -> Layout | None:
+        return self._layout
+
+    def get_layout_entry(self, instance_id: str) -> LayoutEntry | None:
+        """获取指定 Instance 的 Layout 条目。"""
+        if self._layout:
+            entry = self._layout.get(instance_id)
+            if entry is not None:
+                return entry
+        # 向上查找
+        if self._parent:
+            return self._parent.get_layout_entry(instance_id)
+        return None
+
+    # ------------------------------------------------------------------
+    # Diagnostics
+    # ------------------------------------------------------------------
+
     @property
     def diagnostics(self) -> list[Diagnostic]:
-        """获取收集到的所有诊断信息。"""
         return list(self._diagnostics)
 
     def clear_diagnostics(self) -> None:
-        """清空诊断收集器。"""
         self._diagnostics.clear()
+
+    # ------------------------------------------------------------------
+    # 加载
+    # ------------------------------------------------------------------
 
     def load_library(self, library_dir: Path) -> None:
         """扫描 library/ 下的型号库 YAML。"""
@@ -78,9 +223,10 @@ class Registry:
             if not model_id or not family:
                 logger.warning("Skipping model without 'model' or 'family': %s", path)
                 continue
-            # 去掉 metadata 字段，其余作为型号数据
-            model_data = {k: v for k, v in data.items() if k not in ("model", "family")}
-            self.add_model(Model(id=model_id, family=family, data=model_data, source=path))
+            model_data = {k: v for k, v in data.items()
+                          if k not in ("model", "family")}
+            self.add_model(Model(id=model_id, family=family,
+                                 data=model_data, source=path))
 
     def load_collection(self, collection_dir: Path) -> str:
         """扫描一个数据目录，加载所有 Instance。返回集合名。"""
@@ -94,19 +240,15 @@ class Registry:
                 logger.warning("Skipping instance without 'id': %s", path)
                 continue
 
-            model_id = data.get("model")
-            family_name = data.get("family")
-
             instance = Instance(
                 id=inst_id,
-                model=model_id,
-                family=family_name,
+                model=data.get("model"),
+                family=data.get("family"),
                 data={k: v for k, v in data.items() if k != "id"},
                 source=path,
             )
             resolved = self._resolve(instance, data)
             if resolved is None:
-                # 不应再到达这里：_resolve 现在在校验失败时直接返回 ResolvedInstance
                 flat = _flatten(instance.data)
                 flat["id"] = instance.id
                 resolved = ResolvedInstance(
@@ -122,8 +264,22 @@ class Registry:
         self._collections[collection_name] = loaded
         return collection_name
 
-    def _resolve(self, instance: Instance, source_data: dict[str, Any] | None = None) -> ResolvedInstance | None:
-        """合并 Model 默认值 + Instance 覆盖值，并用 Family 校验。
+    # ------------------------------------------------------------------
+    # 核心：解析合并 Instance + Model + Layout
+    # ------------------------------------------------------------------
+
+    def _resolve(
+        self,
+        instance: Instance,
+        source_data: dict[str, Any] | None = None,
+    ) -> ResolvedInstance | None:
+        """合并 Model 默认值 + Instance 覆盖值 + Layout 部署值，并用 Family 校验。
+
+        解析顺序（ADR-008 定义）：
+        1. 加载 Instance → 获取设备属性（model, 覆盖参数）
+        2. 加载 Model  → 获取默认值
+        3. 加载 Layout  → 获取部署决策
+        4. 合并：resolved = Model.defaults + Instance.overrides + Layout
 
         Args:
             instance: 原始实例数据
@@ -132,80 +288,62 @@ class Registry:
         family_name = instance.family
         model_id = instance.model
 
-        # 如果没显式指定 family，尝试从 model 推导
-        if not family_name and model_id:
-            model = self.get_model(model_id)
-            if model:
-                family_name = model.family
+        # 0. 确定 Family
+        if family_name is None:
+            if model_id is not None:
+                model = self.find_model(model_id)
+                if model is not None:
+                    family_name = model.family
+            # 如果还找不到，直接调用 get_family 看看
+            if family_name is None and instance.data.get("family"):
+                family_name = instance.data["family"]
 
-        if not family_name:
-            logger.warning(
-                "Instance %s has no family and cannot infer from model: %s",
-                instance.id,
-                instance.source,
-            )
-            # 退化为无校验的纯数据
-            flat = _flatten(instance.data)
-            return ResolvedInstance(
-                id=instance.id,
-                family="",
-                raw=flat,
-                _resolved=flat,
-                source=instance.source,
-            )
+        if family_name is None:
+            logger.warning("Instance %s has no family or model", instance.id)
+            return None
 
         family_cls = self.get_family(family_name)
         if family_cls is None:
-            logger.warning(
-                "Unknown family '%s' for instance %s in %s",
-                family_name,
-                instance.id,
-                instance.source,
-            )
-            flat = _flatten(instance.data)
-            return ResolvedInstance(
-                id=instance.id,
-                family=family_name,
-                raw=flat,
-                _resolved=flat,
-                source=instance.source,
-            )
+            if self._parent:
+                family_cls = self._parent.get_family(family_name)
+            if family_cls is None:
+                logger.warning("Unknown family %s for instance %s",
+                             family_name, instance.id)
+                return None
 
-        # 合并 model 默认值
-        base: dict[str, Any] = {}
+        # 1. 获取 Model 默认值
+        model_defaults: dict[str, Any] = {}
         if model_id:
-            model = self.get_model(model_id)
-            if model:
-                base = _flatten(model.data, preserve_keys={"assets"})
+            model = self.find_model(model_id)
+            if model is not None:
+                model_defaults = dict(model.data)
 
-        overrides = _flatten(instance.data, preserve_keys={"assets"})
-        merged = {**base, **overrides}
-        # 确保 id 在合并数据中
+        # 2. Instance 覆盖值
+        overrides = dict(instance.data)
+        overrides.pop("model", None)
+        overrides.pop("family", None)
+
+        # 3. 合并 Model + Instance（用于 Schema 校验的基值）
+        merged = _flatten({**model_defaults, **overrides},
+                          preserve_keys={"assets", "tags"})
         merged["id"] = instance.id
 
-        # 用 pydantic 校验
+        # 4. Schema 校验
         try:
-            validated = family_cls(**_unflatten(merged))
+            validated = family_cls.model_validate(merged)
         except ValidationError as exc:
-            logger.error(
-                "Validation failed for %s (%s): %s",
-                instance.id,
-                instance.source,
-                exc,
-            )
-            # 构建带行号定位的 Diagnostic
-            location = self._build_error_location(instance.source, source_data, exc)
+            location = self._build_error_location(
+                instance.source, source_data, exc)
             diagnostic = Diagnostic.from_validation_error(
                 exc=exc,
                 location=location,
                 code="SCHEMA-001",
                 source="piki.schema",
             )
-            # 为每个错误字段添加 related_information
             if source_data is not None:
-                related = self._build_related_info(instance.source, source_data, exc)
+                related = self._build_related_info(
+                    instance.source, source_data, exc)
                 if related:
-                    # 创建新的 Diagnostic，包含 related_information
                     diagnostic = Diagnostic(
                         severity=Severity.ERROR,
                         message=str(exc),
@@ -216,7 +354,6 @@ class Registry:
                     )
             self._diagnostics.append(diagnostic)
 
-            # 返回带错误详情的 ResolvedInstance，family 标记为 _invalid
             flat = _flatten(instance.data)
             flat["id"] = instance.id
             return ResolvedInstance(
@@ -228,7 +365,15 @@ class Registry:
                 _validation_error=str(exc),
             )
 
-        resolved_dict = _flatten(validated.model_dump())
+        resolved_dict = _flatten(validated.model_dump(),
+                                 preserve_keys={"assets", "tags"})
+
+        # 5. Layout 合并（后于 Schema 校验，因为 Layout 字段不参与 Schema）
+        layout_entry = self.get_layout_entry(instance.id)
+        if layout_entry is not None:
+            layout_flat = layout_entry.to_flat()
+            resolved_dict.update(layout_flat)
+
         return ResolvedInstance(
             id=instance.id,
             family=family_name,
@@ -237,26 +382,24 @@ class Registry:
             source=instance.source,
         )
 
+    # ------------------------------------------------------------------
+    # 错误定位辅助
+    # ------------------------------------------------------------------
+
     def _build_error_location(
         self,
         path: Path,
         source_data: dict[str, Any] | None,
         exc: ValidationError,
     ) -> Location:
-        """从 ValidationError 和源码数据构建 Location。"""
-        # 默认定位到文件开头
         location = Location.from_path(path, line=0)
-
         if source_data is None or not isinstance(source_data, SourceTrackedDict):
             return location
-
-        # 尝试从第一个错误定位到具体字段
         errors = exc.errors()
         if errors:
             first_error = errors[0]
             loc_parts = first_error.get("loc", ())
             if loc_parts:
-                # 构建字段路径，如 ("total_u",) 或 ("physical", "height_u")
                 field_path = ".".join(str(p) for p in loc_parts)
                 mark = get_field_location(source_data, field_path, path)
                 if mark is not None:
@@ -264,7 +407,6 @@ class Registry:
                         uri=path.as_uri(),
                         range=Range.point(mark.line, mark.column),
                     )
-
         return location
 
     def _build_related_info(
@@ -273,7 +415,6 @@ class Registry:
         source_data: SourceTrackedDict,
         exc: ValidationError,
     ) -> list:
-        """为 ValidationError 的每个错误字段构建 RelatedInformation。"""
         from ..models.diagnostic import RelatedInformation
 
         related: list[RelatedInformation] = []
@@ -289,39 +430,41 @@ class Registry:
                     uri=path.as_uri(),
                     range=Range.point(mark.line, mark.column),
                 )
-                related.append(RelatedInformation(location=loc, message=f"{field_path}: {msg}"))
+                related.append(RelatedInformation(
+                    location=loc, message=f"{field_path}: {msg}"))
         return related
+
+    # ------------------------------------------------------------------
+    # 查询
+    # ------------------------------------------------------------------
 
     def list_collections(self) -> list[str]:
         return list(self._collections.keys())
 
+    def all_instances(self) -> dict[str, ResolvedInstance]:
+        """返回当前项目的所有 Instance（不包括父项目）。"""
+        return dict(self._instances)
+
+    def all_instances_tree(self) -> dict[str, ResolvedInstance]:
+        """返回项目树中所有 Instance（包括父项目，子覆盖父同名）。"""
+        result: dict[str, ResolvedInstance] = {}
+        if self._parent:
+            result.update(self._parent.all_instances_tree())
+        result.update(self._instances)
+        return result
+
     def query(self, collection: str, **filters: Any) -> QuerySet:
         """查询某个集合，支持增强过滤语法。
 
-        过滤操作符（Django-style 双下划线后缀）：
+        支持 Django-style 双下划线后缀：
           __eq, __ne, __gt, __gte, __lt, __lte, __in, __contains,
           __startswith, __endswith
 
-        链式操作（返回 QuerySet）：
-          .filter(**kwargs)  .exclude(**kwargs)
-          .order_by("field", "-field2")
-          .limit(n)  .fields("id", "name")
-
-        终结操作：
-          .first()  .count()  .list()  .values("id", "name")
-          .group_by("field")  .aggregate(sum=lambda items: ...)
-          .join(other_items, "local_field", "foreign_field")
-
-        示例：
-            ctx.query("devices", rack_id="RACK-A01")
-            ctx.query("devices", tdp_w__gt=300)
-            ctx.query("devices", rack_id__in=["A01", "A02"]).order_by("position_u")
+        支持 Tag 过滤：
+          tags__discipline=hvac  → 自动按 tags.discipline 过滤
         """
         items = list(self._collections.get(collection, {}).values())
         qs = QuerySet(items)
         if filters:
             qs = qs.filter(**filters)
         return qs
-
-    def all_instances(self) -> dict[str, ResolvedInstance]:
-        return dict(self._instances)

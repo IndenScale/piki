@@ -33,7 +33,7 @@ class RackFamily(BaseModel):
 class PduFamily(BaseModel):
     id: str = Field(...)
     name: str = Field(default="")
-    rack_id: str = Field(...)
+    rack_id: str = Field(default="")
     phase: str = Field(default="L1")          # 相线，如 L1, L2, L3
     capacity_w: float = Field(..., gt=0)      # 额定功率（W）
 
@@ -43,9 +43,9 @@ class ServerFamily(BaseModel):
     name: str = Field(default="")
     model: str = Field(default="")
     status: str = Field(default="planned")
-    rack_id: str = Field(...)
-    position_u: int = Field(..., ge=1, le=48)
-    pdu_id: str = Field(...)                  # 引用 PduFamily.id
+    rack_id: str = Field(default="")
+    position_u: int = Field(default=1, ge=1, le=48)
+    pdu_id: str = Field(default="")            # 引用 PduFamily.id
     height_u: int = Field(default=2, ge=1, le=48)
     tdp_w: float = Field(default=300, gt=0)
     psu_count: int = Field(default=1, ge=1)

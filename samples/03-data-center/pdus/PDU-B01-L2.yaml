@@ -1,6 +1,4 @@
 id: PDU-B01-L2
 family: PduFamily
 name: B01-备路-L2
-rack_id: RACK-B01
-phase: L2
 capacity_w: 3000

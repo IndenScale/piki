@@ -1,0 +1,8 @@
+- instance: BAT-BANK-A
+  phase: three-phase
+- instance: BAT-BANK-B
+  phase: three-phase
+- instance: HVDC-BACKUP
+  phase: three-phase
+- instance: HVDC-MAIN
+  phase: three-phase

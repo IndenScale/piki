@@ -4,7 +4,5 @@ name: 主列头柜-A01
 location: 机房A-A列
 total_u: 42
 power_capacity_w: 2000
-
-# 物理尺寸（毫米）
 depth_mm: 1000
 width_mm: 600

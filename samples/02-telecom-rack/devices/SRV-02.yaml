@@ -2,8 +2,4 @@ id: SRV-02
 name: 服务器-02
 model: generic-server
 status: installed
-rack_id: RACK-A01
-position_u: 8
-pdu_id: PDU-A
-
 tdp_w: 250

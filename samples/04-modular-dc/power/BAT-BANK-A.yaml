@@ -5,5 +5,4 @@ unit_type: battery
 container_id: BAT-01
 capacity_kw: 250
 redundancy_n: 2
-phase: three-phase
 efficiency: 0.95

@@ -195,6 +195,23 @@ _OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
 def _match(item: Any, filters: dict[str, Any]) -> bool:
     """判断 item 是否满足所有过滤条件。"""
     for key, expected in filters.items():
+        # 支持 tags__ 前缀过滤（ADR-009）: tags__discipline=hvac
+        # tags__ 后面跟的如果是已知操作符（如 tags__contains），
+        # 则走正常操作符路径，否则作为标签键查找
+        if key.startswith("tags__"):
+            tag_key = key[6:]  # 去掉 "tags__" 前缀
+            if tag_key not in _OPERATORS:
+                actual_tags = _get_value(item, "tags")
+                if isinstance(actual_tags, dict):
+                    tag_value = actual_tags.get(tag_key)
+                else:
+                    # ResolvedInstance 的 tags 也可在 resolved.tags 中
+                    tag_value = _get_value(item, f"resolved.tags.{tag_key}")
+                if tag_value != expected:
+                    return False
+                continue
+            # fall through to normal operator handling
+
         # 解析 field__operator
         if "__" in key:
             parts = key.rsplit("__", 1)

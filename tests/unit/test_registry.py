@@ -190,7 +190,7 @@ class TestEdgeCases:
         inst = registry.query("devices", id="orphan").first()
         assert inst is not None
         assert inst.id == "orphan"
-        assert inst.family == ""
+        assert inst.family == "_invalid"
 
     def test_instance_unknown_family(self, tmp_path: Path) -> None:
         """有 family 但 family 未注册，应退化。"""
@@ -205,7 +205,7 @@ class TestEdgeCases:
 
         inst = registry.query("devices", id="unknown").first()
         assert inst is not None
-        assert inst.family == "NonExistentFamily"
+        assert inst.family == "_invalid"
 
     def test_load_library_missing_dir(self, tmp_path: Path) -> None:
         """library 目录不存在时不应报错。"""

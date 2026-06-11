@@ -1,6 +1,7 @@
 id: RACK-A01
 family: RackFamily
-name: 主列头柜-A01
-location: 机房A-A列
+name: 机柜-A01
+location: 1层A区
 total_u: 42
-power_capacity_w: 2000
+depth_mm: 1000
+width_mm: 600

@@ -241,7 +241,7 @@ class TestTelecom3DCollision:
             encoding="utf-8",
         )
         (devices / "S2.yaml").write_text(
-            "id: S2\nfamily: ServerFamily\nrack_id: R1\nposition_u: 12\n"
+            "id: S2\nfamily: ServerFamily\nrack_id: R1\nposition_u: 10\n"
             "pdu_id: PDU1\nheight_u: 2\n"
             "depth_mm: 700\nwidth_mm: 440\nheight_mm: 88\n"
             "position_x_mm: 0\nposition_y_mm: 0\nposition_z_mm: 0\n",

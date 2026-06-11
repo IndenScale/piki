@@ -6,6 +6,3 @@ equipment_type: other
 container_id: DC-MAIN
 power_unit_id: UPS-MAIN
 power_kw: 0
-position_x_mm: 5000
-position_y_mm: 0
-position_z_mm: 1200

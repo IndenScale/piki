@@ -180,6 +180,12 @@ def build_aabb_from_instance(inst: ResolvedInstance) -> AABB | None:
     pos_y = getattr(resolved, "position_y_mm", 0.0) or 0.0
     pos_z = getattr(resolved, "position_z_mm", 0.0) or 0.0
 
+    # 如果 Y 位置未显式设置但有 position_u（机柜 U 位），
+    # 则从 position_u 推导 Y：1U = 44.45mm，U 位从底部向上
+    position_u = getattr(resolved, "position_u", None)
+    if pos_y == 0.0 and position_u is not None:
+        pos_y = position_u * 44.45
+
     # 也支持嵌套 position 对象
     position = getattr(resolved, "position", None)
     if position is not None:

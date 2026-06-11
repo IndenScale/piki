@@ -32,6 +32,34 @@ def _run_check(project_dir: Path) -> subprocess.CompletedProcess:
     )
 
 
+def _add_device(project_dir: Path, inst_id: str, rack_id: str,
+                position_u: int, pdu_id: str, tdp_w: int = 400,
+                depth_mm: int = 700, width_mm: int = 438, height_mm: int = 88) -> None:
+    """创建一个 Instance 文件并追加到 Layout。"""
+    # Instance 文件
+    inst = project_dir / "devices" / f"{inst_id}.yaml"
+    inst.write_text(
+        f"id: {inst_id}\n"
+        f"name: 服务器-{inst_id[-2:]}\n"
+        f"model: generic-server\n"
+        f"status: planned\n"
+        f"depth_mm: {depth_mm}\n"
+        f"width_mm: {width_mm}\n"
+        f"height_mm: {height_mm}\n"
+        f"tdp_w: {tdp_w}\n",
+        encoding="utf-8",
+    )
+    # 追加 Layout entry
+    layout_path = project_dir / "layouts" / "layout.yaml"
+    with open(layout_path, 'a', encoding='utf-8') as f:
+        f.write(
+            f"\n- instance: {inst_id}\n"
+            f"  rack_id: {rack_id}\n"
+            f"  position_u: {position_u}\n"
+            f"  pdu_id: {pdu_id}\n"
+        )
+
+
 def test_initial_check_passes(demo_project: Path) -> None:
     result = _run_check(demo_project)
     assert result.returncode == 0
@@ -40,20 +68,7 @@ def test_initial_check_passes(demo_project: Path) -> None:
 
 
 def test_pdu_overload_detected(demo_project: Path) -> None:
-    srv03 = demo_project / "devices" / "SRV-03.yaml"
-    srv03.write_text(
-        """id: SRV-03
-name: 服务器-03
-model: generic-server
-status: planned
-rack_id: RACK-A01
-position_u: 6
-pdu_id: PDU-A
-
-tdp_w: 400
-""",
-        encoding="utf-8",
-    )
+    _add_device(demo_project, "SRV-03", "RACK-A01", 6, "PDU-A", tdp_w=400)
     result = _run_check(demo_project)
     assert result.returncode == 1
     assert "PDU-A 负载率 47.5%" in result.stdout
@@ -61,40 +76,14 @@ tdp_w: 400
 
 
 def test_pdu_overload_fixed(demo_project: Path) -> None:
-    srv03 = demo_project / "devices" / "SRV-03.yaml"
-    srv03.write_text(
-        """id: SRV-03
-name: 服务器-03
-model: generic-server
-status: planned
-rack_id: RACK-A01
-position_u: 6
-pdu_id: PDU-B
-
-tdp_w: 400
-""",
-        encoding="utf-8",
-    )
+    _add_device(demo_project, "SRV-03", "RACK-A01", 6, "PDU-B", tdp_w=400)
     result = _run_check(demo_project)
     assert result.returncode == 0
     assert "[PASS]" in result.stdout
 
 
 def test_rack_u_conflict_detected(demo_project: Path) -> None:
-    srv03 = demo_project / "devices" / "SRV-03.yaml"
-    srv03.write_text(
-        """id: SRV-03
-name: 服务器-03
-model: generic-server
-status: planned
-rack_id: RACK-A01
-position_u: 10
-pdu_id: PDU-B
-
-tdp_w: 400
-""",
-        encoding="utf-8",
-    )
+    _add_device(demo_project, "SRV-03", "RACK-A01", 10, "PDU-B", tdp_w=400)
     result = _run_check(demo_project)
     assert result.returncode == 1
     assert "U10-U11 冲突" in result.stdout
@@ -121,7 +110,7 @@ def test_json_format(demo_project: Path) -> None:
     data = json.loads(result.stdout)
     assert data["passed"] is True
     assert data["error_count"] == 0
-    assert len(data["results"]) == 7  # 6 original + TELECOM-COLLISION-001
+    assert len(data["results"]) == 7
 
 
 def test_init_refuses_overwrite(tmp_path: Path) -> None:
@@ -149,20 +138,7 @@ def test_check_no_project(tmp_path: Path) -> None:
 
 def test_multiple_failures_reported(demo_project: Path) -> None:
     """同时触发功率和 U 位冲突，应报告两个失败。"""
-    srv03 = demo_project / "devices" / "SRV-03.yaml"
-    srv03.write_text(
-        """id: SRV-03
-name: 服务器-03
-model: generic-server
-status: planned
-rack_id: RACK-A01
-position_u: 10
-pdu_id: PDU-A
-
-tdp_w: 400
-""",
-        encoding="utf-8",
-    )
+    _add_device(demo_project, "SRV-03", "RACK-A01", 10, "PDU-A", tdp_w=400)
     result = _run_check(demo_project)
     assert result.returncode == 1
     assert "PDU-A 负载率" in result.stdout
@@ -182,22 +158,9 @@ def test_version_flag() -> None:
 def test_check_files_filter(demo_project: Path) -> None:
     """--files 只检查指定文件，不加载未指定文件中的实例。"""
     # 创建 SRV-03 接 PDU-A 导致功率超载
-    srv03 = demo_project / "devices" / "SRV-03.yaml"
-    srv03.write_text(
-        """id: SRV-03
-name: 服务器-03
-model: generic-server
-status: planned
-rack_id: RACK-A01
-position_u: 6
-pdu_id: PDU-A
+    _add_device(demo_project, "SRV-03", "RACK-A01", 6, "PDU-A", tdp_w=400)
 
-tdp_w: 400
-""",
-        encoding="utf-8",
-    )
-    # 只检查 SRV-03.yaml（不指定其他文件），ctx.query 应只返回 SRV-03
-    # 此时 PDU-A 上只有 SRV-03（400W），负载率 20% < 40%，功率规则通过
+    # 只检查 SRV-03.yaml（不指定其他文件）
     result = subprocess.run(
         [*PIKI, "check", str(demo_project), "--files", "devices/SRV-03.yaml"],
         capture_output=True,

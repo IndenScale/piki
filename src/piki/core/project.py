@@ -1,4 +1,4 @@
-"""Project 类：加载 piki.toml、扫描目录。"""
+"""Project 类：加载 piki.toml、扫描目录、管理嵌套项目。"""
 
 from __future__ import annotations
 
@@ -17,18 +17,42 @@ logger = logging.getLogger(__name__)
 
 
 class Project:
-    """piki 项目。"""
+    """piki 项目，支持嵌套（ADR-009）。"""
 
-    def __init__(self, root: Path, config: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        root: Path,
+        config: dict[str, Any],
+        parent: "Project | None" = None,
+    ) -> None:
         self.root = root
         self.config = config
         self.registry = Registry()
         self.checker = Checker()
         self._plugins: list[Plugin] = []
+        self._parent = parent
+        self._children: dict[str, "Project"] = {}
+
+        # 从父项目继承 Registry
+        if parent:
+            self.registry.set_parent(parent.registry)
+
+    # ------------------------------------------------------------------
+    # 发现与工厂
+    # ------------------------------------------------------------------
 
     @classmethod
-    def discover(cls, start: Path | str | None = None) -> "Project":
-        """从当前目录向上查找 piki.toml。"""
+    def discover(
+        cls,
+        start: Path | str | None = None,
+        recurse: bool = True,
+    ) -> "Project":
+        """从当前目录向上查找 piki.toml。
+
+        Args:
+            start: 起始目录，默认为当前工作目录
+            recurse: 是否递归加载子项目
+        """
         if start is None:
             start = Path.cwd()
         else:
@@ -39,14 +63,60 @@ class Project:
             candidate = current / "piki.toml"
             if candidate.exists():
                 config = load_toml(candidate)
-                return cls(current, config)
+                project = cls(current, config)
+                if recurse:
+                    project._discover_children()
+                return project
             if current.parent == current:
-                raise FileNotFoundError(f"Could not find piki.toml from {start}")
+                raise FileNotFoundError(
+                    f"Could not find piki.toml from {start}")
             current = current.parent
 
+    def _discover_children(self) -> None:
+        """递归发现子项目目录。
+
+        子项目是含有 piki.toml 且不是当前项目根的直接子目录。
+        """
+        for entry in sorted(self.root.iterdir()):
+            if not entry.is_dir():
+                continue
+            child_toml = entry / "piki.toml"
+            if not child_toml.exists():
+                continue
+            # 跳过特殊目录
+            if entry.name in ("library", "instances", "layouts", "rules",
+                              ".git", "__pycache__", ".piki"):
+                continue
+            try:
+                child_config = load_toml(child_toml)
+                child_project = Project(
+                    root=entry,
+                    config=child_config,
+                    parent=self,
+                )
+                child_project._discover_children()
+                self._children[entry.name] = child_project
+            except Exception as exc:
+                logger.warning("Failed to load sub-project %s: %s",
+                             entry.name, exc)
+
+    # ------------------------------------------------------------------
+    # 加载
+    # ------------------------------------------------------------------
+
     def load(self) -> None:
-        """加载插件、型号库、实例数据。"""
-        # 1. 加载插件
+        """加载插件、型号库、实例数据、Layout。"""
+        self._load_plugins()
+        self._load_models()
+        self._load_layout()       # Layout 必须在 Instance 之前加载（_resolve 依赖它）
+        self._load_instances()
+        self._load_rules()
+        self._load_tag_config()
+        # 加载子项目
+        for child in self._children.values():
+            child.load()
+
+    def _load_plugins(self) -> None:
         plugin_classes = discover_plugins()
         enabled = self._plugin_names()
         for name in enabled:
@@ -58,26 +128,64 @@ class Project:
             plugin.register_generators(self.checker)
             self._plugins.append(plugin)
 
-        # 2. 加载项目本地型号库
+    def _load_models(self) -> None:
+        """加载项目本地型号库和插件型号库。"""
+        # 项目本地型号库
         self.registry.load_library(self.root / "library")
-
-        # 3. 加载插件自带型号库
+        # 插件自带型号库
         for plugin in self._plugins:
             plugin_lib = getattr(plugin, "library_dir", None)
             if plugin_lib:
                 self.registry.load_library(Path(plugin_lib))
 
-        # 4. 扫描数据目录
-        for path in sorted(self.root.iterdir()):
-            if path.is_dir() and path.name != "library":
-                # 简单启发式：包含 yaml 文件的目录视为集合
-                if any(path.rglob("*.yaml")):
-                    self.registry.load_collection(path)
+    def _load_instances(self) -> None:
+        """扫描实例数据目录。
 
-        # 5. 加载项目 rules/
+        优先加载 instances/ 目录（新格式，ADR-008），
+        兼容旧格式中按类型分目录的方式。
+        """
+        # 新格式：instances/ 目录
+        instances_dir = self.root / "instances"
+        if instances_dir.exists() and any(instances_dir.rglob("*.yaml")):
+            self.registry.load_collection(instances_dir)
+
+        # 兼容旧格式：扫描所有包含 YAML 的非特殊目录
+        for path in sorted(self.root.iterdir()):
+            if not path.is_dir():
+                continue
+            if path.name in ("library", "instances", "layouts", "rules",
+                             ".git", "__pycache__", ".piki"):
+                continue
+            # 跳过子项目（有 piki.toml 的目录）
+            if (path / "piki.toml").exists():
+                continue
+            if any(path.rglob("*.yaml")):
+                self.registry.load_collection(path)
+
+    def _load_layout(self) -> None:
+        """加载项目 Layout 文件。"""
+        layout = self.registry.load_layout(self.root)
+        if layout is None:
+            logger.debug("No layout file found in %s", self.root)
+
+    def _load_rules(self) -> None:
+        """加载项目 rules/ 目录下的 Python 规则。"""
         rules_dir = self.root / "rules"
         if rules_dir.exists():
             self._load_project_rules(rules_dir)
+
+        # 从父项目继承规则
+        if self._parent:
+            for rule_id, name, prio, severity, func in self._parent.checker._rules:
+                if not any(r[0] == rule_id for r in self.checker._rules):
+                    self.checker.add_rule(rule_id, name, func, prio, severity)
+
+    def _load_tag_config(self) -> None:
+        """从 piki.toml 读取允许的 Tag 键。"""
+        tag_config = self.config.get("tags", {})
+        allowed = tag_config.get("allowed", [])
+        if isinstance(allowed, list):
+            self.registry.set_allowed_tags(allowed)
 
     def _plugin_names(self) -> list[str]:
         plugins_config = self.config.get("plugins", {})
@@ -87,14 +195,16 @@ class Project:
         return enabled
 
     def _load_project_rules(self, rules_dir: Path) -> None:
-        """动态导入 rules/ 下的 Python 模块，收集 @rule 装饰器。"""
         import importlib.util
         import sys
 
         for path in sorted(rules_dir.rglob("*.py")):
             if path.name.startswith("_"):
                 continue
-            module_name = f"piki_project_rules.{path.relative_to(rules_dir).with_suffix('').as_posix().replace('/', '.')}"
+            module_name = (
+                f"piki_project_rules."
+                f"{path.relative_to(rules_dir).with_suffix('').as_posix().replace('/', '.')}"
+            )
             spec = importlib.util.spec_from_file_location(module_name, path)
             if spec is None or spec.loader is None:
                 continue
@@ -102,17 +212,28 @@ class Project:
             sys.modules[module_name] = module
             try:
                 spec.loader.exec_module(module)
-            except Exception as exc:  # pragma: no cover
+            except Exception as exc:
                 logger.warning("Failed to load project rule %s: %s", path, exc)
                 continue
             register_module_rules(self.checker, module)
+
+    # ------------------------------------------------------------------
+    # 配置
+    # ------------------------------------------------------------------
+
+    @property
+    def parent(self) -> "Project | None":
+        return self._parent
+
+    @property
+    def children(self) -> dict[str, "Project"]:
+        return dict(self._children)
 
     def plugin_config(self, name: str) -> dict[str, Any]:
         plugins = self.config.get("plugins", {})
         return plugins.get(name, {})
 
     def make_context(self) -> Context:
-        # 合并全局配置 + 插件配置作为规则 ctx.config
         base: dict[str, Any] = {}
         base.update(self.config.get("rules", {}))
         for plugin in self._plugins:
@@ -120,43 +241,33 @@ class Project:
         return Context(self.registry, base)
 
     def enabled_generators(self) -> list[str]:
-        """从 piki.toml [generators] enabled 读取启用的生成器列表。"""
         generators_config = self.config.get("generators", {})
         enabled = generators_config.get("enabled", [])
         if isinstance(enabled, str):
             enabled = [enabled]
         return enabled
 
-    def _expand_files_filter(self, files: list[str]) -> set[str] | None:
-        """将文件列表解析为绝对路径集合，并递归包含被引用的实例文件。
+    # ------------------------------------------------------------------
+    # 检查
+    # ------------------------------------------------------------------
 
-        当 --files 指定变更文件时，规则可能通过外键引用其他实例（如 pdu_id、
-        rack_id）。本方法自动追踪这些引用关系，确保被引用的实例文件也被包含
-        在过滤集合中，避免外键完整性检查误报。
-        """
+    def _expand_files_filter(self, files: list[str]) -> set[str] | None:
         if not files:
             return None
-
-        # 1. 解析为绝对路径
         direct = {str((self.root / f).resolve()) for f in files}
         allowed = set(direct)
-
-        # 2. 构建 id -> instance 映射
         id_map: dict[str, Any] = {}
         for inst in self.registry.all_instances().values():
             id_map[inst.id] = inst
 
-        # 3. 递归收集被引用的实例
         changed = True
         while changed:
             changed = False
             current_instances = [
-                inst
-                for inst in self.registry.all_instances().values()
+                inst for inst in self.registry.all_instances().values()
                 if str(inst.source) in allowed
             ]
             for inst in current_instances:
-                # 检查 _resolved 中的外键字段
                 for field, value in inst._resolved.items():
                     if field.endswith("_id") and isinstance(value, str):
                         if value in id_map:
@@ -164,7 +275,6 @@ class Project:
                             if ref_source not in allowed:
                                 allowed.add(ref_source)
                                 changed = True
-                # 检查 raw 中的外键字段
                 for field, value in inst.raw.items():
                     if field.endswith("_id") and isinstance(value, str):
                         if value in id_map:
@@ -172,7 +282,6 @@ class Project:
                             if ref_source not in allowed:
                                 allowed.add(ref_source)
                                 changed = True
-
         return allowed
 
     def run_check(
@@ -180,17 +289,31 @@ class Project:
         skip: list[str] | None = None,
         only: list[str] | None = None,
         files: list[str] | None = None,
+        recurse: bool = True,
     ) -> CheckReport:
+        """运行检查。
+
+        Args:
+            skip: 跳过的规则 ID 列表
+            only: 仅运行的规则 ID 列表
+            files: 仅检查的文件列表
+            recurse: 是否递归检查子项目
+        """
         ctx = self.make_context()
-        # 将相对路径解析为基于项目根目录的绝对路径，并扩展引用
         resolved_files = self._expand_files_filter(files)
         rules_config = self.config.get("rules", {})
-        report = self.checker.run(ctx, skip=skip, only=only, files=resolved_files, rules_config=rules_config)
+        report = self.checker.run(
+            ctx,
+            skip=skip,
+            only=only,
+            files=resolved_files,
+            rules_config=rules_config,
+        )
 
-        # 将 Registry 收集的 Diagnostic 加入报告
+        # 收集 Registry 诊断
         report.diagnostics.extend(self.registry.diagnostics)
 
-        # 向后兼容：将 Schema 校验失败的实例也加入 RuleResult
+        # 收集 Schema 校验失败的实例
         for inst in self.registry.all_instances().values():
             if inst.family == "_invalid":
                 detail = inst._validation_error or "未知错误"
@@ -203,5 +326,14 @@ class Project:
                         file=str(inst.source),
                     )
                 )
+
+        # 递归检查子项目
+        if recurse:
+            for child in self._children.values():
+                child_report = child.run_check(
+                    skip=skip, only=only, files=None, recurse=True,
+                )
+                report.results.extend(child_report.results)
+                report.diagnostics.extend(child_report.diagnostics)
 
         return report
