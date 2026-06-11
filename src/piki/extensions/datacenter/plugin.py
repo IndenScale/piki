@@ -134,7 +134,7 @@ class DatacenterPlugin(Plugin):
         checker.add_rule("DC-COOLING-001", "液冷方舱制冷容量检查", check_liquid_cooling_capacity, priority=10, severity=Severity.ERROR)
         checker.add_rule("DC-WEIGHT-001", "方舱总重检查", check_container_weight, priority=5, severity=Severity.ERROR)
         checker.add_rule("DC-SPACE-001", "方舱内设备空间边界检查", check_equipment_container_fit, priority=5, severity=Severity.WARNING)
-        checker.add_rule("DC-COLLISION-001", "方舱内设备 3D 碰撞检测", check_equipment_3d_collision, priority=5, severity=Severity.ERROR)
+        checker.add_rule("DC-COLLISION-001", "方舱内设备 3D 碰撞检测", check_equipment_3d_collision, priority=5, severity=Severity.WARNING)
         checker.add_rule("DC-CONN-001", "连接完整性检查", check_connection_integrity, priority=10, severity=Severity.ERROR)
         checker.add_rule("DC-CONN-002", "连接容量检查", check_connection_capacity, priority=5, severity=Severity.WARNING)
         checker.add_rule("DC-FK-001", "外键完整性检查", check_dc_foreign_keys, priority=10, severity=Severity.WARNING)

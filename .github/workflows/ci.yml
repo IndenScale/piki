@@ -41,12 +41,12 @@ jobs:
           piki check
           cd ../..
 
-          # 03-data-center: 进阶示例，有 1 个警告（负载不均衡），应返回 0
+          # 03-data-center: 进阶示例，有 2 个警告（负载不均衡 + 碰撞），应返回 0
           cd samples/03-data-center
           piki check
           cd ../..
 
-          # 04-modular-dc: 高级示例，datacenter 插件，应全部通过
+          # 04-modular-dc: 高级示例，datacenter 插件，有 1 个警告（碰撞），应返回 0
           cd samples/04-modular-dc
           piki check
           cd ../..

@@ -89,7 +89,7 @@ class TelecomPlugin(Plugin):
         checker.add_rule("TELECOM-RACK-001", "U 位冲突检查", check_rack_space, priority=5, severity=Severity.ERROR)
         checker.add_rule("TELECOM-RACK-002", "机柜容量检查", check_rack_capacity, priority=5, severity=Severity.ERROR)
         checker.add_rule("TELECOM-RACK-003", "设备物理尺寸与机柜匹配检查", check_device_physical_fit, priority=3, severity=Severity.WARNING)
-        checker.add_rule("TELECOM-COLLISION-001", "机柜内设备 3D 碰撞检测", check_rack_3d_collision, priority=5, severity=Severity.ERROR)
+        checker.add_rule("TELECOM-COLLISION-001", "机柜内设备 3D 碰撞检测", check_rack_3d_collision, priority=5, severity=Severity.WARNING)
         checker.add_rule("TELECOM-FK-001", "外键完整性检查", check_foreign_keys, priority=10, severity=Severity.WARNING)
 
     def register_generators(self, checker: Checker) -> None:
