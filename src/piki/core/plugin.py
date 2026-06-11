@@ -54,9 +54,7 @@ def discover_plugins() -> dict[str, type[Plugin]]:
             except Exception as exc:  # pragma: no cover
                 import logging
 
-                logging.getLogger(__name__).warning(
-                    "Failed to load extension %s: %s", name, exc
-                )
+                logging.getLogger(__name__).warning("Failed to load extension %s: %s", name, exc)
     except ImportError:
         pass
 
@@ -64,9 +62,7 @@ def discover_plugins() -> dict[str, type[Plugin]]:
     try:
         import piki.plugins as plugins_pkg
 
-        for _, name, _ in iter_modules(
-            plugins_pkg.__path__, plugins_pkg.__name__ + "."
-        ):
+        for _, name, _ in iter_modules(plugins_pkg.__path__, plugins_pkg.__name__ + "."):
             try:
                 mod = import_module(name)
                 for attr in dir(mod):
@@ -81,9 +77,7 @@ def discover_plugins() -> dict[str, type[Plugin]]:
             except Exception as exc:  # pragma: no cover
                 import logging
 
-                logging.getLogger(__name__).warning(
-                    "Failed to load plugin %s: %s", name, exc
-                )
+                logging.getLogger(__name__).warning("Failed to load plugin %s: %s", name, exc)
     except ImportError:
         pass
 

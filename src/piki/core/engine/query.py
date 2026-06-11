@@ -111,6 +111,7 @@ class QuerySet:
     def group_by(self, field: str) -> dict[Any, list[Any]]:
         """按字段分组。"""
         from collections import defaultdict
+
         groups: dict[Any, list[Any]] = defaultdict(list)
         for item in self._evaluate():
             groups[_get_value(item, field)].append(item)
@@ -254,6 +255,7 @@ def _get_value(item: Any, field: str) -> Any:
 def _project(item: Any, names: list[str]) -> Any:
     """将 item 投影为只含指定字段的 SimpleNamespace。"""
     from types import SimpleNamespace
+
     return SimpleNamespace(**{name: _get_value(item, name) for name in names})
 
 

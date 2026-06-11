@@ -34,11 +34,13 @@ class TestMakeNamespace:
         assert ns.items[1].id == "y"
 
     def test_mixed(self) -> None:
-        ns = _make_namespace({
-            "name": "test",
-            "tags": ["a", "b"],
-            "config": {"timeout": 30},
-        })
+        ns = _make_namespace(
+            {
+                "name": "test",
+                "tags": ["a", "b"],
+                "config": {"timeout": 30},
+            }
+        )
         assert ns.name == "test"
         assert ns.tags == ["a", "b"]
         assert ns.config.timeout == 30
@@ -52,9 +54,7 @@ class TestUnflatten:
 
     def test_nested(self) -> None:
         flat = {"a.b.c": 42, "a.d": "hello"}
-        assert _unflatten(flat) == {
-            "a": {"b": {"c": 42}, "d": "hello"}
-        }
+        assert _unflatten(flat) == {"a": {"b": {"c": 42}, "d": "hello"}}
 
     def test_overlapping_prefix(self) -> None:
         """a 既是叶子又是前缀时，当前实现会抛出 TypeError（已知限制）。"""

@@ -15,7 +15,7 @@ from typing import Any
 class LayoutEntry:
     """Layout 中的单条部署记录。"""
 
-    instance: str                 # Instance ID 引用
+    instance: str  # Instance ID 引用
     # 机柜式部署（数据中心）
     rack_id: str | None = None
     position_u: int | None = None
@@ -61,7 +61,7 @@ class Layout:
     按照 ADR-008，每个子项目只有一个 Layout 文件。
     """
 
-    name: str                           # Layout 名称（通常是目录名）
+    name: str  # Layout 名称（通常是目录名）
     entries: dict[str, LayoutEntry] = field(default_factory=dict)  # instance_id -> LayoutEntry
     source: Path | None = None
     sections: dict[str, list[LayoutEntry]] = field(default_factory=dict)  # discipline -> entries
@@ -88,6 +88,9 @@ class Layout:
     def free_positions(self, rack_id: str) -> set[int]:
         """查询指定机柜的空闲 U 位（需要外部传入 total_u）。"""
         # 需要机柜的 total_u 信息，由调用方提供
-        used = {e.position_u for e in self.entries.values()
-                if e.rack_id == rack_id and e.position_u is not None}
+        {
+            e.position_u
+            for e in self.entries.values()
+            if e.rack_id == rack_id and e.position_u is not None
+        }
         return set()

@@ -17,15 +17,17 @@ if TYPE_CHECKING:
 def _has_manifold() -> bool:
     try:
         import manifold3d  # noqa: F401
+
         return True
     except ImportError:
         return False
 
 
-def _inline_to_manifold(geom: InlineGeometry, transform: Transform | None = None) -> "manifold3d.Manifold":
+def _inline_to_manifold(
+    geom: InlineGeometry, transform: Transform | None = None
+) -> "manifold3d.Manifold":
     """将 InlineGeometry 转换为 Manifold 对象。"""
     import manifold3d as m3d
-    import numpy as np
 
     t = transform.translation if transform else Vec3(x=0.0, y=0.0, z=0.0)
     s = transform.scale if transform else Vec3(x=1.0, y=1.0, z=1.0)
@@ -74,8 +76,7 @@ def eval_csg(node: CSGNode) -> "manifold3d.Manifold":
     """
     if not _has_manifold():
         raise ImportError(
-            "manifold3d is required for CSG evaluation. "
-            "Install with: pip install manifold3d"
+            "manifold3d is required for CSG evaluation. Install with: pip install manifold3d"
         )
 
     if node.type == "primitive":
@@ -133,6 +134,10 @@ def eval_csg_aabb(node: CSGNode) -> "AABB":
 
     verts = mesh.vert_properties[:, :3]
     return AABB(
-        min=Vec3(x=float(verts[:, 0].min()), y=float(verts[:, 1].min()), z=float(verts[:, 2].min())),
-        max=Vec3(x=float(verts[:, 0].max()), y=float(verts[:, 1].max()), z=float(verts[:, 2].max())),
+        min=Vec3(
+            x=float(verts[:, 0].min()), y=float(verts[:, 1].min()), z=float(verts[:, 2].min())
+        ),
+        max=Vec3(
+            x=float(verts[:, 0].max()), y=float(verts[:, 1].max()), z=float(verts[:, 2].max())
+        ),
     )

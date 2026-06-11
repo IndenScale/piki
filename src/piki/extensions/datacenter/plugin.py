@@ -17,33 +17,33 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from piki.core.engine.checker import Checker, rule
+from piki.core.engine.checker import Checker
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
-from piki.core.models.geometry import GeometryAssets, Vec3
+from piki.core.models.geometry import GeometryAssets
 from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
-
 
 # ---------------------------------------------------------------------------
 # Family 定义
 # ---------------------------------------------------------------------------
+
 
 class ContainerFamily(BaseModel):
     """方舱 / 集装箱式模块化机房。"""
 
     id: str = Field(...)
     name: str = Field(default="")
-    container_type: str = Field(...)          # liquid-cooling | air-cooling | battery | power-distribution
-    standard: str = Field(default="20ft")     # 20ft | 40ft | custom
+    container_type: str = Field(...)  # liquid-cooling | air-cooling | battery | power-distribution
+    standard: str = Field(default="20ft")  # 20ft | 40ft | custom
     length_mm: float = Field(default=6058, gt=0, json_schema_extra={"piki_non_overridable": True})
     width_mm: float = Field(default=2438, gt=0, json_schema_extra={"piki_non_overridable": True})
     height_mm: float = Field(default=2591, gt=0, json_schema_extra={"piki_non_overridable": True})
     max_weight_kg: float = Field(default=24000, gt=0)  # 最大总重（kg）
     power_capacity_kw: float = Field(default=0, ge=0)  # 配电容量（kW）
     cooling_capacity_kw: float = Field(default=0, ge=0)  # 制冷容量（kW）
-    location: str = Field(default="")         # 场地位置描述
-    status: str = Field(default="planned")    # planned | installed | operating | retired
+    location: str = Field(default="")  # 场地位置描述
+    status: str = Field(default="planned")  # planned | installed | operating | retired
     # 3D 空间定位（毫米）
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
@@ -58,11 +58,11 @@ class PowerUnitFamily(BaseModel):
 
     id: str = Field(...)
     name: str = Field(default="")
-    unit_type: str = Field(...)               # ups | hvdc | battery | diesel | solar | pdu-rack
-    container_id: str = Field(...)            # 所属方舱
-    capacity_kw: float = Field(..., gt=0)     # 额定容量（kW）
+    unit_type: str = Field(...)  # ups | hvdc | battery | diesel | solar | pdu-rack
+    container_id: str = Field(...)  # 所属方舱
+    capacity_kw: float = Field(..., gt=0)  # 额定容量（kW）
     redundancy_n: int = Field(default=1, ge=1)  # N+几冗余，1=N, 2=N+1
-    phase: str = Field(default="L1")          # L1 | L2 | L3 | three-phase
+    phase: str = Field(default="L1")  # L1 | L2 | L3 | three-phase
     efficiency: float = Field(default=0.95, ge=0, le=1)  # 转换效率
     status: str = Field(default="planned")
 
@@ -73,9 +73,9 @@ class EquipmentFamily(BaseModel):
     id: str = Field(...)
     name: str = Field(default="")
     model: str = Field(default="")
-    equipment_type: str = Field(...)          # compute | storage | network | cooling | other
-    container_id: str = Field(...)            # 所在方舱
-    power_unit_id: str = Field(...)           # 供电来源
+    equipment_type: str = Field(...)  # compute | storage | network | cooling | other
+    container_id: str = Field(...)  # 所在方舱
+    power_unit_id: str = Field(...)  # 供电来源
     power_kw: float = Field(default=5, gt=0)  # 额定功耗（kW）
     weight_kg: float = Field(default=100, gt=0)  # 重量（kg）
     status: str = Field(default="planned")
@@ -103,7 +103,7 @@ class ConnectionFamily(BaseModel):
 
     id: str = Field(...)
     name: str = Field(default="")
-    connection_type: str = Field(...)         # liquid | power | fiber
+    connection_type: str = Field(...)  # liquid | power | fiber
     from_container: str = Field(...)
     to_container: str = Field(...)
     capacity: float = Field(default=0, ge=0)  # 容量：kW(电缆) / L/min(液冷) / Gbps(光纤)
@@ -114,6 +114,7 @@ class ConnectionFamily(BaseModel):
 # ---------------------------------------------------------------------------
 # Plugin
 # ---------------------------------------------------------------------------
+
 
 class DatacenterPlugin(Plugin):
     name = "datacenter"
@@ -130,15 +131,69 @@ class DatacenterPlugin(Plugin):
         registry.add_family("ConnectionFamily", ConnectionFamily)
 
     def register_rules(self, checker: Checker) -> None:
-        checker.add_rule("DC-POWER-001", "方舱功率预算检查", check_container_power_budget, priority=10, severity=Severity.ERROR)
-        checker.add_rule("DC-COOLING-001", "液冷方舱制冷容量检查", check_liquid_cooling_capacity, priority=10, severity=Severity.ERROR)
-        checker.add_rule("DC-WEIGHT-001", "方舱总重检查", check_container_weight, priority=5, severity=Severity.ERROR)
-        checker.add_rule("DC-SPACE-001", "方舱内设备空间边界检查", check_equipment_container_fit, priority=5, severity=Severity.WARNING)
-        checker.add_rule("DC-COLLISION-001", "方舱内设备 3D 碰撞检测", check_equipment_3d_collision, priority=5, severity=Severity.WARNING)
-        checker.add_rule("DC-CONN-001", "连接完整性检查", check_connection_integrity, priority=10, severity=Severity.ERROR)
-        checker.add_rule("DC-CONN-002", "连接容量检查", check_connection_capacity, priority=5, severity=Severity.WARNING)
-        checker.add_rule("DC-FK-001", "外键完整性检查", check_dc_foreign_keys, priority=10, severity=Severity.WARNING)
-        checker.add_rule("DC-REDUNDANCY-001", "配电冗余检查", check_power_redundancy, priority=5, severity=Severity.WARNING)
+        checker.add_rule(
+            "DC-POWER-001",
+            "方舱功率预算检查",
+            check_container_power_budget,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "DC-COOLING-001",
+            "液冷方舱制冷容量检查",
+            check_liquid_cooling_capacity,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "DC-WEIGHT-001",
+            "方舱总重检查",
+            check_container_weight,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "DC-SPACE-001",
+            "方舱内设备空间边界检查",
+            check_equipment_container_fit,
+            priority=5,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "DC-COLLISION-001",
+            "方舱内设备 3D 碰撞检测",
+            check_equipment_3d_collision,
+            priority=5,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "DC-CONN-001",
+            "连接完整性检查",
+            check_connection_integrity,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "DC-CONN-002",
+            "连接容量检查",
+            check_connection_capacity,
+            priority=5,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "DC-FK-001",
+            "外键完整性检查",
+            check_dc_foreign_keys,
+            priority=10,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "DC-REDUNDANCY-001",
+            "配电冗余检查",
+            check_power_redundancy,
+            priority=5,
+            severity=Severity.WARNING,
+        )
 
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("dc-bom-csv", "数据中心 BOM CSV 导出", generate_dc_bom_csv)
@@ -147,6 +202,7 @@ class DatacenterPlugin(Plugin):
 # ---------------------------------------------------------------------------
 # 规则实现
 # ---------------------------------------------------------------------------
+
 
 def check_container_power_budget(ctx):
     """检查每个方舱内设备总功耗不超过方舱配电容量。"""
@@ -287,7 +343,7 @@ def check_equipment_3d_collision(ctx):
     """
     from piki.ext.geometry import build_aabb_from_instance, find_collisions
 
-    containers = {c.id: c for c in ctx.query("containers")}
+    {c.id: c for c in ctx.query("containers")}
 
     for container in ctx.query("containers"):
         devices = ctx.query("equipment", container_id=container.id)
@@ -305,9 +361,7 @@ def check_equipment_3d_collision(ctx):
         if collisions:
             ctx.set_current_file(str(container.source))
             pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
-            assert False, (
-                f"方舱 {container.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
-            )
+            assert False, f"方舱 {container.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
     ctx.clear_current_file()
 
 
@@ -327,7 +381,9 @@ def check_connection_capacity(ctx):
 
         # 液冷连接：检查 to_container 的流量需求
         if conn.connection_type == "liquid":
-            target_devices = ctx.query("equipment", container_id=conn.to_container, liquid_cooled=True)
+            target_devices = ctx.query(
+                "equipment", container_id=conn.to_container, liquid_cooled=True
+            )
             total_flow = sum(d.coolant_flow_lpm for d in target_devices)
             if total_flow > 0:
                 assert cap >= total_flow, (
@@ -336,7 +392,9 @@ def check_connection_capacity(ctx):
                 )
 
             # 双向校验：同时检查 from_container 是否能提供足够的供液
-            source_devices = ctx.query("equipment", container_id=conn.from_container, liquid_cooled=True)
+            source_devices = ctx.query(
+                "equipment", container_id=conn.from_container, liquid_cooled=True
+            )
             source_flow = sum(d.coolant_flow_lpm for d in source_devices)
             if source_flow > 0 and cap < source_flow:
                 # 源方舱也有液冷需求时，连接容量应至少满足较大的一方
@@ -370,7 +428,9 @@ def check_connection_capacity(ctx):
 
         # 光纤连接：检查带宽需求
         elif conn.connection_type == "fiber":
-            target_devices = ctx.query("equipment", container_id=conn.to_container, equipment_type="network")
+            target_devices = ctx.query(
+                "equipment", container_id=conn.to_container, equipment_type="network"
+            )
             # 简化：假设每个网络设备需要 10Gbps
             total_bandwidth = len(target_devices) * 10
             if total_bandwidth > 0:
@@ -420,6 +480,7 @@ def check_power_redundancy(ctx):
 # 生成器
 # ---------------------------------------------------------------------------
 
+
 def generate_dc_bom_csv(ctx, config):
     """生成数据中心 BOM CSV。"""
     import csv
@@ -437,22 +498,37 @@ def generate_dc_bom_csv(ctx, config):
     writer.writerow(["=== 方舱清单 ==="])
     writer.writerow(["ID", "Type", "Standard", "Power_kW", "Cooling_kW", "Status"])
     for c in containers:
-        writer.writerow([
-            c.id, c.container_type, c.standard,
-            c.power_capacity_kw, c.cooling_capacity_kw, c.status,
-        ])
+        writer.writerow(
+            [
+                c.id,
+                c.container_type,
+                c.standard,
+                c.power_capacity_kw,
+                c.cooling_capacity_kw,
+                c.status,
+            ]
+        )
 
     writer.writerow([])
 
     # 设备清单
     writer.writerow(["=== 设备清单 ==="])
-    writer.writerow(["ID", "Type", "Model", "Container", "Power_kW", "Weight_kg", "LiquidCooled", "Status"])
+    writer.writerow(
+        ["ID", "Type", "Model", "Container", "Power_kW", "Weight_kg", "LiquidCooled", "Status"]
+    )
     for d in equipment:
-        writer.writerow([
-            d.id, d.equipment_type, d.model or "",
-            d.container_id, d.power_kw, d.weight_kg,
-            d.liquid_cooled, d.status,
-        ])
+        writer.writerow(
+            [
+                d.id,
+                d.equipment_type,
+                d.model or "",
+                d.container_id,
+                d.power_kw,
+                d.weight_kg,
+                d.liquid_cooled,
+                d.status,
+            ]
+        )
 
     writer.writerow([])
 
@@ -460,10 +536,16 @@ def generate_dc_bom_csv(ctx, config):
     writer.writerow(["=== 配电清单 ==="])
     writer.writerow(["ID", "Type", "Container", "Capacity_kW", "Redundancy", "Status"])
     for p in power:
-        writer.writerow([
-            p.id, p.unit_type, p.container_id,
-            p.capacity_kw, f"N+{p.redundancy_n - 1}", p.status,
-        ])
+        writer.writerow(
+            [
+                p.id,
+                p.unit_type,
+                p.container_id,
+                p.capacity_kw,
+                f"N+{p.redundancy_n - 1}",
+                p.status,
+            ]
+        )
 
     content = output.getvalue()
     out_path = config.get("output")

@@ -23,11 +23,15 @@ def check_liquid_loop_flow(ctx):
             continue
 
         # 查找进入该方舱的液冷连接
-        incoming_conns = ctx.query("connections", to_container=container.id, connection_type="liquid")
+        incoming_conns = ctx.query(
+            "connections", to_container=container.id, connection_type="liquid"
+        )
         total_supply = sum(c.capacity for c in incoming_conns)
 
         # 也查找从该方舱出去的液冷连接（作为供液源）
-        outgoing_conns = ctx.query("connections", from_container=container.id, connection_type="liquid")
+        outgoing_conns = ctx.query(
+            "connections", from_container=container.id, connection_type="liquid"
+        )
         total_supply += sum(c.capacity for c in outgoing_conns)
 
         assert total_supply >= total_flow, (

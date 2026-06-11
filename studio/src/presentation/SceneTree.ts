@@ -1,72 +1,35 @@
 import type { PikiProject, PikiInstance, SceneObject } from '../types/index.ts';
 import type { ISelectionService } from '../core/selection/SelectionService.ts';
 import { inferTypeFromId, typeColor } from '../utils/index.ts';
+import { createPanel } from './components/Panel.ts';
+import { createBadge } from './components/Badge.ts';
+import { createEmptyState } from './components/EmptyState.ts';
 
 export class SceneTree {
   private selectionService: ISelectionService;
   private element: HTMLElement | null = null;
   private treeContainer: HTMLElement | null = null;
   private project: PikiProject | null = null;
+  private panel: ReturnType<typeof createPanel> | null = null;
 
   constructor(selectionService: ISelectionService) {
     this.selectionService = selectionService;
-    // Subscribe to selection changes from other sources (e.g., Viewport)
     this.selectionService.onChange((obj) => {
       this.updateVisualSelection(obj);
     });
   }
 
   render(): HTMLElement {
-    const el = document.createElement('div');
-    el.className = 'piki-scene-tree';
-    this.applyStyles(el);
+    this.panel = createPanel({ title: '场景层级' });
+    this.element = this.panel.root;
+    this.element.style.borderRight = '1px solid var(--border-color)';
 
-    // Header
-    const header = document.createElement('div');
-    header.className = 'sidebar-header';
-    header.style.padding = '12px 16px';
-    header.style.background = '#0f3460';
-    header.style.fontWeight = '600';
-    header.style.fontSize = '14px';
-    header.style.display = 'flex';
-    header.style.alignItems = 'center';
-    header.style.gap = '8px';
-    header.style.flexShrink = '0';
+    this.treeContainer = this.panel.content;
+    this.treeContainer.style.padding = '6px 0';
 
-    const icon = document.createElement('div');
-    icon.textContent = 'P';
-    icon.style.width = '20px';
-    icon.style.height = '20px';
-    icon.style.background = '#e94560';
-    icon.style.borderRadius = '4px';
-    icon.style.display = 'flex';
-    icon.style.alignItems = 'center';
-    icon.style.justifyContent = 'center';
-    icon.style.fontSize = '12px';
-    icon.style.fontWeight = 'bold';
-    icon.style.color = 'white';
-
-    const title = document.createElement('span');
-    title.textContent = '场景层级';
-
-    header.appendChild(icon);
-    header.appendChild(title);
-    el.appendChild(header);
-
-    // Tree container
-    const tree = document.createElement('div');
-    tree.className = 'tree-content';
-    tree.style.flex = '1';
-    tree.style.overflowY = 'auto';
-    tree.style.padding = '8px 0';
-    this.treeContainer = tree;
-    el.appendChild(tree);
-
-    // Empty state
     this.renderEmpty();
 
-    this.element = el;
-    return el;
+    return this.element;
   }
 
   setProject(project: PikiProject): void {
@@ -81,10 +44,12 @@ export class SceneTree {
       const el = item as HTMLElement;
       if (selectedName && el.dataset.name === selectedName) {
         el.classList.add('selected');
-        el.style.background = '#1a2744';
+        el.style.background = 'rgba(88, 166, 255, 0.1)';
+        el.style.borderLeftColor = 'var(--info)';
       } else {
         el.classList.remove('selected');
         el.style.background = 'transparent';
+        el.style.borderLeftColor = 'transparent';
       }
     });
   }
@@ -92,14 +57,12 @@ export class SceneTree {
   private renderEmpty(): void {
     if (!this.treeContainer) return;
     this.treeContainer.innerHTML = '';
-    const empty = document.createElement('div');
-    empty.className = 'no-selection';
-    empty.textContent = '点击顶部"打开项目"按钮加载工程';
-    empty.style.textAlign = 'center';
-    empty.style.color = '#666';
-    empty.style.padding = '40px 20px';
-    empty.style.fontSize = '13px';
-    this.treeContainer.appendChild(empty);
+    this.treeContainer.appendChild(
+      createEmptyState({
+        title: '暂无场景数据',
+        subtitle: '打开项目后在此处查看层级',
+      }),
+    );
   }
 
   private renderTree(): void {
@@ -107,33 +70,36 @@ export class SceneTree {
     this.treeContainer.innerHTML = '';
 
     for (const collection of this.project.collections) {
-      // Collection group
+      // Collection group header
       const groupItem = document.createElement('div');
-      groupItem.className = 'tree-item';
-      groupItem.style.padding = '6px 16px';
-      groupItem.style.cursor = 'pointer';
-      groupItem.style.fontSize = '13px';
+      groupItem.className = 'tree-group';
+      groupItem.style.padding = '5px 14px';
       groupItem.style.display = 'flex';
       groupItem.style.alignItems = 'center';
-      groupItem.style.gap = '6px';
-      groupItem.style.transition = 'background 0.15s';
-      groupItem.style.whiteSpace = 'nowrap';
-      groupItem.style.overflow = 'hidden';
-      groupItem.style.textOverflow = 'ellipsis';
+      groupItem.style.gap = '8px';
+      groupItem.style.fontSize = '12px';
       groupItem.style.fontWeight = '600';
-      groupItem.style.color = '#888';
+      groupItem.style.color = 'var(--text-secondary)';
+      groupItem.style.userSelect = 'none';
+      groupItem.style.cursor = 'default';
 
       const groupIcon = document.createElement('span');
-      groupIcon.className = 'icon group';
-      groupIcon.style.width = '14px';
-      groupIcon.style.height = '14px';
+      groupIcon.style.width = '10px';
+      groupIcon.style.height = '10px';
       groupIcon.style.borderRadius = '2px';
       groupIcon.style.flexShrink = '0';
-      groupIcon.style.background = '#6c757d';
-      groupIcon.style.display = 'inline-block';
+      groupIcon.style.background = 'var(--text-muted)';
+      groupIcon.style.opacity = '0.5';
+
+      const groupLabel = document.createElement('span');
+      groupLabel.textContent = collection.name;
+      groupLabel.style.flex = '1';
+
+      const countBadge = createBadge(String(collection.instances.length), 'collection');
 
       groupItem.appendChild(groupIcon);
-      groupItem.appendChild(document.createTextNode(`${collection.name} (${collection.instances.length})`));
+      groupItem.appendChild(groupLabel);
+      groupItem.appendChild(countBadge);
       this.treeContainer.appendChild(groupItem);
 
       // Instances
@@ -141,21 +107,22 @@ export class SceneTree {
         const item = document.createElement('div');
         item.className = 'tree-item';
         item.dataset.name = inst.id;
-        item.style.padding = '6px 16px 6px 32px';
+        item.style.padding = '5px 14px 5px 28px';
         item.style.cursor = 'pointer';
-        item.style.fontSize = '13px';
+        item.style.fontSize = '12px';
         item.style.display = 'flex';
         item.style.alignItems = 'center';
-        item.style.gap = '6px';
-        item.style.transition = 'background 0.15s';
+        item.style.gap = '8px';
+        item.style.transition = 'all 0.12s ease';
         item.style.whiteSpace = 'nowrap';
         item.style.overflow = 'hidden';
         item.style.textOverflow = 'ellipsis';
+        item.style.borderLeft = '2px solid transparent';
+        item.style.color = 'var(--text-primary)';
 
         const icon = document.createElement('span');
-        icon.className = 'icon';
-        icon.style.width = '14px';
-        icon.style.height = '14px';
+        icon.style.width = '10px';
+        icon.style.height = '10px';
         icon.style.borderRadius = '2px';
         icon.style.flexShrink = '0';
         icon.style.display = 'inline-block';
@@ -165,13 +132,14 @@ export class SceneTree {
         label.textContent = inst.id;
         label.style.overflow = 'hidden';
         label.style.textOverflow = 'ellipsis';
+        label.style.flex = '1';
 
         item.appendChild(icon);
         item.appendChild(label);
 
         item.addEventListener('mouseenter', () => {
           if (!item.classList.contains('selected')) {
-            item.style.background = '#1a2744';
+            item.style.background = 'var(--bg-tertiary)';
           }
         });
         item.addEventListener('mouseleave', () => {
@@ -196,13 +164,5 @@ export class SceneTree {
         this.treeContainer.appendChild(item);
       }
     }
-  }
-
-  private applyStyles(el: HTMLElement): void {
-    el.style.display = 'flex';
-    el.style.flexDirection = 'column';
-    el.style.background = '#16213e';
-    el.style.borderRight = '1px solid #0f3460';
-    el.style.overflow = 'hidden';
   }
 }

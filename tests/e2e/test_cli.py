@@ -32,8 +32,9 @@ def _run_check(project_dir: Path) -> subprocess.CompletedProcess:
     )
 
 
-def _add_device(project_dir: Path, inst_id: str, rack_id: str,
-                position_u: int, pdu_id: str, tdp_w: int = 400) -> None:
+def _add_device(
+    project_dir: Path, inst_id: str, rack_id: str, position_u: int, pdu_id: str, tdp_w: int = 400
+) -> None:
     """创建一个 Instance 文件并追加到 Layout。
 
     物理尺寸字段不可被 Instance 覆盖（ADR-008），应在 Model 中设置。
@@ -50,7 +51,7 @@ def _add_device(project_dir: Path, inst_id: str, rack_id: str,
     )
     # 追加 Layout entry
     layout_path = project_dir / "layouts" / "layout.yaml"
-    with open(layout_path, 'a', encoding='utf-8') as f:
+    with open(layout_path, "a", encoding="utf-8") as f:
         f.write(
             f"\n- instance: {inst_id}\n"
             f"  rack_id: {rack_id}\n"
@@ -106,6 +107,7 @@ def test_json_format(demo_project: Path) -> None:
         check=True,
     )
     import json
+
     data = json.loads(result.stdout)
     assert data["passed"] is True
     assert data["error_count"] == 0

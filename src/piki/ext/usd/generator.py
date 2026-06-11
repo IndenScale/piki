@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 def _has_usd_core() -> bool:
     try:
         import pxr  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -49,7 +50,7 @@ def _build_proxy_box(
     tz: float = 0.0,
 ) -> Any:
     """根据物理尺寸生成 Box 代理几何。"""
-    from pxr import Gf, Usd, UsdGeom
+    from pxr import Gf, UsdGeom
 
     xform = UsdGeom.Xform.Define(stage, prim_path)
     xform.GetPrim().SetDisplayName(name)
@@ -77,13 +78,13 @@ def _build_inline_geometry(
     name: str,
 ) -> Any:
     """将 InlineGeometry 写入 USD。"""
-    from pxr import Gf, Usd, UsdGeom
+    from pxr import Gf, UsdGeom
 
     xform = UsdGeom.Xform.Define(stage, prim_path)
     xform.GetPrim().SetDisplayName(name)
 
     t = inline.transform.translation if inline.transform else Vec3(x=0, y=0, z=0)
-    r = inline.transform.rotation if inline.transform else Vec3(x=0, y=0, z=0)
+    inline.transform.rotation if inline.transform else Vec3(x=0, y=0, z=0)
     s = inline.transform.scale if inline.transform else Vec3(x=1, y=1, z=1)
 
     geom_path = prim_path + "/geometry"
@@ -140,8 +141,9 @@ def _build_csg_mesh(
     name: str,
 ) -> Any:
     """将 CSG 树烘焙为 USD Mesh。"""
-    from pxr import Gf, Usd, UsdGeom
-    from ..geometry.csg import eval_csg, csg_to_mesh
+    from pxr import Gf, UsdGeom
+
+    from ..geometry.csg import csg_to_mesh, eval_csg
 
     manifold = eval_csg(node)
     verts, indices = csg_to_mesh(manifold)
@@ -181,7 +183,7 @@ def _build_reference(
     name: str,
 ) -> Any:
     """引用外部 USD 文件。"""
-    from pxr import Usd, UsdGeom
+    from pxr import UsdGeom
 
     ref_prim = UsdGeom.Xform.Define(stage, prim_path)
     ref_prim.GetPrim().SetDisplayName(name)
@@ -247,7 +249,9 @@ def _write_instance(
             tx = 50  # 向 X 方向偏移 50mm
             tz = 50  # 向 Z 方向偏移 50mm
 
-        return _build_proxy_box(width, height, depth, stage, prim_path, name, _mm_to_m(tx), _mm_to_m(ty), _mm_to_m(tz))
+        return _build_proxy_box(
+            width, height, depth, stage, prim_path, name, _mm_to_m(tx), _mm_to_m(ty), _mm_to_m(tz)
+        )
 
     # 无几何信息
     return None
@@ -262,8 +266,7 @@ def generate_usd_scene(ctx: Context, config: dict[str, Any]) -> None:
     """
     if not _has_usd_core():
         raise ImportError(
-            "usd-core is required for USD scene generation. "
-            "Install with: pip install usd-core"
+            "usd-core is required for USD scene generation. Install with: pip install usd-core"
         )
 
     from pxr import Usd, UsdGeom
@@ -285,7 +288,7 @@ def generate_usd_scene(ctx: Context, config: dict[str, Any]) -> None:
     stage.SetEndTimeCode(1)
 
     # 根节点
-    root = UsdGeom.Xform.Define(stage, "/piki")
+    UsdGeom.Xform.Define(stage, "/piki")
 
     # 按集合分组
     collections = ctx._registry._collections
@@ -297,7 +300,7 @@ def generate_usd_scene(ctx: Context, config: dict[str, Any]) -> None:
             racks[rid] = rinst
 
     for collection_name, instances in collections.items():
-        group = UsdGeom.Xform.Define(stage, f"/piki/{collection_name}")
+        UsdGeom.Xform.Define(stage, f"/piki/{collection_name}")
 
         for idx, (inst_id, inst) in enumerate(instances.items()):
             # USD prim path cannot contain '-', replace with '_'

@@ -53,10 +53,7 @@ class Context:
         qs = self._registry.query(collection, **filters)
         if self._files_filter is not None:
             allowed = self._files_filter
-            items = [
-                item for item in qs
-                if str(getattr(item, "source", "")) in allowed
-            ]
+            items = [item for item in qs if str(getattr(item, "source", "")) in allowed]
             qs = QuerySet(items)
         return qs
 
@@ -69,10 +66,7 @@ class Context:
         qs = QuerySet(items)
         if self._files_filter is not None:
             allowed = self._files_filter
-            items = [
-                item for item in qs
-                if str(getattr(item, "source", "")) in allowed
-            ]
+            items = [item for item in qs if str(getattr(item, "source", "")) in allowed]
             qs = QuerySet(items)
         return qs
 
@@ -120,8 +114,7 @@ class Context:
     # ------------------------------------------------------------------
 
     def add_related_info(self, location: Location, message: str) -> None:
-        self._related_info.append(
-            RelatedInformation(location=location, message=message))
+        self._related_info.append(RelatedInformation(location=location, message=message))
 
     def set_suggestion(self, suggestion: str) -> None:
         self._suggestion = suggestion

@@ -64,8 +64,7 @@ class TestLoadToml:
     def test_plugins_section(self, tmp_path: Path) -> None:
         f = tmp_path / "piki.toml"
         f.write_text(
-            '[plugins]\nenabled = ["telecom"]\n\n'
-            '[plugins.telecom]\npower_threshold = 0.4\n',
+            '[plugins]\nenabled = ["telecom"]\n\n[plugins.telecom]\npower_threshold = 0.4\n',
             encoding="utf-8",
         )
         data = load_toml(f)

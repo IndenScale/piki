@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...core.models.base import ResolvedInstance
 
-from ...core.models.geometry import Vec3, Transform
+from ...core.models.geometry import Transform, Vec3
 
 
 @dataclass(frozen=True)
@@ -70,11 +70,7 @@ class AABB:
 
     def volume(self) -> float:
         """计算体积。"""
-        return (
-            (self.max.x - self.min.x)
-            * (self.max.y - self.min.y)
-            * (self.max.z - self.min.z)
-        )
+        return (self.max.x - self.min.x) * (self.max.y - self.min.y) * (self.max.z - self.min.z)
 
     def union(self, other: AABB) -> AABB:
         """计算两个 AABB 的并集包围盒。"""

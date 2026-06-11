@@ -8,10 +8,10 @@
     plugins.py  — piki plugins：插件管理
 """
 
-from .init import cmd_init
 from .check import cmd_check
 from .generate import cmd_generate
-from .report import cmd_report
+from .init import cmd_init
 from .plugins import cmd_plugins_list
+from .report import cmd_report
 
 __all__ = ["cmd_init", "cmd_check", "cmd_generate", "cmd_report", "cmd_plugins_list"]

@@ -37,7 +37,9 @@ def cmd_generate(path: str | None, generator: str | None, output: str | None) ->
         # 运行所有启用的生成器
         enabled = project.enabled_generators()
         if not enabled:
-            print("No generators enabled. Specify a generator ID or configure [generators] enabled in piki.toml")
+            print(
+                "No generators enabled. Specify a generator ID or configure [generators] enabled in piki.toml"
+            )
             print("Available generators:")
             for gid, name, _fn in gen_list:
                 print(f"  {gid:<20} {name}")

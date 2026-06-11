@@ -117,11 +117,13 @@ class TestBuildAABBFromInstance:
         )
 
     def test_from_physical_dimensions(self) -> None:
-        inst = self._make_inst({
-            "width_mm": 1000.0,
-            "height_mm": 2000.0,
-            "depth_mm": 500.0,
-        })
+        inst = self._make_inst(
+            {
+                "width_mm": 1000.0,
+                "height_mm": 2000.0,
+                "depth_mm": 500.0,
+            }
+        )
         aabb = build_aabb_from_instance(inst)
         assert aabb is not None
         # 1m x 2m x 0.5m, centered at origin
@@ -129,14 +131,16 @@ class TestBuildAABBFromInstance:
         assert aabb.max == pytest.approx(Vec3(x=0.5, y=1.0, z=0.25), abs=1e-6)
 
     def test_from_physical_with_position(self) -> None:
-        inst = self._make_inst({
-            "width_mm": 1000.0,
-            "height_mm": 2000.0,
-            "depth_mm": 500.0,
-            "position_x_mm": 500.0,
-            "position_y_mm": 1000.0,
-            "position_z_mm": 250.0,
-        })
+        inst = self._make_inst(
+            {
+                "width_mm": 1000.0,
+                "height_mm": 2000.0,
+                "depth_mm": 500.0,
+                "position_x_mm": 500.0,
+                "position_y_mm": 1000.0,
+                "position_z_mm": 250.0,
+            }
+        )
         aabb = build_aabb_from_instance(inst)
         assert aabb is not None
         # translated by (0.5, 1.0, 0.25)
@@ -145,17 +149,20 @@ class TestBuildAABBFromInstance:
 
     def test_from_inline_box(self) -> None:
         from piki.core.models.geometry import AssetReference
-        inst = self._make_inst({
-            "assets": GeometryAssets(
-                usd=AssetReference(
-                    inline=InlineGeometry(
-                        type="box",
-                        size=Vec3(x=2.0, y=3.0, z=4.0),
-                        transform=Transform(translation=Vec3(x=1.0, y=0.0, z=0.0)),
+
+        inst = self._make_inst(
+            {
+                "assets": GeometryAssets(
+                    usd=AssetReference(
+                        inline=InlineGeometry(
+                            type="box",
+                            size=Vec3(x=2.0, y=3.0, z=4.0),
+                            transform=Transform(translation=Vec3(x=1.0, y=0.0, z=0.0)),
+                        )
                     )
-                )
-            ).model_dump(),
-        })
+                ).model_dump(),
+            }
+        )
         aabb = build_aabb_from_instance(inst)
         assert aabb is not None
         assert aabb.min == Vec3(x=0.0, y=-1.5, z=-2.0)
@@ -166,12 +173,14 @@ class TestBuildAABBFromInstance:
         assert build_aabb_from_instance(inst) is None
 
     def test_length_fallback_for_depth(self) -> None:
-        inst = self._make_inst({
-            "width_mm": 1000.0,
-            "height_mm": 2000.0,
-            "length_mm": 600.0,
-            # no depth_mm
-        })
+        inst = self._make_inst(
+            {
+                "width_mm": 1000.0,
+                "height_mm": 2000.0,
+                "length_mm": 600.0,
+                # no depth_mm
+            }
+        )
         aabb = build_aabb_from_instance(inst)
         assert aabb is not None
         assert aabb.size().z == pytest.approx(0.6, abs=1e-6)

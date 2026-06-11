@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from piki.core.models.diagnostic import (
     CodeDescription,
     Diagnostic,
@@ -92,7 +90,10 @@ class TestRange:
 
     def test_lsp_format(self) -> None:
         r = Range.point(line=0, character=0)
-        assert r.to_lsp() == {"start": {"line": 0, "character": 0}, "end": {"line": 0, "character": 0}}
+        assert r.to_lsp() == {
+            "start": {"line": 0, "character": 0},
+            "end": {"line": 0, "character": 0},
+        }
 
 
 class TestLocation:

@@ -153,12 +153,7 @@ class TestQuery:
         assert [d.id for d in result] == ["SRV-03", "SRV-01", "SRV-02"]
 
     def test_query_chain(self, registry: Registry) -> None:
-        result = (
-            registry.query("devices")
-            .filter(pdu_id="PDU-A")
-            .order_by("position_u")
-            .list()
-        )
+        result = registry.query("devices").filter(pdu_id="PDU-A").order_by("position_u").list()
         assert [d.id for d in result] == ["SRV-02", "SRV-01"]
 
     def test_query_empty_collection(self, registry: Registry) -> None:

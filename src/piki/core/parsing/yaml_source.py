@@ -23,8 +23,8 @@ class SourceMark:
     """YAML 节点在源文件中的位置。"""
 
     path: Path
-    line: int      # 0-based 行号
-    column: int    # 0-based 列号
+    line: int  # 0-based 行号
+    column: int  # 0-based 列号
 
     def __str__(self) -> str:
         return f"{self.path}:{self.line + 1}:{self.column + 1}"
@@ -80,7 +80,7 @@ class SourceTrackedList(list):
 
 def _compose_to_tracked(node: yaml.Node, path: Path) -> Any:
     """将 PyYAML 的 AST 节点转换为带源码追踪的 Python 对象。"""
-    mark = SourceMark(path=path, line=node.start_mark.line, column=node.start_mark.column)
+    SourceMark(path=path, line=node.start_mark.line, column=node.start_mark.column)
 
     if isinstance(node, yaml.MappingNode):
         tracked = SourceTrackedDict()
@@ -117,6 +117,7 @@ def _compose_to_tracked(node: yaml.Node, path: Path) -> Any:
     elif isinstance(node, yaml.ScalarNode):
         # 使用 SafeConstructor 解析标量
         from yaml.constructor import SafeConstructor
+
         constructor = SafeConstructor()
         return constructor.construct_scalar(node)  # type: ignore[no-any-return]
 

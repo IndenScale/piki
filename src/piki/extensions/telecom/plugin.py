@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from piki.core.engine.checker import Checker, rule
+from piki.core.engine.checker import Checker
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets
@@ -37,8 +37,8 @@ class PduFamily(BaseModel):
     id: str = Field(...)
     name: str = Field(default="")
     rack_id: str = Field(default="")
-    phase: str = Field(default="L1")          # 相线，如 L1, L2, L3
-    capacity_w: float = Field(..., gt=0)      # 额定功率（W）
+    phase: str = Field(default="L1")  # 相线，如 L1, L2, L3
+    capacity_w: float = Field(..., gt=0)  # 额定功率（W）
     tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
 
 
@@ -49,7 +49,7 @@ class ServerFamily(BaseModel):
     status: str = Field(default="planned")
     rack_id: str = Field(default="")
     position_u: int = Field(default=1, ge=1, le=48)
-    pdu_id: str = Field(default="")            # 引用 PduFamily.id
+    pdu_id: str = Field(default="")  # 引用 PduFamily.id
     height_u: int = Field(default=2, ge=1, le=48)
     tdp_w: float = Field(default=300, gt=0)
     psu_count: int = Field(default=1, ge=1)
@@ -58,7 +58,9 @@ class ServerFamily(BaseModel):
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
     depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
-    height_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})  # 设备高度（1U ≈ 44.45mm，但这里用实际物理高度）
+    height_mm: float = Field(
+        default=0, ge=0, json_schema_extra={"piki_non_overridable": True}
+    )  # 设备高度（1U ≈ 44.45mm，但这里用实际物理高度）
     weight_kg: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     # 3D 空间定位（毫米，相对于机柜原点）
     position_x_mm: float = Field(default=0.0)
@@ -84,13 +86,55 @@ class TelecomPlugin(Plugin):
         registry.add_family("ServerFamily", ServerFamily)
 
     def register_rules(self, checker: Checker) -> None:
-        checker.add_rule("TELECOM-POWER-001", "PDU 功率预算检查", check_pdu_budget, priority=10, severity=Severity.ERROR)
-        checker.add_rule("TELECOM-POWER-002", "PDU 相线平衡检查", check_pdu_phase_balance, priority=5, severity=Severity.WARNING)
-        checker.add_rule("TELECOM-RACK-001", "U 位冲突检查", check_rack_space, priority=5, severity=Severity.ERROR)
-        checker.add_rule("TELECOM-RACK-002", "机柜容量检查", check_rack_capacity, priority=5, severity=Severity.ERROR)
-        checker.add_rule("TELECOM-RACK-003", "设备物理尺寸与机柜匹配检查", check_device_physical_fit, priority=3, severity=Severity.WARNING)
-        checker.add_rule("TELECOM-COLLISION-001", "机柜内设备 3D 碰撞检测", check_rack_3d_collision, priority=5, severity=Severity.WARNING)
-        checker.add_rule("TELECOM-FK-001", "外键完整性检查", check_foreign_keys, priority=10, severity=Severity.WARNING)
+        checker.add_rule(
+            "TELECOM-POWER-001",
+            "PDU 功率预算检查",
+            check_pdu_budget,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-POWER-002",
+            "PDU 相线平衡检查",
+            check_pdu_phase_balance,
+            priority=5,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "TELECOM-RACK-001",
+            "U 位冲突检查",
+            check_rack_space,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-RACK-002",
+            "机柜容量检查",
+            check_rack_capacity,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-RACK-003",
+            "设备物理尺寸与机柜匹配检查",
+            check_device_physical_fit,
+            priority=3,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "TELECOM-COLLISION-001",
+            "机柜内设备 3D 碰撞检测",
+            check_rack_3d_collision,
+            priority=5,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "TELECOM-FK-001",
+            "外键完整性检查",
+            check_foreign_keys,
+            priority=10,
+            severity=Severity.WARNING,
+        )
 
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("bom-csv", "BOM CSV 导出", generate_bom_csv)
@@ -115,9 +159,7 @@ def check_pdu_budget(ctx):
     # 检查设备引用的 PDU 是否都存在
     for device in ctx.query("devices"):
         ctx.set_current_file(str(device.source))
-        assert device.pdu_id in pdus, (
-            f"设备 {device.id} 引用的 PDU {device.pdu_id} 不存在"
-        )
+        assert device.pdu_id in pdus, f"设备 {device.id} 引用的 PDU {device.pdu_id} 不存在"
     ctx.clear_current_file()
 
 
@@ -254,18 +296,12 @@ def check_foreign_keys(ctx):
 
     for device in ctx.query("devices"):
         ctx.set_current_file(str(device.source))
-        assert device.rack_id in racks, (
-            f"设备 {device.id} 引用的机柜 {device.rack_id} 不存在"
-        )
-        assert device.pdu_id in pdus, (
-            f"设备 {device.id} 引用的 PDU {device.pdu_id} 不存在"
-        )
+        assert device.rack_id in racks, f"设备 {device.id} 引用的机柜 {device.rack_id} 不存在"
+        assert device.pdu_id in pdus, f"设备 {device.id} 引用的 PDU {device.pdu_id} 不存在"
 
     for pdu in ctx.query("pdus"):
         ctx.set_current_file(str(pdu.source))
-        assert pdu.rack_id in racks, (
-            f"PDU {pdu.id} 引用的机柜 {pdu.rack_id} 不存在"
-        )
+        assert pdu.rack_id in racks, f"PDU {pdu.id} 引用的机柜 {pdu.rack_id} 不存在"
     ctx.clear_current_file()
 
 
@@ -293,9 +329,7 @@ def check_rack_3d_collision(ctx):
         if collisions:
             ctx.set_current_file(str(rack.source))
             pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
-            assert False, (
-                f"机柜 {rack.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
-            )
+            assert False, f"机柜 {rack.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
     ctx.clear_current_file()
 
 
@@ -310,15 +344,17 @@ def generate_bom_csv(ctx, config):
     writer = csv.writer(output)
     writer.writerow(["ID", "Model", "Rack", "Position_U", "PDU", "TDP_W", "Height_U"])
     for d in devices:
-        writer.writerow([
-            d.id,
-            d.model or "",
-            d.rack_id,
-            d.position_u,
-            d.pdu_id,
-            d.resolved.tdp_w,
-            d.resolved.height_u,
-        ])
+        writer.writerow(
+            [
+                d.id,
+                d.model or "",
+                d.rack_id,
+                d.position_u,
+                d.pdu_id,
+                d.resolved.tdp_w,
+                d.resolved.height_u,
+            ]
+        )
 
     content = output.getvalue()
     out_path = config.get("output")

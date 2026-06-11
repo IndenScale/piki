@@ -8,17 +8,15 @@ import pytest
 
 from piki.core.engine.checker import Checker
 from piki.core.engine.context import Context
-from piki.core.project import Project
 from piki.core.engine.registry import Registry
 from piki.extensions.telecom.plugin import (
     PduFamily,
     RackFamily,
     ServerFamily,
-    TelecomPlugin,
+    check_device_physical_fit,
     check_pdu_budget,
     check_pdu_phase_balance,
     check_rack_space,
-    check_device_physical_fit,
 )
 
 

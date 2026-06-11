@@ -8,7 +8,12 @@ from piki.core.engine.context import Context
 from piki.core.models.diagnostic import Severity
 
 
-@rule("NAMING-001", "Server Instance ID 命名规范（使用 Layout 查询）", priority=5, severity=Severity.WARNING)
+@rule(
+    "NAMING-001",
+    "Server Instance ID 命名规范（使用 Layout 查询）",
+    priority=5,
+    severity=Severity.WARNING,
+)
 def check_naming(ctx: Context) -> None:
     """验证 ServerFamily Instance ID 的前缀部分与实际部署的 rack_id 前缀一致。"""
     for inst in ctx.instances():

@@ -39,8 +39,7 @@ def _make_namespace(data: dict[str, Any]) -> SimpleNamespace:
             kwargs[key] = _make_namespace(value)
         elif isinstance(value, list):
             kwargs[key] = [
-                _make_namespace(item) if isinstance(item, dict) else item
-                for item in value
+                _make_namespace(item) if isinstance(item, dict) else item for item in value
             ]
         else:
             kwargs[key] = value
@@ -86,8 +85,8 @@ class ResolvedInstance:
 
     id: str
     family: str
-    raw: dict[str, Any]          # 原始 instance 字段（扁平）
-    _resolved: dict[str, Any]    # 合并 model 后的字段（扁平）
+    raw: dict[str, Any]  # 原始 instance 字段（扁平）
+    _resolved: dict[str, Any]  # 合并 model 后的字段（扁平）
     source: Path
     _validation_error: str = ""  # Schema 校验失败时的错误详情
 

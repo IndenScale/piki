@@ -29,11 +29,11 @@ class Severity(IntEnum):
     我们扩展为五级，并增加 FATAL（系统无法继续）。
     """
 
-    DEBUG = 0       # 调试信息，仅在 verbose 模式显示
-    INFO = 1        # 一般信息
-    WARNING = 2     # 警告，不影响继续执行
-    ERROR = 3       # 错误，当前检查项失败，但系统可继续其他检查
-    FATAL = 4       # 致命错误，系统无法继续（如配置损坏、核心依赖缺失）
+    DEBUG = 0  # 调试信息，仅在 verbose 模式显示
+    INFO = 1  # 一般信息
+    WARNING = 2  # 警告，不影响继续执行
+    ERROR = 3  # 错误，当前检查项失败，但系统可继续其他检查
+    FATAL = 4  # 致命错误，系统无法继续（如配置损坏、核心依赖缺失）
 
     def __str__(self) -> str:
         return self.name
@@ -57,11 +57,11 @@ class Severity(IntEnum):
         我们的 DEBUG/INFO 都映射到 Info，FATAL/ERROR 映射到 Error。
         """
         return {
-            Severity.DEBUG: 3,      # Information
-            Severity.INFO: 3,       # Information
-            Severity.WARNING: 2,    # Warning
-            Severity.ERROR: 1,      # Error
-            Severity.FATAL: 1,      # Error
+            Severity.DEBUG: 3,  # Information
+            Severity.INFO: 3,  # Information
+            Severity.WARNING: 2,  # Warning
+            Severity.ERROR: 1,  # Error
+            Severity.FATAL: 1,  # Error
         }.get(self)
 
 
@@ -164,7 +164,9 @@ class Location:
         col = character if character is not None else start_col
         return cls(
             uri=uri,
-            range=Range.point(line, col) if end_col is None else Range.from_line(line, col, end_col),
+            range=Range.point(line, col)
+            if end_col is None
+            else Range.from_line(line, col, end_col),
         )
 
     def __str__(self) -> str:
@@ -277,15 +279,24 @@ class Diagnostic:
             "location": {
                 "uri": self.location.uri,
                 "range": {
-                    "start": {"line": self.location.range.start.line, "character": self.location.range.start.character},
-                    "end": {"line": self.location.range.end.line, "character": self.location.range.end.character},
+                    "start": {
+                        "line": self.location.range.start.line,
+                        "character": self.location.range.start.character,
+                    },
+                    "end": {
+                        "line": self.location.range.end.line,
+                        "character": self.location.range.end.character,
+                    },
                 },
             },
             "code": self.code,
             "source": self.source,
             "name": self.name,
             "related_information": [
-                {"location": {"uri": ri.location.uri, "range": ri.location.range.to_lsp()}, "message": ri.message}
+                {
+                    "location": {"uri": ri.location.uri, "range": ri.location.range.to_lsp()},
+                    "message": ri.message,
+                }
                 for ri in self.related_information
             ],
             "tags": self.tags,

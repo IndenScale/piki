@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from piki.commands.init import cmd_init
 from piki.commands.check import cmd_check
+from piki.commands.init import cmd_init
 from piki.commands.plugins import cmd_plugins_list
 
 
@@ -21,7 +21,9 @@ class TestCmdInit:
         assert (target / "piki.toml").exists()
         assert (target / ".gitignore").exists()
 
-    def test_init_refuses_overwrite(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_init_refuses_overwrite(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         (tmp_path / "piki.toml").write_text("[project]\nname = x\n", encoding="utf-8")
         ret = cmd_init(str(tmp_path), "telecom")
         assert ret == 1
@@ -41,7 +43,7 @@ class TestCmdCheck:
     def test_check_passes(self, tmp_path: Path) -> None:
         (tmp_path / "piki.toml").write_text(
             '[project]\nname = "demo"\n\n[plugins]\nenabled = ["telecom"]\n'
-            '[plugins.telecom]\npower_threshold = 0.8\n',
+            "[plugins.telecom]\npower_threshold = 0.8\n",
             encoding="utf-8",
         )
         racks = tmp_path / "racks"
@@ -59,8 +61,7 @@ class TestCmdCheck:
         devices = tmp_path / "devices"
         devices.mkdir()
         (devices / "SRV-01.yaml").write_text(
-            "id: SRV-01\nmodel: generic-server\nrack_id: RACK-A01\n"
-            "position_u: 10\npdu_id: PDU-A\n",
+            "id: SRV-01\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 10\npdu_id: PDU-A\n",
             encoding="utf-8",
         )
 
@@ -76,7 +77,7 @@ class TestCmdCheck:
     def test_check_json_format(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         (tmp_path / "piki.toml").write_text(
             '[project]\nname = "demo"\n\n[plugins]\nenabled = ["telecom"]\n'
-            '[plugins.telecom]\npower_threshold = 0.8\n',
+            "[plugins.telecom]\npower_threshold = 0.8\n",
             encoding="utf-8",
         )
         racks = tmp_path / "racks"

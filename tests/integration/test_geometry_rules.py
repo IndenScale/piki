@@ -6,21 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from piki.core.engine.checker import Checker
 from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
 from piki.extensions.datacenter.plugin import (
     ContainerFamily,
     EquipmentFamily,
     PowerUnitFamily,
-    DatacenterPlugin,
     check_equipment_3d_collision,
 )
 from piki.extensions.telecom.plugin import (
-    RackFamily,
     PduFamily,
+    RackFamily,
     ServerFamily,
-    TelecomPlugin,
     check_rack_3d_collision,
 )
 

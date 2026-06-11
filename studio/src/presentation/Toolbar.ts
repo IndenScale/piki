@@ -3,7 +3,9 @@ import type { IProjectService } from '../core/project/ProjectService.ts';
 export class Toolbar {
   private projectService: IProjectService;
   private onProjectOpened: (dirHandle: FileSystemDirectoryHandle) => void;
+
   private element: HTMLElement | null = null;
+  private projectNameEl: HTMLElement | null = null;
 
   constructor(
     projectService: IProjectService,
@@ -16,48 +18,73 @@ export class Toolbar {
   render(): HTMLElement {
     const el = document.createElement('div');
     el.className = 'piki-toolbar';
-    this.applyStyles(el);
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.height = '40px';
+    el.style.padding = '0 14px';
+    el.style.background = 'var(--bg-secondary)';
+    el.style.borderBottom = '1px solid var(--border-color)';
+    el.style.flexShrink = '0';
+    el.style.gap = '10px';
 
-    // Logo + title
-    const brand = document.createElement('div');
-    brand.style.display = 'flex';
-    brand.style.alignItems = 'center';
-    brand.style.gap = '8px';
-
-    const logo = document.createElement('div');
-    logo.textContent = 'P';
-    logo.style.width = '24px';
-    logo.style.height = '24px';
-    logo.style.background = '#e94560';
-    logo.style.borderRadius = '4px';
-    logo.style.display = 'flex';
-    logo.style.alignItems = 'center';
-    logo.style.justifyContent = 'center';
-    logo.style.fontSize = '14px';
-    logo.style.fontWeight = 'bold';
-    logo.style.color = 'white';
-
-    const title = document.createElement('span');
-    title.textContent = 'Piki Studio';
-    title.style.fontSize = '14px';
-    title.style.fontWeight = '600';
-    title.style.color = '#e0e0e0';
-
-    brand.appendChild(logo);
-    brand.appendChild(title);
+    const brand = document.createElement('span');
+    brand.textContent = 'Piki Studio';
+    brand.style.fontSize = '14px';
+    brand.style.fontWeight = '600';
+    brand.style.color = 'var(--text-primary)';
+    brand.style.flexShrink = '0';
+    brand.style.userSelect = 'none';
     el.appendChild(brand);
 
-    // Actions
-    const actions = document.createElement('div');
-    actions.style.display = 'flex';
-    actions.style.gap = '8px';
+    const divider = document.createElement('span');
+    divider.textContent = '|';
+    divider.style.color = 'var(--border-color)';
+    divider.style.fontSize = '12px';
+    divider.style.flexShrink = '0';
+    divider.style.userSelect = 'none';
+    el.appendChild(divider);
 
-    const openBtn = this.createButton('📁 打开项目', () => this.handleOpenProject());
-    actions.appendChild(openBtn);
+    this.projectNameEl = document.createElement('span');
+    this.projectNameEl.textContent = '点击打开项目';
+    this.projectNameEl.style.fontSize = '13px';
+    this.projectNameEl.style.color = 'var(--text-muted)';
+    this.projectNameEl.style.fontWeight = '400';
+    this.projectNameEl.style.overflow = 'hidden';
+    this.projectNameEl.style.textOverflow = 'ellipsis';
+    this.projectNameEl.style.whiteSpace = 'nowrap';
+    this.projectNameEl.style.cursor = 'pointer';
+    this.projectNameEl.style.transition = 'color 0.15s';
+    this.projectNameEl.addEventListener('mouseenter', () => {
+      if (!this.projectNameEl?.dataset.project) {
+        this.projectNameEl!.style.color = 'var(--text-secondary)';
+      }
+    });
+    this.projectNameEl.addEventListener('mouseleave', () => {
+      if (!this.projectNameEl?.dataset.project) {
+        this.projectNameEl!.style.color = 'var(--text-muted)';
+      }
+    });
+    this.projectNameEl.addEventListener('click', () => this.handleOpenProject());
+    el.appendChild(this.projectNameEl);
 
-    el.appendChild(actions);
     this.element = el;
     return el;
+  }
+
+  setProjectName(name: string | null): void {
+    if (this.projectNameEl) {
+      if (name) {
+        this.projectNameEl.textContent = name;
+        this.projectNameEl.style.color = 'var(--text-secondary)';
+        this.projectNameEl.dataset.project = name;
+        this.projectNameEl.style.cursor = 'default';
+      } else {
+        this.projectNameEl.textContent = '点击打开项目';
+        this.projectNameEl.style.color = 'var(--text-muted)';
+        delete this.projectNameEl.dataset.project;
+        this.projectNameEl.style.cursor = 'pointer';
+      }
+    }
   }
 
   private async handleOpenProject(): Promise<void> {
@@ -69,37 +96,5 @@ export class Toolbar {
         console.error('Failed to open project:', err);
       }
     }
-  }
-
-  private createButton(label: string, onClick: () => void): HTMLButtonElement {
-    const btn = document.createElement('button');
-    btn.textContent = label;
-    btn.style.background = '#0f3460';
-    btn.style.border = '1px solid #1a4a7a';
-    btn.style.color = '#e0e0e0';
-    btn.style.padding = '6px 14px';
-    btn.style.borderRadius = '4px';
-    btn.style.fontSize = '12px';
-    btn.style.cursor = 'pointer';
-    btn.style.transition = 'all 0.15s';
-    btn.addEventListener('mouseenter', () => {
-      btn.style.background = '#1a4a7a';
-    });
-    btn.addEventListener('mouseleave', () => {
-      btn.style.background = '#0f3460';
-    });
-    btn.addEventListener('click', onClick);
-    return btn;
-  }
-
-  private applyStyles(el: HTMLElement): void {
-    el.style.display = 'flex';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'space-between';
-    el.style.height = '40px';
-    el.style.padding = '0 16px';
-    el.style.background = '#16213e';
-    el.style.borderBottom = '1px solid #0f3460';
-    el.style.flexShrink = '0';
   }
 }

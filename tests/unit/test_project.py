@@ -7,8 +7,6 @@ from pathlib import Path
 import pytest
 
 from piki.core.project import Project
-from piki.core.engine.checker import rule
-from piki.extensions.telecom.plugin import RackFamily, PduFamily, ServerFamily
 
 
 class TestProjectDiscover:
@@ -47,7 +45,7 @@ class TestProjectLoad:
     def test_load_telecom_plugin(self, tmp_path: Path) -> None:
         (tmp_path / "piki.toml").write_text(
             '[project]\nname = "demo"\n\n[plugins]\nenabled = ["telecom"]\n'
-            '[plugins.telecom]\npower_threshold = 0.4\n',
+            "[plugins.telecom]\npower_threshold = 0.4\n",
             encoding="utf-8",
         )
         racks = tmp_path / "racks"
@@ -112,7 +110,7 @@ class TestProjectRunCheck:
     def test_run_check_passes(self, tmp_path: Path) -> None:
         (tmp_path / "piki.toml").write_text(
             '[project]\nname = "demo"\n\n[plugins]\nenabled = ["telecom"]\n'
-            '[plugins.telecom]\npower_threshold = 0.8\n',
+            "[plugins.telecom]\npower_threshold = 0.8\n",
             encoding="utf-8",
         )
         racks = tmp_path / "racks"
@@ -130,8 +128,7 @@ class TestProjectRunCheck:
         devices = tmp_path / "devices"
         devices.mkdir()
         (devices / "SRV-01.yaml").write_text(
-            "id: SRV-01\nmodel: generic-server\nrack_id: RACK-A01\n"
-            "position_u: 10\npdu_id: PDU-A\n",
+            "id: SRV-01\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 10\npdu_id: PDU-A\n",
             encoding="utf-8",
         )
 
@@ -162,4 +159,6 @@ class TestProjectRunCheck:
         assert len(schema_results) == 1
         assert "RACK-A01" in schema_results[0].message
         # 验证报告中包含具体的 pydantic 校验错误详情
-        assert "total_u" in schema_results[0].message or "Input should be" in schema_results[0].message
+        assert (
+            "total_u" in schema_results[0].message or "Input should be" in schema_results[0].message
+        )

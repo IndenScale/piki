@@ -24,6 +24,10 @@
 - **[ADR-003: 插件架构](adr/003-plugin-architecture.md)** — 为什么用插件管理领域知识，而非硬编码或配置驱动
 - **[ADR-004: 多级质量检查](adr/004-multi-level-quality-checks.md)** — 从 L0 格式检查到 L6 AI 评估的分层体系
 - **[ADR-005: LSP 兼容诊断](adr/005-lsp-compatible-diagnostics.md)** — 为什么诊断格式与 Language Server Protocol 对齐
+- **[ADR-006: Piki Studio 可视化 IDE](adr/006-piki-studio-web-viewer.md)** — 为什么做浏览器端 3D 视口、与 CLI 的关系
+- **[ADR-007: CAD 资产引用与白牌标准型号](adr/007-cad-asset-reference.md)** — 引用而非嵌入、多专业集成、设备数据包规范
+- **[ADR-008: Instance 与 Layout 分离](adr/008-instance-layout-separation.md)** — Instance（设备是什么）、Layout（放在哪）、Git 分支做方案比选
+- **[ADR-009: 嵌套项目结构与通用数据环境 (CDE)](adr/009-nested-projects-and-cde.md)** — 嵌套项目、物理空间主维度、正交 Tag 管理跨维度约束
 
 ## 参考文档
 

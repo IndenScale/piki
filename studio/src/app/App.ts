@@ -6,8 +6,6 @@
  * 2. 编排布局（Toolbar | SceneTree | Viewport | PropertiesPanel | StatusBar）
  * 3. 协调组件生命周期（mount → init → load → update）
  * 4. 处理跨层事件（项目加载 → 场景加载 → 状态更新）
- *
- * App 本身不包含业务逻辑，所有业务逻辑委托给 Core Layer 服务。
  */
 
 import { Toolbar } from '../presentation/Toolbar.ts';
@@ -44,6 +42,9 @@ export class App {
   private propertiesPanel: PropertiesPanel;
   private statusBar: StatusBar;
 
+  // ─── State ───
+  private currentProject: PikiProject | null = null;
+
   constructor(root: HTMLElement) {
     this.root = root;
 
@@ -60,7 +61,10 @@ export class App {
     this.checkService = new CheckService();
 
     // ─── Presentation Layer ───
-    this.toolbar = new Toolbar(this.projectService, this.handleOpenProject.bind(this));
+    this.toolbar = new Toolbar(
+      this.projectService,
+      this.handleOpenProject.bind(this),
+    );
     this.sceneTree = new SceneTree(this.selectionService);
     this.viewport = new Viewport(
       this.selectionService,
@@ -101,9 +105,9 @@ export class App {
 
     // Right sidebar - Properties
     const rightSidebar = this.propertiesPanel.render();
-    rightSidebar.style.width = '300px';
-    rightSidebar.style.minWidth = '250px';
-    rightSidebar.style.maxWidth = '500px';
+    rightSidebar.style.width = '280px';
+    rightSidebar.style.minWidth = '220px';
+    rightSidebar.style.maxWidth = '450px';
     rightSidebar.style.resize = 'horizontal';
     main.appendChild(rightSidebar);
 
@@ -120,32 +124,29 @@ export class App {
 
   private async handleOpenProject(dirHandle: FileSystemDirectoryHandle): Promise<void> {
     this.statusBar.setMessage('正在加载项目...');
+    this.toolbar.setProjectName(null);
 
     try {
       // 1. Load project via Core Layer
       const project = await this.projectService.loadProject(dirHandle);
+      this.currentProject = project;
 
       // 2. Update SceneTree
       this.sceneTree.setProject(project);
+      this.toolbar.setProjectName(project.name);
       this.statusBar.setProject(project.name);
 
-      const totalInstances = project.collections.reduce(
-        (sum, c) => sum + c.instances.length,
-        0,
-      );
-      this.statusBar.setMessage(
-        `已加载 ${project.collections.length} 个集合, ${totalInstances} 个实例`,
-      );
-
-      // 3. Try to load scene.usda
-      await this.loadSceneFile(dirHandle);
+      // 3. Try to load scene.usda, fallback to instance placeholders
+      await this.loadScene(dirHandle, project);
     } catch (err) {
       console.error('Failed to load project:', err);
       this.statusBar.setMessage('加载项目失败: ' + (err as Error).message);
     }
   }
 
-  private async loadSceneFile(dirHandle: FileSystemDirectoryHandle): Promise<void> {
+  private async loadScene(dirHandle: FileSystemDirectoryHandle, project: PikiProject): Promise<void> {
+    let hasUsda = false;
+
     try {
       const fileHandle = await dirHandle.getFileHandle('scene.usda');
       const file = await fileHandle.getFile();
@@ -153,12 +154,24 @@ export class App {
 
       // Parse via Core Layer
       this.sceneService.loadFromUsda(text);
-
-      // Render via Presentation Layer
-      this.viewport.loadScene(this.sceneService.getAllObjects());
+      hasUsda = true;
+      this.statusBar.setMessage('scene.usda 已加载');
     } catch {
-      // scene.usda not found, that's ok
-      this.statusBar.setMessage('未找到 scene.usda，仅显示实例列表');
+      // scene.usda not found — generate placeholders from instances
+      this.sceneService.loadFromInstances(project.collections);
+      this.statusBar.setMessage('已从实例生成占位场景');
     }
+
+    // Render via Presentation Layer
+    const objects = this.sceneService.getAllObjects();
+    this.viewport.loadScene(objects);
+
+    // Update stats
+    const totalInstances = project.collections.reduce((s, c) => s + c.instances.length, 0);
+    this.statusBar.setStats(
+      project.collections.length,
+      totalInstances,
+      objects.filter((o) => o.geometry !== null).length,
+    );
   }
 }

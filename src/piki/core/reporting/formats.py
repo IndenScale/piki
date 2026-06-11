@@ -143,7 +143,9 @@ def format_markdown(report: CheckReport) -> str:
     # 汇总
     status = "✅ 全部通过" if report.passed else "❌ 存在错误"
     lines.append(f"**状态**: {status}")
-    lines.append(f"**错误**: {report.error_count} | **警告**: {report.warning_count} | **通过**: {report.pass_count}")
+    lines.append(
+        f"**错误**: {report.error_count} | **警告**: {report.warning_count} | **通过**: {report.pass_count}"
+    )
     lines.append("")
 
     # 规则结果

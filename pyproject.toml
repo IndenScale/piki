@@ -65,3 +65,28 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 100
+
+[tool.ruff.lint.isort]
+known-first-party = ["piki"]
+
+[tool.ruff.lint.per-file-ignores]
+# from __future__ import annotations 环境下，函数签名中的字符串注解被 ruff 当作未定义名称
+"src/piki/core/models/base.py" = ["F821"]
+"src/piki/ext/geometry/csg.py" = ["F821"]
+"src/piki/ext/geometry/__init__.py" = ["F401"]
+"src/piki/extensions/datacenter/plugin.py" = ["F821"]
+"src/piki/extensions/telecom/plugin.py" = ["F821"]
+"tests/unit/test_checker.py" = ["E402"]
+
+[tool.ruff.format]

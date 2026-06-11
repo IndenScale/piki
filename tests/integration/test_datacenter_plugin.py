@@ -10,14 +10,13 @@ from piki.core.engine.checker import Checker
 from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
 from piki.extensions.datacenter.plugin import (
+    ConnectionFamily,
     ContainerFamily,
     EquipmentFamily,
     PowerUnitFamily,
-    ConnectionFamily,
-    DatacenterPlugin,
-    check_equipment_container_fit,
     check_connection_capacity,
     check_container_power_budget,
+    check_equipment_container_fit,
 )
 
 
@@ -85,13 +84,11 @@ def dc_ctx(tmp_path: Path) -> Context:
     equipment = tmp_path / "equipment"
     equipment.mkdir()
     (equipment / "GPU-A01-01.yaml").write_text(
-        "id: GPU-A01-01\nmodel: gpu-server\n"
-        "container_id: AI-LIQUID-01\npower_unit_id: HVDC-MAIN\n",
+        "id: GPU-A01-01\nmodel: gpu-server\ncontainer_id: AI-LIQUID-01\npower_unit_id: HVDC-MAIN\n",
         encoding="utf-8",
     )
     (equipment / "CPU-G01-01.yaml").write_text(
-        "id: CPU-G01-01\nmodel: cpu-server\n"
-        "container_id: AI-LIQUID-01\npower_unit_id: HVDC-MAIN\n",
+        "id: CPU-G01-01\nmodel: cpu-server\ncontainer_id: AI-LIQUID-01\npower_unit_id: HVDC-MAIN\n",
         encoding="utf-8",
     )
     registry.load_collection(equipment)

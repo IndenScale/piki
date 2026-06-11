@@ -5,13 +5,10 @@ from __future__ import annotations
 import inspect
 import traceback
 from dataclasses import dataclass, field
-from pathlib import Path
-from types import ModuleType
 from typing import Any, Callable
 
-from ..models.diagnostic import Diagnostic, Location, Range, Severity
+from ..models.diagnostic import Diagnostic, Location, Severity
 from .context import Context
-from .registry import Registry
 
 
 @dataclass
@@ -65,9 +62,9 @@ class CheckReport:
 
     @property
     def warning_count(self) -> int:
-        return sum(1 for r in self.results if not r.passed and r.severity == Severity.WARNING) + sum(
-            1 for d in self.diagnostics if d.severity == Severity.WARNING
-        )
+        return sum(
+            1 for r in self.results if not r.passed and r.severity == Severity.WARNING
+        ) + sum(1 for d in self.diagnostics if d.severity == Severity.WARNING)
 
     @property
     def pass_count(self) -> int:
@@ -177,7 +174,9 @@ class Checker:
             try:
                 func(ctx)
                 report.results.append(
-                    RuleResult(rule_id=rule_id, name=name, passed=True, file=file, severity=severity)
+                    RuleResult(
+                        rule_id=rule_id, name=name, passed=True, file=file, severity=severity
+                    )
                 )
             except AssertionError as exc:
                 message = str(exc) if str(exc) else "Assertion failed"

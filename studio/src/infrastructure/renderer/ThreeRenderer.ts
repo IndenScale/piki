@@ -53,6 +53,10 @@ export class ThreeRenderer implements IThreeRenderer {
   private wireframeMode = false;
   private animFrameId = 0;
   private onSelectCallback: ((name: string | null) => void) | null = null;
+  private pointerDownPos: { x: number; y: number } | null = null;
+  private keysPressed: Set<string> = new Set();
+  private lastFrameTime = 0;
+  private walkSpeed = 3.0;
 
   mount(container: HTMLElement): void {
     this.container = container;
@@ -109,9 +113,12 @@ export class ThreeRenderer implements IThreeRenderer {
     this.mouse = new THREE.Vector2();
 
     // Events
-    this.renderer.domElement.addEventListener('click', this._onCanvasClick.bind(this));
-    this.renderer.domElement.addEventListener('mousemove', this._onCanvasHover.bind(this));
+    this.renderer.domElement.addEventListener('pointerdown', this._onPointerDown.bind(this));
+    this.renderer.domElement.addEventListener('pointerup', this._onPointerUp.bind(this));
+    this.renderer.domElement.addEventListener('pointermove', this._onCanvasHover.bind(this));
     window.addEventListener('resize', this._onResize.bind(this));
+    this.renderer.domElement.addEventListener('keydown', this._onKeyDown.bind(this));
+    this.renderer.domElement.addEventListener('keyup', this._onKeyUp.bind(this));
 
     // Animation loop
     this._animate();
@@ -252,9 +259,12 @@ export class ThreeRenderer implements IThreeRenderer {
       cancelAnimationFrame(this.animFrameId);
     }
     if (this.renderer) {
-      this.renderer.domElement.removeEventListener('click', this._onCanvasClick.bind(this));
-      this.renderer.domElement.removeEventListener('mousemove', this._onCanvasHover.bind(this));
+      this.renderer.domElement.removeEventListener('pointerdown', this._onPointerDown.bind(this));
+      this.renderer.domElement.removeEventListener('pointerup', this._onPointerUp.bind(this));
+      this.renderer.domElement.removeEventListener('pointermove', this._onCanvasHover.bind(this));
       window.removeEventListener('resize', this._onResize.bind(this));
+      this.renderer.domElement.removeEventListener('keydown', this._onKeyDown.bind(this));
+      this.renderer.domElement.removeEventListener('keyup', this._onKeyUp.bind(this));
       this.renderer.dispose();
       if (this.container && this.renderer.domElement.parentNode === this.container) {
         this.container.removeChild(this.renderer.domElement);
@@ -275,8 +285,19 @@ export class ThreeRenderer implements IThreeRenderer {
     }
   }
 
-  private _onCanvasClick(event: MouseEvent): void {
-    if (!this.raycaster || !this.mouse || !this.camera || !this.renderer) return;
+  private _onPointerDown(event: PointerEvent): void {
+    this.pointerDownPos = { x: event.clientX, y: event.clientY };
+  }
+
+  private _onPointerUp(event: PointerEvent): void {
+    if (!this.pointerDownPos || !this.raycaster || !this.mouse || !this.camera || !this.renderer) return;
+
+    // Only treat as a click if the pointer barely moved (distinguish from drag)
+    const dx = event.clientX - this.pointerDownPos.x;
+    const dy = event.clientY - this.pointerDownPos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 4) return; // dragged, not clicked
+
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -295,9 +316,11 @@ export class ThreeRenderer implements IThreeRenderer {
         this.onSelectCallback(null);
       }
     }
+
+    this.pointerDownPos = null;
   }
 
-  private _onCanvasHover(event: MouseEvent): void {
+  private _onCanvasHover(event: PointerEvent): void {
     if (!this.raycaster || !this.mouse || !this.camera || !this.renderer) return;
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -319,9 +342,59 @@ export class ThreeRenderer implements IThreeRenderer {
 
   private _animate(): void {
     this.animFrameId = requestAnimationFrame(this._animate.bind(this));
-    if (this.controls) this.controls.update();
+
+    const now = performance.now();
+    const dt = this.lastFrameTime ? (now - this.lastFrameTime) / 1000 : 0;
+    this.lastFrameTime = now;
+
+    if (this.camera && this.controls) {
+      this._applyWalkMovement(dt);
+      this.controls.update();
+    }
+
     if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
     }
+  }
+
+  private _applyWalkMovement(dt: number): void {
+    if (!this.camera || !this.controls || this.keysPressed.size === 0) return;
+
+    const cam = this.camera;
+    const target = this.controls.target;
+
+    // Forward vector projected onto XZ plane
+    const forward = new THREE.Vector3();
+    cam.getWorldDirection(forward);
+    forward.y = 0;
+    if (forward.lengthSq() > 0) forward.normalize();
+
+    // Right vector = forward × world up
+    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+    const move = new THREE.Vector3();
+    if (this.keysPressed.has('w') || this.keysPressed.has('W')) move.add(forward);
+    if (this.keysPressed.has('s') || this.keysPressed.has('S')) move.sub(forward);
+    if (this.keysPressed.has('a') || this.keysPressed.has('A')) move.sub(right);
+    if (this.keysPressed.has('d') || this.keysPressed.has('D')) move.add(right);
+    if (this.keysPressed.has('q') || this.keysPressed.has('Q')) move.y -= 1;
+    if (this.keysPressed.has('e') || this.keysPressed.has('E')) move.y += 1;
+
+    if (move.lengthSq() === 0) return;
+    move.normalize().multiplyScalar(this.walkSpeed * dt);
+
+    cam.position.add(move);
+    target.add(move);
+  }
+
+  private _onKeyDown(event: KeyboardEvent): void {
+    const key = event.key;
+    if (['w', 'a', 's', 'd', 'q', 'e', 'W', 'A', 'S', 'D', 'Q', 'E'].includes(key)) {
+      this.keysPressed.add(key);
+    }
+  }
+
+  private _onKeyUp(event: KeyboardEvent): void {
+    this.keysPressed.delete(event.key);
   }
 }

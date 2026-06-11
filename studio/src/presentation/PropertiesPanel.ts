@@ -1,74 +1,34 @@
 import type { ISelectionService } from '../core/selection/SelectionService.ts';
 import type { SceneObject } from '../types/index.ts';
 import { typeLabel, fmt, extractPosition, extractScale } from '../utils/index.ts';
+import { createPanel } from './components/Panel.ts';
+import { createBadge } from './components/Badge.ts';
+import { createEmptyState } from './components/EmptyState.ts';
 
 export class PropertiesPanel {
   private selectionService: ISelectionService;
   private element: HTMLElement | null = null;
   private content: HTMLElement | null = null;
+  private panel: ReturnType<typeof createPanel> | null = null;
 
   constructor(selectionService: ISelectionService) {
     this.selectionService = selectionService;
-    // Subscribe to selection changes
     this.selectionService.onChange((obj) => {
       this.setObject(obj);
     });
   }
 
   render(): HTMLElement {
-    const el = document.createElement('div');
-    el.className = 'piki-properties-panel';
-    el.style.display = 'flex';
-    el.style.flexDirection = 'column';
-    el.style.background = '#16213e';
-    el.style.borderLeft = '1px solid #0f3460';
-    el.style.overflow = 'hidden';
+    this.panel = createPanel({ title: '属性面板' });
+    this.element = this.panel.root;
+    this.element.style.borderLeft = '1px solid var(--border-color)';
 
-    // Header
-    const header = document.createElement('div');
-    header.className = 'sidebar-header';
-    header.style.padding = '12px 16px';
-    header.style.background = '#0f3460';
-    header.style.fontWeight = '600';
-    header.style.fontSize = '14px';
-    header.style.display = 'flex';
-    header.style.alignItems = 'center';
-    header.style.gap = '8px';
-    header.style.flexShrink = '0';
-
-    const icon = document.createElement('div');
-    icon.textContent = 'i';
-    icon.style.width = '20px';
-    icon.style.height = '20px';
-    icon.style.background = '#4a90d9';
-    icon.style.borderRadius = '4px';
-    icon.style.display = 'flex';
-    icon.style.alignItems = 'center';
-    icon.style.justifyContent = 'center';
-    icon.style.fontSize = '12px';
-    icon.style.fontWeight = 'bold';
-    icon.style.color = 'white';
-
-    const title = document.createElement('span');
-    title.textContent = '属性面板';
-
-    header.appendChild(icon);
-    header.appendChild(title);
-    el.appendChild(header);
-
-    // Content
-    const content = document.createElement('div');
-    content.className = 'properties-content';
-    content.style.flex = '1';
-    content.style.overflowY = 'auto';
-    content.style.padding = '16px';
-    this.content = content;
-    el.appendChild(content);
+    this.content = this.panel.content;
+    this.content.style.padding = '12px';
 
     this.renderEmpty();
 
-    this.element = el;
-    return el;
+    return this.element;
   }
 
   setObject(obj: SceneObject | null): void {
@@ -80,11 +40,15 @@ export class PropertiesPanel {
       return;
     }
 
+    // Type badge at top
+    const typeBadge = createBadge(typeLabel(obj.type), obj.type as 'rack' | 'device' | 'pdu' | 'collection');
+    typeBadge.style.marginBottom = '12px';
+    this.content.appendChild(typeBadge);
+
     // Basic Info
     this.content.appendChild(this.createSection('基本信息', [
       { key: 'ID', value: obj.name },
       { key: '显示名称', value: obj.displayName || '-' },
-      { key: '类型', value: typeLabel(obj.type) },
     ]));
 
     // Geometry
@@ -107,28 +71,28 @@ export class PropertiesPanel {
       const colorSection = this.createSection('外观', [
         { key: '颜色', value: `RGB(${fmt(geo.color.r)}, ${fmt(geo.color.g)}, ${fmt(geo.color.b)})` },
       ]);
+
       const previewRow = document.createElement('div');
-      previewRow.className = 'prop-row';
       previewRow.style.display = 'flex';
       previewRow.style.justifyContent = 'space-between';
       previewRow.style.alignItems = 'center';
       previewRow.style.padding = '6px 0';
       previewRow.style.fontSize = '13px';
-      previewRow.style.borderBottom = '1px solid rgba(15, 52, 96, 0.3)';
+      previewRow.style.borderBottom = '1px solid var(--border-color)';
 
       const previewKey = document.createElement('span');
-      previewKey.className = 'prop-key';
       previewKey.textContent = '预览';
-      previewKey.style.color = '#888';
+      previewKey.style.color = 'var(--text-secondary)';
+      previewKey.style.fontSize = '12px';
 
       const previewVal = document.createElement('span');
-      previewVal.className = 'prop-val';
       previewVal.style.display = 'inline-block';
       previewVal.style.width = '20px';
       previewVal.style.height = '20px';
       previewVal.style.background = `rgb(${Math.round(geo.color.r * 255)},${Math.round(geo.color.g * 255)},${Math.round(geo.color.b * 255)})`;
-      previewVal.style.borderRadius = '3px';
-      previewVal.style.border = '1px solid #444';
+      previewVal.style.borderRadius = '4px';
+      previewVal.style.border = '1px solid var(--border-color)';
+      previewVal.style.boxShadow = 'inset 0 0 0 1px rgba(0,0,0,0.2)';
 
       previewRow.appendChild(previewKey);
       previewRow.appendChild(previewVal);
@@ -148,60 +112,55 @@ export class PropertiesPanel {
 
   private renderEmpty(): void {
     if (!this.content) return;
-    const empty = document.createElement('div');
-    empty.className = 'no-selection';
-    empty.innerHTML = '在场景树或 3D 视图中选择一个对象<br>查看详细信息';
-    empty.style.textAlign = 'center';
-    empty.style.color = '#666';
-    empty.style.padding = '40px 20px';
-    empty.style.fontSize = '13px';
-    this.content.appendChild(empty);
+    this.content.appendChild(
+      createEmptyState({
+        title: '未选择对象',
+        subtitle: '在场景树或 3D 视图中点击对象',
+      }),
+    );
   }
 
   private createSection(title: string, rows: { key: string; value: string; valClass?: string }[]): HTMLElement {
     const section = document.createElement('div');
-    section.className = 'prop-section';
-    section.style.marginBottom = '20px';
+    section.style.marginBottom = '16px';
 
     const sectionTitle = document.createElement('div');
-    sectionTitle.className = 'prop-section-title';
     sectionTitle.textContent = title;
-    sectionTitle.style.fontSize = '12px';
+    sectionTitle.style.fontSize = '11px';
     sectionTitle.style.fontWeight = '600';
-    sectionTitle.style.color = '#e94560';
+    sectionTitle.style.color = 'var(--accent)';
     sectionTitle.style.textTransform = 'uppercase';
-    sectionTitle.style.letterSpacing = '0.5px';
-    sectionTitle.style.marginBottom = '10px';
+    sectionTitle.style.letterSpacing = '0.8px';
+    sectionTitle.style.marginBottom = '8px';
     sectionTitle.style.paddingBottom = '6px';
-    sectionTitle.style.borderBottom = '1px solid #0f3460';
+    sectionTitle.style.borderBottom = '1px solid var(--border-color)';
     section.appendChild(sectionTitle);
 
     for (const row of rows) {
       const rowEl = document.createElement('div');
-      rowEl.className = 'prop-row';
       rowEl.style.display = 'flex';
       rowEl.style.justifyContent = 'space-between';
       rowEl.style.alignItems = 'center';
-      rowEl.style.padding = '6px 0';
-      rowEl.style.fontSize = '13px';
-      rowEl.style.borderBottom = '1px solid rgba(15, 52, 96, 0.3)';
+      rowEl.style.padding = '5px 0';
+      rowEl.style.fontSize = '12px';
+      rowEl.style.borderBottom = '1px solid rgba(48, 54, 61, 0.4)';
 
       const keyEl = document.createElement('span');
-      keyEl.className = 'prop-key';
       keyEl.textContent = row.key;
-      keyEl.style.color = '#888';
+      keyEl.style.color = 'var(--text-secondary)';
+      keyEl.style.fontSize = '12px';
 
       const valEl = document.createElement('span');
-      valEl.className = `prop-val ${row.valClass || ''}`;
       valEl.textContent = row.value;
-      valEl.style.color = '#e0e0e0';
+      valEl.style.color = 'var(--text-primary)';
       valEl.style.fontWeight = '500';
+      valEl.style.fontSize = '12px';
       if (row.valClass === 'number') {
-        valEl.style.color = '#5cb85c';
-        valEl.style.fontFamily = "'SF Mono', monospace";
+        valEl.style.color = 'var(--success)';
+        valEl.style.fontFamily = "'SF Mono', 'Menlo', monospace";
       } else if (row.valClass === 'dim') {
-        valEl.style.color = '#4a90d9';
-        valEl.style.fontFamily = "'SF Mono', monospace";
+        valEl.style.color = 'var(--info)';
+        valEl.style.fontFamily = "'SF Mono', 'Menlo', monospace";
       }
 
       rowEl.appendChild(keyEl);

@@ -36,9 +36,9 @@ class InlineGeometry(BaseModel):
     """内联简单几何体（代理几何）。"""
 
     type: Literal["box", "cylinder", "sphere", "capsule"]
-    size: Vec3 | None = None          # box: width, height, depth
-    radius: float | None = None       # cylinder / sphere / capsule
-    height: float | None = None       # cylinder / capsule
+    size: Vec3 | None = None  # box: width, height, depth
+    radius: float | None = None  # cylinder / sphere / capsule
+    height: float | None = None  # cylinder / capsule
     transform: Transform = Field(default_factory=Transform)
 
     @model_validator(mode="after")
@@ -71,18 +71,16 @@ class CSGNode(BaseModel):
                 raise ValueError("primitive node requires 'primitive'")
         else:
             if not self.operands or len(self.operands) < 2:
-                raise ValueError(
-                    f"{self.type} node requires at least 2 operands"
-                )
+                raise ValueError(f"{self.type} node requires at least 2 operands")
         return self
 
 
 class AssetReference(BaseModel):
     """USD 资产引用 —— 四种方式任选其一。"""
 
-    reference: str | None = None      # 外部 USD 文件路径/URL
+    reference: str | None = None  # 外部 USD 文件路径/URL
     inline: InlineGeometry | None = None
-    usdz: str | None = None           # 厂商 USDZ URL
+    usdz: str | None = None  # 厂商 USDZ URL
     procedural: CSGNode | None = None  # CSG 程序化几何
 
     @model_validator(mode="after")
@@ -94,9 +92,7 @@ class AssetReference(BaseModel):
             self.procedural is not None,
         ]
         if sum(sources) > 1:
-            raise ValueError(
-                "Only one of 'reference', 'inline', 'usdz', 'procedural' can be set"
-            )
+            raise ValueError("Only one of 'reference', 'inline', 'usdz', 'procedural' can be set")
         return self
 
 

@@ -4,13 +4,13 @@
 """
 
 from piki.core import (
-    __version__,
-    Plugin,
     Context,
-    rule,
-    generator,
-    Severity,
+    Plugin,
     Project,
+    Severity,
+    __version__,
+    generator,
+    rule,
 )
 
 __all__ = [

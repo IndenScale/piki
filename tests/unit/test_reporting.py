@@ -15,18 +15,22 @@ class TestFormatHuman:
         assert "总计: 0 错误, 0 通过" in output
 
     def test_pass_only(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "规则1", True),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "规则1", True),
+            ]
+        )
         output = format_human(report)
         assert "[PASS] R-001: 规则1" in output
         assert "总计: 0 错误, 1 通过" in output
 
     def test_fail_with_message(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "规则1", True),
-            RuleResult("R-002", "规则2", False, message="出错了\n第二行"),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "规则1", True),
+                RuleResult("R-002", "规则2", False, message="出错了\n第二行"),
+            ]
+        )
         output = format_human(report)
         assert "[PASS] R-001: 规则1" in output
         assert "[FAIL] R-002: 规则2" in output
@@ -35,38 +39,48 @@ class TestFormatHuman:
         assert "总计: 1 错误, 1 通过" in output
 
     def test_fail_empty_message(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "规则1", False, message=""),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "规则1", False, message=""),
+            ]
+        )
         output = format_human(report)
         assert "[FAIL] R-001: 规则1" in output
 
     def test_fail_with_suggestion(self) -> None:
-        from piki.core.models.diagnostic import Location
-        report = CheckReport(results=[
-            RuleResult(
-                "R-001", "规则1", False,
-                message="PDU 过载",
-                suggestion="将设备迁移到 PDU-B",
-            ),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult(
+                    "R-001",
+                    "规则1",
+                    False,
+                    message="PDU 过载",
+                    suggestion="将设备迁移到 PDU-B",
+                ),
+            ]
+        )
         output = format_human(report)
         assert "💡 建议: 将设备迁移到 PDU-B" in output
 
     def test_fail_with_related_info(self) -> None:
         from piki.core.models.diagnostic import Location, RelatedInformation
-        report = CheckReport(results=[
-            RuleResult(
-                "R-001", "规则1", False,
-                message="外键引用错误",
-                related_information=[
-                    RelatedInformation(
-                        location=Location(uri="file:///racks/RACK-A01.yaml"),
-                        message="机柜定义在此处",
-                    ),
-                ],
-            ),
-        ])
+
+        report = CheckReport(
+            results=[
+                RuleResult(
+                    "R-001",
+                    "规则1",
+                    False,
+                    message="外键引用错误",
+                    related_information=[
+                        RelatedInformation(
+                            location=Location(uri="file:///racks/RACK-A01.yaml"),
+                            message="机柜定义在此处",
+                        ),
+                    ],
+                ),
+            ]
+        )
         output = format_human(report)
         assert "->" in output
         assert "机柜定义在此处" in output
@@ -76,12 +90,15 @@ class TestFormatJson:
     """测试 JSON 格式。"""
 
     def test_basic(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "规则1", True),
-            RuleResult("R-002", "规则2", False, message="err", file="a.yaml"),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "规则1", True),
+                RuleResult("R-002", "规则2", False, message="err", file="a.yaml"),
+            ]
+        )
         output = format_json(report)
         import json
+
         data = json.loads(output)
         assert data["passed"] is False
         assert data["error_count"] == 1
@@ -95,6 +112,7 @@ class TestFormatJson:
         report = CheckReport()
         output = format_json(report)
         import json
+
         data = json.loads(output)
         assert data["passed"] is True
         assert data["results"] == []
@@ -104,22 +122,28 @@ class TestFormatReport:
     """测试 format_report 路由。"""
 
     def test_json_format(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "规则1", True),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "规则1", True),
+            ]
+        )
         output = format_report(report, "json")
         assert '"passed": true' in output
 
     def test_human_default(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "规则1", True),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "规则1", True),
+            ]
+        )
         output = format_report(report, "human")
         assert "[PASS]" in output
 
     def test_unknown_format_fallback(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "规则1", True),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "规则1", True),
+            ]
+        )
         output = format_report(report, "unknown")
         assert "[PASS]" in output

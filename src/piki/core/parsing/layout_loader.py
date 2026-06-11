@@ -9,8 +9,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..models.layout import Layout, LayoutEntry
 import yaml
+
+from ..models.layout import Layout, LayoutEntry
 
 
 def load_layout_file(path: Path, name: str = "") -> Layout:
@@ -37,7 +38,7 @@ def load_layout_file(path: Path, name: str = "") -> Layout:
     if not path.exists():
         return Layout(name=name or path.stem)
 
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     entries: dict[str, LayoutEntry] = {}
     sections: dict[str, list[LayoutEntry]] = {}
@@ -86,9 +87,17 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         connections = [c for c in connections if isinstance(c, dict)]
 
     # 提取已知字段，其余作为 extra
-    known = {"instance", "rack_id", "position_u", "pdu_id",
-             "grid_id", "position_x_mm", "position_y_mm", "position_z_mm",
-             "connections"}
+    known = {
+        "instance",
+        "rack_id",
+        "position_u",
+        "pdu_id",
+        "grid_id",
+        "position_x_mm",
+        "position_y_mm",
+        "position_z_mm",
+        "connections",
+    }
     extra = {k: v for k, v in item.items() if k not in known}
 
     return LayoutEntry(

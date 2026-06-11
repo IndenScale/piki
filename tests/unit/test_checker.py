@@ -5,14 +5,14 @@ from __future__ import annotations
 import types
 
 from piki.core.engine.checker import (
+    _GEN_ATTR,
+    _RULE_ATTR,
     Checker,
     CheckReport,
     RuleResult,
-    rule,
     generator,
     register_module_rules,
-    _RULE_ATTR,
-    _GEN_ATTR,
+    rule,
 )
 from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
@@ -102,7 +102,9 @@ class TestGenerator:
             called_with["config"] = config
 
         checker.add_generator("my-gen", "我的生成器", my_gen)
-        assert [(gid, name) for gid, name, _fn in checker.list_generators()] == [("my-gen", "我的生成器")]
+        assert [(gid, name) for gid, name, _fn in checker.list_generators()] == [
+            ("my-gen", "我的生成器")
+        ]
 
         checker.generate("my-gen", ctx, {"format": "csv"})
         assert called_with["config"] == {"format": "csv"}
@@ -218,19 +220,23 @@ class TestCheckReport:
         assert report.pass_count == 0
 
     def test_passed_property(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "通过", True),
-            RuleResult("R-002", "失败", False, message="err"),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "通过", True),
+                RuleResult("R-002", "失败", False, message="err"),
+            ]
+        )
         assert report.passed is False
         assert report.error_count == 1
         assert report.pass_count == 1
 
     def test_all_pass(self) -> None:
-        report = CheckReport(results=[
-            RuleResult("R-001", "通过", True),
-            RuleResult("R-002", "也通过", True),
-        ])
+        report = CheckReport(
+            results=[
+                RuleResult("R-001", "通过", True),
+                RuleResult("R-002", "也通过", True),
+            ]
+        )
         assert report.passed is True
 
 
@@ -238,7 +244,7 @@ class TestRelatedInformationAndSuggestion:
     """测试 related_information 和 suggestion 在规则结果中的传递。"""
 
     def test_related_info_in_rule_result(self) -> None:
-        from piki.core.models.diagnostic import Location, RelatedInformation
+        from piki.core.models.diagnostic import Location
 
         checker = Checker()
         ctx = Context(Registry(), {})

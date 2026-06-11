@@ -19,7 +19,8 @@ import sys
 from typing import Sequence
 
 from piki.core import __version__
-from .commands import cmd_init, cmd_check, cmd_generate, cmd_report, cmd_plugins_list
+
+from .commands import cmd_check, cmd_generate, cmd_init, cmd_plugins_list, cmd_report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -64,7 +65,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="只检查指定文件（相对项目根目录的路径）",
     )
     check.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         help="输出到文件而非终端",
     )
 
@@ -90,7 +92,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="只运行指定规则 ID（可多次使用）",
     )
     report.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         help="输出文件路径（默认 piki-report.md）",
     )
 
@@ -104,7 +107,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     generate.add_argument("path", nargs="?", help="项目目录")
     generate.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         help="输出文件路径",
     )
 

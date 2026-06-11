@@ -14,14 +14,13 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from ..models.base import Instance, Model, ResolvedInstance, _unflatten
+from ..models.base import Instance, Model, ResolvedInstance, get_non_overridable_fields
 from ..models.diagnostic import Diagnostic, Location, Range, Severity
 from ..models.layout import Layout, LayoutEntry
 from ..parsing.layout_loader import find_layout_file, load_layout_file
 from ..parsing.loaders import load_yaml
 from ..parsing.yaml_source import SourceTrackedDict, get_field_location
-from .query import QuerySet, _match
-from ..models.base import get_non_overridable_fields, NON_OVERRIDABLE_KEY
+from .query import QuerySet
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +49,7 @@ def _flatten(
 # ---------------------------------------------------------------------------
 # 跨项目引用解析
 # ---------------------------------------------------------------------------
+
 
 class PathResolver:
     """解析 Instance 引用路径（ADR-009 §5）。
@@ -85,7 +85,7 @@ class PathResolver:
 
         # 2. $PROJECT_ROOT 变量展开
         if instance_ref.startswith("$PROJECT_ROOT/"):
-            rel_path = instance_ref[len("$PROJECT_ROOT/"):]
+            rel_path = instance_ref[len("$PROJECT_ROOT/") :]
             target = self.root / rel_path
             if target.exists():
                 return self._load_instance_file(target)
@@ -94,7 +94,7 @@ class PathResolver:
         # 3. 外部项目别名: alias/instance_id
         for alias, ext_path in self.externals.items():
             if instance_ref.startswith(alias + "/"):
-                sub_path = instance_ref[len(alias) + 1:]
+                sub_path = instance_ref[len(alias) + 1 :]
                 # 尝试 instances/sub_path.yaml
                 target = ext_path / "instances" / (sub_path + ".yaml")
                 if target.exists():
@@ -114,6 +114,7 @@ class PathResolver:
         if not path.exists():
             return None
         from ..parsing.loaders import load_yaml
+
         data = load_yaml(path)
         inst_id = data.get("id")
         if not inst_id:
@@ -256,6 +257,7 @@ class Registry:
     @property
     def allowed_tags(self) -> set[str]:
         return set(self._allowed_tags)
+
     def register_external(self, alias: str, path: Path) -> None:
         """注册外部项目路径（ADR-009 §5.3）。"""
         if not hasattr(self, "_externals"):
@@ -268,13 +270,14 @@ class Registry:
             self._externals = {}
         return dict(self._externals)
 
-    def _make_path_resolver(self, root: Path, externals: dict[str, Path] | None = None) -> "PathResolver":
+    def _make_path_resolver(
+        self, root: Path, externals: dict[str, Path] | None = None
+    ) -> "PathResolver":
         """创建 PathResolver 实例。"""
         merged = dict(self.externals)
         if externals:
             merged.update(externals)
         return PathResolver(root=root, parent=self, externals=merged)
-
 
     # ------------------------------------------------------------------
     # Layout
@@ -332,10 +335,8 @@ class Registry:
             if not model_id or not family:
                 logger.warning("Skipping model without 'model' or 'family': %s", path)
                 continue
-            model_data = {k: v for k, v in data.items()
-                          if k not in ("model", "family")}
-            self.add_model(Model(id=model_id, family=family,
-                                 data=model_data, source=path))
+            model_data = {k: v for k, v in data.items() if k not in ("model", "family")}
+            self.add_model(Model(id=model_id, family=family, data=model_data, source=path))
 
     def load_collection(self, collection_dir: Path, collection_name: str | None = None) -> str:
         """扫描一个数据目录，加载所有 Instance。返回集合名。"""
@@ -416,8 +417,7 @@ class Registry:
             if self._parent:
                 family_cls = self._parent.get_family(family_name)
             if family_cls is None:
-                logger.warning("Unknown family %s for instance %s",
-                             family_name, instance.id)
+                logger.warning("Unknown family %s for instance %s", family_name, instance.id)
                 return None
 
         # 1. 获取 Model 默认值
@@ -436,6 +436,7 @@ class Registry:
         non_overridable = get_non_overridable_fields(family_cls)
         if non_overridable:
             from ..models.diagnostic import Location
+
             for field_name in sorted(non_overridable):
                 if field_name in overrides:
                     self._diagnostics.append(
@@ -455,16 +456,14 @@ class Registry:
                     del overrides[field_name]
 
         # 3. 合并 Model + Instance（用于 Schema 校验的基值）
-        merged = _flatten({**model_defaults, **overrides},
-                          preserve_keys={"assets", "tags"})
+        merged = _flatten({**model_defaults, **overrides}, preserve_keys={"assets", "tags"})
         merged["id"] = instance.id
 
         # 4. Schema 校验
         try:
             validated = family_cls.model_validate(merged)
         except ValidationError as exc:
-            location = self._build_error_location(
-                instance.source, source_data, exc)
+            location = self._build_error_location(instance.source, source_data, exc)
             diagnostic = Diagnostic.from_validation_error(
                 exc=exc,
                 location=location,
@@ -472,8 +471,7 @@ class Registry:
                 source="piki.schema",
             )
             if source_data is not None:
-                related = self._build_related_info(
-                    instance.source, source_data, exc)
+                related = self._build_related_info(instance.source, source_data, exc)
                 if related:
                     diagnostic = Diagnostic(
                         severity=Severity.ERROR,
@@ -496,8 +494,7 @@ class Registry:
                 _validation_error=str(exc),
             )
 
-        resolved_dict = _flatten(validated.model_dump(),
-                                 preserve_keys={"assets", "tags"})
+        resolved_dict = _flatten(validated.model_dump(), preserve_keys={"assets", "tags"})
 
         # 5. Layout 合并（后于 Schema 校验，因为 Layout 字段不参与 Schema）
         layout_entry = self.get_layout_entry(instance.id)
@@ -561,8 +558,7 @@ class Registry:
                     uri=path.as_uri(),
                     range=Range.point(mark.line, mark.column),
                 )
-                related.append(RelatedInformation(
-                    location=loc, message=f"{field_path}: {msg}"))
+                related.append(RelatedInformation(location=loc, message=f"{field_path}: {msg}"))
         return related
 
     # ------------------------------------------------------------------

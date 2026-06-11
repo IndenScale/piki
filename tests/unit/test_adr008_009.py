@@ -6,13 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from piki.core.engine.checker import Checker, CheckReport, rule
+from piki.core.engine.checker import Checker
 from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
-from piki.core.models.base import get_non_overridable_fields, NON_OVERRIDABLE_KEY
+from piki.core.models.base import get_non_overridable_fields
 from piki.core.models.tags import Tags
-from piki.extensions.telecom.plugin import ServerFamily, RackFamily, PduFamily
-from piki.core.models.diagnostic import Severity
+from piki.extensions.telecom.plugin import ServerFamily
 
 
 class TestOverrideWhitelist:
@@ -61,7 +60,7 @@ class TestOverrideWhitelist:
         inst = registry.find_instance("BAD")
         assert inst is not None
         assert inst.resolved.depth_mm == 700  # Model 默认值
-        assert inst.resolved.width_mm == 438   # Model 默认值
+        assert inst.resolved.width_mm == 438  # Model 默认值
 
     def test_allowed_override_still_works(self, tmp_path: Path) -> None:
         """可覆盖字段仍可被 Instance 覆盖。"""

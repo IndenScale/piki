@@ -9,7 +9,6 @@ from typing import Any
 from .engine.checker import Checker, CheckReport, RuleResult, register_module_rules
 from .engine.context import Context
 from .engine.registry import Registry
-from .models.diagnostic import Severity
 from .parsing.loaders import load_toml
 from .plugin import Plugin, discover_plugins
 
@@ -71,8 +70,7 @@ class Project:
                     project._discover_children()
                 return project
             if current.parent == current:
-                raise FileNotFoundError(
-                    f"Could not find piki.toml from {start}")
+                raise FileNotFoundError(f"Could not find piki.toml from {start}")
             current = current.parent
 
     def _discover_children(self) -> None:
@@ -87,8 +85,15 @@ class Project:
             if not child_toml.exists():
                 continue
             # 跳过特殊目录
-            if entry.name in ("library", "instances", "layouts", "rules",
-                              ".git", "__pycache__", ".piki"):
+            if entry.name in (
+                "library",
+                "instances",
+                "layouts",
+                "rules",
+                ".git",
+                "__pycache__",
+                ".piki",
+            ):
                 continue
             try:
                 child_config = load_toml(child_toml)
@@ -100,8 +105,7 @@ class Project:
                 child_project._discover_children()
                 self._children[entry.name] = child_project
             except Exception as exc:
-                logger.warning("Failed to load sub-project %s: %s",
-                             entry.name, exc)
+                logger.warning("Failed to load sub-project %s: %s", entry.name, exc)
 
     # ------------------------------------------------------------------
     # 加载
@@ -111,7 +115,7 @@ class Project:
         """加载插件、型号库、实例数据、Layout。"""
         self._load_plugins()
         self._load_models()
-        self._load_layout()       # Layout 必须在 Instance 之前加载（_resolve 依赖它）
+        self._load_layout()  # Layout 必须在 Instance 之前加载（_resolve 依赖它）
         self._load_instances()
         self._load_rules()
         self._load_tag_config()
@@ -156,8 +160,15 @@ class Project:
         for path in sorted(self.root.iterdir()):
             if not path.is_dir():
                 continue
-            if path.name in ("library", "instances", "layouts", "rules",
-                             ".git", "__pycache__", ".piki"):
+            if path.name in (
+                "library",
+                "instances",
+                "layouts",
+                "rules",
+                ".git",
+                "__pycache__",
+                ".piki",
+            ):
                 continue
             # 跳过子项目（有 piki.toml 的目录）
             if (path / "piki.toml").exists():
@@ -274,7 +285,8 @@ class Project:
         while changed:
             changed = False
             current_instances = [
-                inst for inst in self.registry.all_instances().values()
+                inst
+                for inst in self.registry.all_instances().values()
                 if str(inst.source) in allowed
             ]
             for inst in current_instances:
@@ -341,7 +353,10 @@ class Project:
         if recurse:
             for child in self._children.values():
                 child_report = child.run_check(
-                    skip=skip, only=only, files=None, recurse=True,
+                    skip=skip,
+                    only=only,
+                    files=None,
+                    recurse=True,
                 )
                 report.results.extend(child_report.results)
                 report.diagnostics.extend(child_report.diagnostics)
