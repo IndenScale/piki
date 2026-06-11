@@ -25,8 +25,6 @@ piki 要帮你：**在提交设计前，自动发现这个问题。**
 pip install piki
 ```
 
-`piki` 包含核心框架和内置的 `telecom` 等行业插件，提供机柜、设备、PDU 等模型。
-
 ## 步骤 2：初始化项目
 
 ```bash
@@ -35,31 +33,29 @@ cd my-datacenter
 piki init --plugin telecom
 ```
 
-这会创建目录结构：
+这会创建 ADR-008 分离架构的目录结构：
 
 ```
 my-datacenter/
-├── piki.toml           # 项目元数据：根目录声明、插件启用、型号引用
-├── library/            # 型号库（厂商规格）
-│   └── devices/
-│       └── generic-server.yaml
-├── racks/              # 机柜数据
-│   └── RACK-A01.yaml
-├── pdus/               # PDU 数据
-│   ├── PDU-A.yaml
-│   └── PDU-B.yaml
-├── devices/            # 设备数据
+├── piki.toml              # 项目元数据
+├── instances/             # 设备身份（ADR-008：只声明"是什么"）
 │   ├── SRV-01.yaml
 │   └── SRV-02.yaml
-└── rules/              # 检查规则
+├── layouts/               # 部署决策（ADR-008：只声明"放哪、接哪"）
+│   └── layout.yaml
+├── racks/                 # 机柜数据
+│   └── RACK-A01.yaml
+├── pdus/                  # PDU 数据
+│   ├── PDU-A.yaml
+│   └── PDU-B.yaml
+├── library/               # 型号库
+│   └── devices/
+│       └── generic-server.yaml
+└── rules/                 # 检查规则
     └── power.py
 ```
 
-`piki.toml` 是项目元数据文件，**声明**三件事：
-
-1. **项目根目录**：piki 从该文件所在目录开始扫描所有数据
-2. **启用哪些行业插件**：如 `telecom`、`construction`
-3. **引用哪些型号库**：插件自带的 + 项目本地 `library/` 的
+`piki.toml` 是项目元数据文件，声明三件事：
 
 ```toml
 # piki.toml
@@ -75,6 +71,10 @@ power_threshold = 0.4
 rack_usage_threshold = 0.8
 ```
 
+### ADR-008：Instance 与 Layout 分离
+
+> **为什么分离？** 设备身份（是什么型号、什么规格）和部署决策（放哪个机柜、接哪个 PDU）是两个独立的关注点。分离后，Git 分支可以直接做方案比选——同一个设备，分支 A 放 RACK-A01，分支 B 放 RACK-A02，合并时只冲突 `layout.yaml`。
+
 ## 步骤 3：录入现有设施（Brown Field）
 
 先记录机柜：
@@ -89,28 +89,62 @@ total_u: 42
 power_capacity_w: 2000
 ```
 
-再记录已有设备：
+PDU：
 
 ```yaml
-# devices/SRV-01.yaml
-id: SRV-01
-name: 服务器-01
-model: generic-server
-status: installed
+# pdus/PDU-A.yaml
+id: PDU-A
+family: PduFamily
+name: PDU-A路
 rack_id: RACK-A01
-position_u: 10
-pdu_id: PDU-A
+capacity_w: 2000
 ```
 
 ```yaml
-# devices/SRV-02.yaml
+# pdus/PDU-B.yaml
+id: PDU-B
+family: PduFamily
+name: PDU-B路
+rack_id: RACK-A01
+capacity_w: 2000
+```
+
+已有设备身份（**只声明是什么**）：
+
+```yaml
+# instances/SRV-01.yaml
+id: SRV-01
+family: ServerFamily
+name: 服务器-01
+model: generic-server
+status: installed
+tdp_w: 300
+```
+
+```yaml
+# instances/SRV-02.yaml
 id: SRV-02
+family: ServerFamily
 name: 服务器-02
 model: generic-server
 status: installed
-rack_id: RACK-A01
-position_u: 8
-pdu_id: PDU-A
+tdp_w: 250
+```
+
+已有设备的部署决策（**只声明放哪、接哪**）：
+
+```yaml
+# layouts/layout.yaml
+entries:
+  - instance: SRV-01
+    rack_id: RACK-A01
+    position_u: 10
+    pdu_id: PDU-A
+
+  - instance: SRV-02
+    rack_id: RACK-A01
+    position_u: 8
+    pdu_id: PDU-A
 ```
 
 型号库定义了 `generic-server` 的规格：
@@ -124,40 +158,36 @@ physical:
   height_u: 2
 
 power:
-  tdp_w: 300        # 默认值，实例可覆盖
+  tdp_w: 300
   psu_count: 1
   psu_redundancy: false
 ```
 
-注意：`SRV-02` 实际功耗是 250W，不是型号库的 300W。我们可以在实例中覆盖：
-
-```yaml
-# devices/SRV-02.yaml（覆盖功耗）
-id: SRV-02
-name: 服务器-02
-model: generic-server
-status: installed
-rack_id: RACK-A01
-position_u: 8
-pdu_id: PDU-A
-
-# 覆盖型号库的默认值
-tdp_w: 250
-```
-
 ## 步骤 4：编写新增方案
 
+新增设备身份：
+
 ```yaml
-# devices/SRV-03.yaml
+# instances/SRV-03.yaml
 id: SRV-03
+family: ServerFamily
 name: 服务器-03
 model: generic-server
-status: planned        # 状态：planned（计划中）
-rack_id: RACK-A01
-position_u: 6
-pdu_id: PDU-A
+status: planned
+tdp_w: 400
+```
 
-tdp_w: 400            # 这台功耗更高
+新增部署决策：
+
+```yaml
+# layouts/layout.yaml（追加）
+entries:
+  # ... 已有条目 ...
+
+  - instance: SRV-03
+    rack_id: RACK-A01
+    position_u: 6
+    pdu_id: PDU-A        # ← 注意：接在 PDU-A 上
 ```
 
 ## 步骤 5：运行检查
@@ -184,19 +214,14 @@ piki check
 
 ## 步骤 6：修正并重新检查
 
-把 `SRV-03` 改接到 PDU-B：
+把 `SRV-03` 改接到 PDU-B——只需修改 layout：
 
 ```yaml
-# devices/SRV-03.yaml（修正后）
-id: SRV-03
-name: 服务器-03
-model: generic-server
-status: planned
-rack_id: RACK-A01
-position_u: 6
-pdu_id: PDU-B        # 改接 PDU-B
-
-tdp_w: 400
+# layouts/layout.yaml（修正 SRV-03 的条目）
+  - instance: SRV-03
+    rack_id: RACK-A01
+    position_u: 6
+    pdu_id: PDU-B        # ← 改接 PDU-B
 ```
 
 ```bash
@@ -215,6 +240,8 @@ piki check
 总计: 0 错误, 1 警告, 3 通过
 ============================================================
 ```
+
+> **关键洞察**：修正时只改了 `layouts/layout.yaml` 中的一行（`pdu_id: PDU-B`），设备身份文件 `instances/SRV-03.yaml` 完全没动。这就是 Instance/Layout 分离的价值——部署决策的变更不污染设备身份数据。
 
 ## 步骤 7：提交到 Git
 
@@ -238,16 +265,15 @@ git push origin HEAD:review/srv-03-addition
 
 同事在 Pull Request 中看到：
 
-- 变更的 YAML 文件
+- 变更的 YAML 文件（`instances/SRV-03.yaml` 新增，`layouts/layout.yaml` 修改）
 - piki 检查报告（全部通过）
 - 设计意图（commit message 中的完整说明）
 
-审核通过后，合并到 `main` 分支，再推送到交底分支：
+审核通过后，合并到 `main` 分支：
 
 ```bash
 git checkout main
 git merge review/srv-03-addition
-git push origin main:handover/2024-Q2-expansion
 ```
 
 ## 你做了什么
@@ -255,23 +281,23 @@ git push origin main:handover/2024-Q2-expansion
 | 步骤 | 动作 | piki 的作用 |
 |------|------|------------|
 | 1 | 安装 | 提供声明式建模框架 + 行业插件 |
-| 2 | 初始化 | 创建标准目录结构 |
+| 2 | 初始化 | 创建 ADR-008 标准目录结构（instances/ + layouts/） |
 | 3 | 录入现有设施 | 声明基准状态（brown field） |
-| 4 | 编写方案 | 声明设计意图，规格自动补齐 |
+| 4 | 编写方案 | Instance 声明身份 + Layout 声明部署 |
 | 5 | 运行检查 | **自动发现 PDU 过载风险** |
-| 6 | 修正 | 根据反馈调整声明 |
+| 6 | 修正 | 只改 layout.yaml，Instance 不变 |
 | 7 | 提交 | Git 记录完整设计演进 |
 
 > **💡 不想一步步手动创建？** 完整的示例项目已准备好，直接体验：
 >
 > ```bash
-> cd samples/02-telecom-rack
+> cd samples/01-hello-piki
 > piki check
 > ```
 >
-> 或从最小示例开始：
+> 从电信机架示例开始：
 > ```bash
-> cd samples/01-hello-piki
+> cd samples/02-telecom-rack
 > piki check
 > ```
 
