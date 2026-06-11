@@ -44,17 +44,25 @@ def _build_proxy_box(
     stage: Any,
     prim_path: str,
     name: str,
+    tx: float = 0.0,
+    ty: float = 0.0,
+    tz: float = 0.0,
 ) -> Any:
     """根据物理尺寸生成 Box 代理几何。"""
     from pxr import Gf, Usd, UsdGeom
 
     xform = UsdGeom.Xform.Define(stage, prim_path)
-    xform.SetDisplayName(name)
+    xform.GetPrim().SetDisplayName(name)
 
     size = (_mm_to_m(width_mm), _mm_to_m(height_mm), _mm_to_m(depth_mm))
     cube = UsdGeom.Cube.Define(stage, prim_path + "/geometry")
     cube.CreateSizeAttr().Set(1.0)
-    cube.AddTransformOp().Set(Gf.Matrix4d().SetScale(Gf.Vec3d(*size)))
+
+    # 组合缩放 + 平移
+    xf = Gf.Matrix4d()
+    xf.SetScale(Gf.Vec3d(*size))
+    xf.SetTranslateOnly(Gf.Vec3d(tx, ty, tz))
+    cube.AddTransformOp().Set(xf)
 
     # 设置显示颜色（灰色代理）
     cube.CreateDisplayColorAttr().Set([(0.7, 0.7, 0.7)])
@@ -72,7 +80,7 @@ def _build_inline_geometry(
     from pxr import Gf, Usd, UsdGeom
 
     xform = UsdGeom.Xform.Define(stage, prim_path)
-    xform.SetDisplayName(name)
+    xform.GetPrim().SetDisplayName(name)
 
     t = inline.transform.translation if inline.transform else Vec3(x=0, y=0, z=0)
     r = inline.transform.rotation if inline.transform else Vec3(x=0, y=0, z=0)
@@ -143,7 +151,7 @@ def _build_csg_mesh(
         return None
 
     xform = UsdGeom.Xform.Define(stage, prim_path)
-    xform.SetDisplayName(name)
+    xform.GetPrim().SetDisplayName(name)
 
     mesh = UsdGeom.Mesh.Define(stage, prim_path + "/geometry")
 
@@ -176,7 +184,7 @@ def _build_reference(
     from pxr import Usd, UsdGeom
 
     ref_prim = UsdGeom.Xform.Define(stage, prim_path)
-    ref_prim.SetDisplayName(name)
+    ref_prim.GetPrim().SetDisplayName(name)
     ref_prim.GetPrim().GetReferences().AddReference(ref_path)
     return ref_prim
 
@@ -185,6 +193,7 @@ def _write_instance(
     inst: Any,
     stage: Any,
     prim_path: str,
+    racks: dict[str, Any] | None = None,
 ) -> Any | None:
     """将一个 ResolvedInstance 写入 USD 场景。
 
@@ -213,12 +222,32 @@ def _write_instance(
     length_mm = getattr(resolved, "length_mm", 0.0) or 0.0
     height_mm = getattr(resolved, "height_mm", 0.0) or 0.0
 
+    # 机柜高度可以从 total_u 推算（1U = 44.45mm）
+    if height_mm <= 0:
+        total_u = getattr(resolved, "total_u", 0) or 0
+        if total_u > 0:
+            height_mm = total_u * 44.45
+
     depth = depth_mm if depth_mm > 0 else length_mm
     height = height_mm
     width = width_mm
 
     if width > 0 and height > 0 and depth > 0:
-        return _build_proxy_box(width, height, depth, stage, prim_path, name)
+        # 计算位置偏移（毫米 → 米）
+        tx = getattr(resolved, "position_x_mm", 0.0) or 0.0
+        ty = getattr(resolved, "position_y_mm", 0.0) or 0.0
+        tz = getattr(resolved, "position_z_mm", 0.0) or 0.0
+
+        # 如果是设备，根据 position_u 计算 Y 位置（1U = 44.45mm）
+        position_u = getattr(resolved, "position_u", 0) or 0
+        if position_u > 0:
+            # 设备底部在 (position_u - 1) * 44.45mm 处
+            ty = (position_u - 1) * 44.45
+            # 简单偏移：让设备在机柜内稍微错开显示
+            tx = 50  # 向 X 方向偏移 50mm
+            tz = 50  # 向 Z 方向偏移 50mm
+
+        return _build_proxy_box(width, height, depth, stage, prim_path, name, _mm_to_m(tx), _mm_to_m(ty), _mm_to_m(tz))
 
     # 无几何信息
     return None
@@ -247,7 +276,11 @@ def generate_usd_scene(ctx: Context, config: dict[str, Any]) -> None:
 
     # 创建舞台
     stage = Usd.Stage.CreateNew(str(out_path))
-    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.Y)
+    # usd-core 26.5+ uses lowercase 'y', older versions use uppercase 'Y'
+    up_axis = getattr(UsdGeom.Tokens, "y", getattr(UsdGeom.Tokens, "Y", None))
+    if up_axis is None:
+        up_axis = "Y"
+    UsdGeom.SetStageUpAxis(stage, up_axis)
     stage.SetStartTimeCode(1)
     stage.SetEndTimeCode(1)
 
@@ -256,13 +289,22 @@ def generate_usd_scene(ctx: Context, config: dict[str, Any]) -> None:
 
     # 按集合分组
     collections = ctx._registry._collections
+
+    # 先收集机柜信息（用于设备定位）
+    racks: dict[str, Any] = {}
+    if "racks" in collections:
+        for rid, rinst in collections["racks"].items():
+            racks[rid] = rinst
+
     for collection_name, instances in collections.items():
         group = UsdGeom.Xform.Define(stage, f"/piki/{collection_name}")
 
         for idx, (inst_id, inst) in enumerate(instances.items()):
-            prim_path = f"/piki/{collection_name}/{inst_id}"
+            # USD prim path cannot contain '-', replace with '_'
+            safe_id = inst_id.replace("-", "_")
+            prim_path = f"/piki/{collection_name}/{safe_id}"
             try:
-                prim = _write_instance(inst, stage, prim_path)
+                prim = _write_instance(inst, stage, prim_path, racks)
                 if prim is None:
                     logger.debug("No geometry for instance %s", inst_id)
             except Exception as exc:

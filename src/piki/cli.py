@@ -19,7 +19,7 @@ import sys
 from typing import Sequence
 
 from piki.core import __version__
-from .commands import cmd_init, cmd_check, cmd_generate, cmd_report, cmd_plugins_list, cmd_preview
+from .commands import cmd_init, cmd_check, cmd_generate, cmd_report, cmd_plugins_list
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -108,20 +108,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="输出文件路径",
     )
 
-    # --- preview ---
-    preview = sub.add_parser("preview", help="生成 USD 场景并预览")
-    preview.add_argument("path", nargs="?", help="项目目录")
-    preview.add_argument(
-        "--output", "-o",
-        default="scene.usda",
-        help="USD 输出文件路径（默认 scene.usda）",
-    )
-    preview.add_argument(
-        "--no-view",
-        action="store_true",
-        help="只生成文件，不启动预览器",
-    )
-
     # --- plugins ---
     plugins = sub.add_parser("plugins", help="管理插件")
     plugins_sub = plugins.add_subparsers(dest="subcommand", required=True)
@@ -163,8 +149,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     if args.command == "generate":
         return cmd_generate(args.path, args.generator, args.output)
-    if args.command == "preview":
-        return cmd_preview(args.path, args.output, no_view=args.no_view)
     if args.command == "plugins":
         if args.subcommand == "list":
             return cmd_plugins_list()
