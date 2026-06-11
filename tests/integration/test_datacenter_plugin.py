@@ -48,15 +48,24 @@ def dc_ctx(tmp_path: Path) -> Context:
     )
     registry.load_library(lib.parent)
 
-    # 方舱
-    containers = tmp_path / "containers"
-    containers.mkdir()
-    (containers / "AI-LIQUID-01.yaml").write_text(
-        "id: AI-LIQUID-01\nfamily: ContainerFamily\n"
+    # 方舱型号库（物理尺寸在 Model 中，ADR-008）
+    container_lib = tmp_path / "library" / "containers"
+    container_lib.mkdir(parents=True)
+    (container_lib / "liquid-40ft.yaml").write_text(
+        "model: liquid-40ft\nfamily: ContainerFamily\n"
         "container_type: liquid-cooling\nstandard: 40ft\n"
         "length_mm: 12192\nwidth_mm: 2438\nheight_mm: 2896\n"
         "max_weight_kg: 30480\npower_capacity_kw: 500\n"
         "cooling_capacity_kw: 550\n",
+        encoding="utf-8",
+    )
+    registry.load_library(container_lib.parent)
+
+    # 方舱
+    containers = tmp_path / "containers"
+    containers.mkdir()
+    (containers / "AI-LIQUID-01.yaml").write_text(
+        "id: AI-LIQUID-01\nfamily: ContainerFamily\nmodel: liquid-40ft\n",
         encoding="utf-8",
     )
     registry.load_collection(containers)
@@ -104,11 +113,19 @@ class TestEquipmentContainerFitRule:
         registry.add_family("ContainerFamily", ContainerFamily)
         registry.add_family("EquipmentFamily", EquipmentFamily)
 
+        # 物理尺寸在 Model 中（ADR-008）
+        clib = tmp_path / "clib2"
+        clib.mkdir()
+        (clib / "small-container.yaml").write_text(
+            "model: small-container\nfamily: ContainerFamily\ncontainer_type: air-cooling\n"
+            "length_mm: 1000\nwidth_mm: 1000\nheight_mm: 1000\n",
+            encoding="utf-8",
+        )
+        registry.load_library(clib)
         containers = tmp_path / "containers2"
         containers.mkdir()
         (containers / "C1.yaml").write_text(
-            "id: C1\nfamily: ContainerFamily\ncontainer_type: air-cooling\n"
-            "length_mm: 1000\nwidth_mm: 1000\nheight_mm: 1000\n",
+            "id: C1\nfamily: ContainerFamily\ncontainer_type: air-cooling\nmodel: small-container\n",
             encoding="utf-8",
         )
         registry.load_collection(containers)
@@ -134,21 +151,38 @@ class TestEquipmentContainerFitRule:
         registry.add_family("ContainerFamily", ContainerFamily)
         registry.add_family("EquipmentFamily", EquipmentFamily)
 
+        # 物理尺寸在 Model 中（ADR-008）
+        clib = base / "clib"
+        clib.mkdir()
+        (clib / "small-container.yaml").write_text(
+            "model: small-container\nfamily: ContainerFamily\ncontainer_type: air-cooling\n"
+            "length_mm: 1000\nwidth_mm: 1000\nheight_mm: 1000\n",
+            encoding="utf-8",
+        )
+        registry.load_library(clib)
         containers = base / "containers"
         containers.mkdir()
         (containers / "C1.yaml").write_text(
-            "id: C1\nfamily: ContainerFamily\ncontainer_type: air-cooling\n"
-            "length_mm: 1000\nwidth_mm: 1000\nheight_mm: 1000\n",
+            "id: C1\nfamily: ContainerFamily\ncontainer_type: air-cooling\nmodel: small-container\n",
             encoding="utf-8",
         )
         registry.load_collection(containers)
 
+        # 设备型号库（物理尺寸在 Model 中）
+        elib = base / "elib"
+        elib.mkdir()
+        (elib / "long-server.yaml").write_text(
+            "model: long-server\nfamily: EquipmentFamily\n"
+            "equipment_type: compute\nlength_mm: 1500\nwidth_mm: 500\nheight_mm: 500\n",
+            encoding="utf-8",
+        )
+        registry.load_library(elib)
         equipment = base / "equipment"
         equipment.mkdir()
         (equipment / "E1.yaml").write_text(
             "id: E1\nfamily: EquipmentFamily\n"
             "equipment_type: compute\ncontainer_id: C1\npower_unit_id: PU1\n"
-            "length_mm: 1500\nwidth_mm: 500\nheight_mm: 500\n",
+            "model: long-server\n",
             encoding="utf-8",
         )
         registry.load_collection(equipment)
@@ -178,16 +212,23 @@ class TestConnectionCapacityRule:
         registry.add_family("EquipmentFamily", EquipmentFamily)
         registry.add_family("ConnectionFamily", ConnectionFamily)
 
-        containers = tmp_path / "conn_containers"
-        containers.mkdir()
-        (containers / "C1.yaml").write_text(
-            "id: C1\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\n"
+        # 物理尺寸在 Model 中（ADR-008）
+        cc_lib = tmp_path / "cc_lib"
+        cc_lib.mkdir()
+        (cc_lib / "liquid-40ft.yaml").write_text(
+            "model: liquid-40ft\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\n"
             "length_mm: 12192\nwidth_mm: 2438\nheight_mm: 2896\n",
             encoding="utf-8",
         )
+        registry.load_library(cc_lib)
+        containers = tmp_path / "conn_containers"
+        containers.mkdir()
+        (containers / "C1.yaml").write_text(
+            "id: C1\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\nmodel: liquid-40ft\n",
+            encoding="utf-8",
+        )
         (containers / "C2.yaml").write_text(
-            "id: C2\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\n"
-            "length_mm: 12192\nwidth_mm: 2438\nheight_mm: 2896\n",
+            "id: C2\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\nmodel: liquid-40ft\n",
             encoding="utf-8",
         )
         registry.load_collection(containers)
@@ -226,16 +267,23 @@ class TestConnectionCapacityRule:
         registry.add_family("EquipmentFamily", EquipmentFamily)
         registry.add_family("ConnectionFamily", ConnectionFamily)
 
-        containers = base / "containers"
-        containers.mkdir()
-        (containers / "C1.yaml").write_text(
-            "id: C1\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\n"
+        # 物理尺寸在 Model 中（ADR-008）
+        ic_lib = base / "ic_lib"
+        ic_lib.mkdir()
+        (ic_lib / "liquid-40ft.yaml").write_text(
+            "model: liquid-40ft\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\n"
             "length_mm: 12192\nwidth_mm: 2438\nheight_mm: 2896\n",
             encoding="utf-8",
         )
+        registry.load_library(ic_lib)
+        containers = base / "containers"
+        containers.mkdir()
+        (containers / "C1.yaml").write_text(
+            "id: C1\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\nmodel: liquid-40ft\n",
+            encoding="utf-8",
+        )
         (containers / "C2.yaml").write_text(
-            "id: C2\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\n"
-            "length_mm: 12192\nwidth_mm: 2438\nheight_mm: 2896\n",
+            "id: C2\nfamily: ContainerFamily\ncontainer_type: liquid-cooling\nmodel: liquid-40ft\n",
             encoding="utf-8",
         )
         registry.load_collection(containers)

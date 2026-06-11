@@ -33,9 +33,11 @@ def _run_check(project_dir: Path) -> subprocess.CompletedProcess:
 
 
 def _add_device(project_dir: Path, inst_id: str, rack_id: str,
-                position_u: int, pdu_id: str, tdp_w: int = 400,
-                depth_mm: int = 700, width_mm: int = 438, height_mm: int = 88) -> None:
-    """创建一个 Instance 文件并追加到 Layout。"""
+                position_u: int, pdu_id: str, tdp_w: int = 400) -> None:
+    """创建一个 Instance 文件并追加到 Layout。
+
+    物理尺寸字段不可被 Instance 覆盖（ADR-008），应在 Model 中设置。
+    """
     # Instance 文件
     inst = project_dir / "devices" / f"{inst_id}.yaml"
     inst.write_text(
@@ -43,9 +45,6 @@ def _add_device(project_dir: Path, inst_id: str, rack_id: str,
         f"name: 服务器-{inst_id[-2:]}\n"
         f"model: generic-server\n"
         f"status: planned\n"
-        f"depth_mm: {depth_mm}\n"
-        f"width_mm: {width_mm}\n"
-        f"height_mm: {height_mm}\n"
         f"tdp_w: {tdp_w}\n",
         encoding="utf-8",
     )

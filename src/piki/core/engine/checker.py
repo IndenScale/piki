@@ -119,6 +119,52 @@ class Checker:
         # 按 priority 降序
         sorted_rules = sorted(self._rules, key=lambda x: x[2], reverse=True)
         report = CheckReport()
+
+        # 运行内置 L2 引用完整性检查
+        try:
+            self.check_reference_integrity(ctx)
+        except AssertionError as exc:
+            report.results.append(
+                RuleResult(
+                    rule_id="REFS-001",
+                    name="Layout-Instance 引用完整性",
+                    passed=False,
+                    message=str(exc),
+                    file=getattr(ctx, "_current_file", ""),
+                    severity=Severity.ERROR,
+                )
+            )
+
+        # 运行内置 Tag Schema 检查
+        try:
+            self.check_tag_schema(ctx)
+        except AssertionError as exc:
+            report.results.append(
+                RuleResult(
+                    rule_id="TAGS-001",
+                    name="Tag Schema 合规性",
+                    passed=False,
+                    message=str(exc),
+                    file=getattr(ctx, "_current_file", ""),
+                    severity=Severity.WARNING,
+                )
+            )
+
+        # 运行内置 FQID 冲突检查
+        try:
+            self.check_fqid_duplicates(ctx)
+        except AssertionError as exc:
+            report.results.append(
+                RuleResult(
+                    rule_id="REFS-002",
+                    name="FQID 冲突检查",
+                    passed=False,
+                    message=str(exc),
+                    file=getattr(ctx, "_current_file", ""),
+                    severity=Severity.ERROR,
+                )
+            )
+
         for rule_id, name, _prio, default_severity, func in sorted_rules:
             if skip_set and rule_id in skip_set:
                 continue
@@ -168,6 +214,111 @@ class Checker:
                     )
                 )
         return report
+
+    def check_reference_integrity(self, ctx: Context) -> None:
+        """L2 引用完整性检查（ADR-004, ADR-008, ADR-009）。
+
+        自动运行，检查 Layout → Instance 引用的一致性：
+        1. Layout 中的 instance 引用是否存在
+        2. Layout 中被引用的 Instance 是否仍为 _invalid（Schema 失败）
+
+        注意：此检查忽略 --files 过滤，始终检查完整 Layout 的引用完整性。
+        """
+        layout = ctx.layout
+        if layout is None:
+            return
+
+        # 使用完整项目树的 Instance（不受 files 过滤影响）
+        all_instances = ctx._registry.all_instances_tree()
+        all_ids = set(all_instances.keys())
+        valid_ids = {iid for iid, inst in all_instances.items() if inst.family != "_invalid"}
+
+        for entry_id, entry in layout.entries.items():
+            ctx.set_current_file(str(layout.source) if layout.source else "")
+
+            # 1. 检查 Instance 是否存在
+            if entry_id not in all_ids:
+                assert False, (
+                    f"Layout 引用的 Instance '{entry_id}' 在项目树中不存在。"
+                    f" 请检查 instances/ 目录是否包含该 Instance 文件。"
+                )
+
+            # 2. 检查 Instance 是否通过 Schema 校验
+            if entry_id not in valid_ids:
+                inst = ctx.find_instance(entry_id)
+                if inst is not None and inst.family == "_invalid":
+                    assert False, (
+                        f"Layout 引用的 Instance '{entry_id}' Schema 校验失败，"
+                        f"无法用于部署。请先修复该 Instance 的错误。"
+                    )
+
+        ctx.clear_current_file()
+
+    def check_tag_schema(self, ctx: Context) -> None:
+        """L2 Tag Schema 检查（ADR-009 §3.3）。
+
+        当 piki.toml 中定义了 [tags] allowed 列表时，
+        检查所有 Instance 的 tags 键是否在允许范围内。
+        未定义 allowed 列表时不作检查。
+        """
+        allowed_tags = ctx._registry.allowed_tags
+        if not allowed_tags:
+            return
+
+        for inst in ctx.instances():
+            tags_raw = inst._resolved.get("tags")
+            if not isinstance(tags_raw, dict):
+                continue
+
+            # 只检查有实际值的 Tag 键（过滤空字符串和空 extra）
+            active_keys: set[str] = set()
+            for k, v in tags_raw.items():
+                if k == "extra":
+                    if isinstance(v, dict):
+                        active_keys.update(ek for ek, ev in v.items() if ev)
+                    continue
+                if v:  # 非空值
+                    active_keys.add(k)
+
+            unknown_keys = active_keys - allowed_tags
+            if unknown_keys:
+                ctx.set_current_file(str(inst.source))
+                assert False, (
+                    f"Instance '{inst.id}' 使用了未在 piki.toml [tags] 中声明的 Tag 键: "
+                    f"{', '.join(sorted(unknown_keys))}。"
+                    f" 允许的键: {', '.join(sorted(allowed_tags))}。"
+                )
+        ctx.clear_current_file()
+
+    def check_fqid_duplicates(self, ctx: Context) -> None:
+        """L2 FQID 冲突检查（ADR-009 §6.2）。
+
+        检查同一项目树下是否存在简单 ID 冲突的 Instance。
+        如果某个 ID 出现在多个同级或祖先/后代项目中，报告冲突。
+        """
+        reg = ctx._registry
+        all_instances = reg.all_instances_with_fqid()
+        all_simple = reg.all_instances_tree()
+
+        # 统计每个简单 ID 的出现次数（在同一项目树中）
+        id_counts: dict[str, list[str]] = {}
+        for fqid_val, inst in all_instances.items():
+            simple_id = inst.id
+            if simple_id not in id_counts:
+                id_counts[simple_id] = []
+            id_counts[simple_id].append(fqid_val)
+
+        for simple_id, fqids in id_counts.items():
+            if len(fqids) > 1:
+                # 使用第一个 Instance 的文件作为上下文
+                inst = all_simple.get(simple_id)
+                if inst:
+                    ctx.set_current_file(str(inst.source))
+                assert False, (
+                    f"Instance ID '{simple_id}' 在项目树中出现 {len(fqids)} 次: "
+                    f"{', '.join(fqids)}。请使用全限定 ID 引用。"
+                )
+        ctx.clear_current_file()
 
     def generate(self, gen_id: str, ctx: Context, config: dict[str, Any]) -> None:
         if gen_id not in self._generators:

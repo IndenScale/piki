@@ -5,7 +5,7 @@
 
 - instance: SRV-02
   rack_id: RACK-A01
-  position_u: 12
+  position_u: 13
   pdu_id: PDU-A
 
 - instance: PDU-A

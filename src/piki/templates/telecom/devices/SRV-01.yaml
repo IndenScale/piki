@@ -2,6 +2,3 @@ id: SRV-01
 name: 服务器-01
 model: generic-server
 status: installed
-depth_mm: 700
-width_mm: 438
-height_mm: 88

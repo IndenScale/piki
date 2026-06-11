@@ -287,20 +287,27 @@ class TestDevicePhysicalFitRule:
         check_device_physical_fit(telecom_ctx)  # 不应抛异常
 
     def test_passes_when_fits(self, telecom_ctx: Context, tmp_path: Path) -> None:
-        # 给机柜和设备添加尺寸数据，设备能装下
-        racks = tmp_path / "racks"
-        (racks / "RACK-A01.yaml").write_text(
-            "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\ndepth_mm: 1000\nwidth_mm: 600\n",
+        # 物理尺寸应在 Model 中设置，不可被 Instance 覆盖（ADR-008）
+        # 创建 rack model library
+        rack_lib = tmp_path / "library" / "racks"
+        rack_lib.mkdir(parents=True)
+        (rack_lib / "standard-rack.yaml").write_text(
+            "model: standard-rack\nfamily: RackFamily\ndepth_mm: 1000\nwidth_mm: 600\n",
             encoding="utf-8",
         )
-        # 重新加载机柜
+        telecom_ctx._registry.load_library(rack_lib.parent)
+
+        racks = tmp_path / "racks"
+        (racks / "RACK-A01.yaml").write_text(
+            "id: RACK-A01\nfamily: RackFamily\nmodel: standard-rack\ntotal_u: 42\n",
+            encoding="utf-8",
+        )
         telecom_ctx._registry.load_collection(racks)
 
         check_device_physical_fit(telecom_ctx)  # 不应抛异常
 
     def test_fails_when_too_deep(self, telecom_ctx: Context, tmp_path: Path) -> None:
-        # 给机柜和设备添加尺寸数据，设备深度超过机柜
-        # 但 fixture 中的型号库没有 depth_mm，需要创建新场景
+        # 设备深度超过机柜——物理尺寸在 Model 中（ADR-008）
         base = tmp_path / "toodeep"
         base.mkdir()
 
@@ -309,18 +316,24 @@ class TestDevicePhysicalFitRule:
         registry.add_family("PduFamily", PduFamily)
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = base / "library" / "devices"
+        lib = base / "library"
         lib.mkdir(parents=True)
-        (lib / "generic-server.yaml").write_text(
+        (lib / "devices" / "generic-server.yaml").parent.mkdir(parents=True, exist_ok=True)
+        (lib / "devices" / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\ndepth_mm: 715\nwidth_mm: 445\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        (lib / "racks" / "short-rack.yaml").parent.mkdir(parents=True, exist_ok=True)
+        (lib / "racks" / "short-rack.yaml").write_text(
+            "model: short-rack\nfamily: RackFamily\ndepth_mm: 500\nwidth_mm: 600\n",
+            encoding="utf-8",
+        )
+        registry.load_library(lib)
 
         racks = base / "racks"
         racks.mkdir()
         (racks / "RACK-A01.yaml").write_text(
-            "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\ndepth_mm: 500\nwidth_mm: 600\n",
+            "id: RACK-A01\nfamily: RackFamily\nmodel: short-rack\ntotal_u: 42\n",
             encoding="utf-8",
         )
         registry.load_collection(racks)

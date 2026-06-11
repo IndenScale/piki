@@ -36,6 +36,9 @@ class Project:
         # 从父项目继承 Registry
         if parent:
             self.registry.set_parent(parent.registry)
+        # 设置项目名称用于 FQID
+        project_name = config.get("project", {}).get("name", root.name)
+        self.registry.set_project_name(project_name)
 
     # ------------------------------------------------------------------
     # 发现与工厂
@@ -181,11 +184,18 @@ class Project:
                     self.checker.add_rule(rule_id, name, func, prio, severity)
 
     def _load_tag_config(self) -> None:
-        """从 piki.toml 读取允许的 Tag 键。"""
+        """从 piki.toml 读取允许的 Tag 键和外部项目注册。"""
         tag_config = self.config.get("tags", {})
         allowed = tag_config.get("allowed", [])
         if isinstance(allowed, list):
             self.registry.set_allowed_tags(allowed)
+
+        # 加载外部项目注册（ADR-009 §5.3）
+        externals_config = self.config.get("external", {})
+        if isinstance(externals_config, dict):
+            for alias, path_str in externals_config.items():
+                if isinstance(path_str, str):
+                    self.registry.register_external(alias, Path(path_str))
 
     def _plugin_names(self) -> list[str]:
         plugins_config = self.config.get("plugins", {})

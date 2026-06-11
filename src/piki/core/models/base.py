@@ -7,6 +7,29 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+from pydantic import BaseModel
+
+# ---------------------------------------------------------------------------
+# Instance 覆盖白名单标记（ADR-008 §1.2）
+# ---------------------------------------------------------------------------
+# 使用 Field(json_schema_extra={"piki_non_overridable": True}) 标记不可覆盖字段。
+# 物理尺寸字段应标记为不可覆盖，防止 Instance 覆盖导致几何碰撞失效。
+
+NON_OVERRIDABLE_KEY = "piki_non_overridable"
+
+
+def get_non_overridable_fields(family_cls: type[BaseModel]) -> set[str]:
+    """返回 Family Schema 中标记为不可覆盖的字段名集合。"""
+    non_overridable: set[str] = set()
+    for name, field_info in family_cls.model_fields.items():
+        extra = field_info.json_schema_extra or {}
+        if isinstance(extra, dict) and extra.get(NON_OVERRIDABLE_KEY):
+            non_overridable.add(name)
+    return non_overridable
+
+
+# ---------------------------------------------------------------------------
+
 
 def _make_namespace(data: dict[str, Any]) -> SimpleNamespace:
     """把 dict 转成支持属性访问的对象（嵌套）。"""

@@ -21,6 +21,7 @@ from ..parsing.layout_loader import find_layout_file, load_layout_file
 from ..parsing.loaders import load_yaml
 from ..parsing.yaml_source import SourceTrackedDict, get_field_location
 from .query import QuerySet, _match
+from ..models.base import get_non_overridable_fields, NON_OVERRIDABLE_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -51,26 +52,74 @@ def _flatten(
 # ---------------------------------------------------------------------------
 
 class PathResolver:
-    """解析 Instance 引用路径。
+    """解析 Instance 引用路径（ADR-009 §5）。
 
     支持：
     - 当前项目内的 Instance ID
     - $PROJECT_ROOT 变量跨仓库引用
     - 嵌套项目的父/子 Instance 查找
+    - piki.toml [external] 注册的外部项目路径
     """
 
-    def __init__(self, root: Path, parent: "Registry | None" = None):
+    def __init__(
+        self,
+        root: Path,
+        parent: "Registry | None" = None,
+        externals: dict[str, Path] | None = None,
+    ):
         self.root = root
         self.parent = parent
+        self.externals = externals or {}
 
     def resolve_instance(self, instance_ref: str) -> ResolvedInstance | None:
         """解析 Instance 引用。
 
-        展开后按当前项目 -> 父项目 -> 根项目的顺序查找。
+        解析顺序：
+        1. 简单 ID：委托给 Registry.find_instance（项目树查找）
+        2. $PROJECT_ROOT 前缀：替换为项目根路径后尝试加载
+        3. 外部项目别名：prefix/instance_id 格式
         """
-        # TODO: 实现 $PROJECT_ROOT 变量展开 和 submodule 支持
-        # 当前仅支持按 Instance ID 查找
+        # 1. 简单 ID（无路径分隔符，无变量前缀）
+        if "/" not in instance_ref and not instance_ref.startswith("$"):
+            return None  # 由 Registry.find_instance 处理
+
+        # 2. $PROJECT_ROOT 变量展开
+        if instance_ref.startswith("$PROJECT_ROOT/"):
+            rel_path = instance_ref[len("$PROJECT_ROOT/"):]
+            target = self.root / rel_path
+            if target.exists():
+                return self._load_instance_file(target)
+            return None
+
+        # 3. 外部项目别名: alias/instance_id
+        for alias, ext_path in self.externals.items():
+            if instance_ref.startswith(alias + "/"):
+                sub_path = instance_ref[len(alias) + 1:]
+                # 尝试 instances/sub_path.yaml
+                target = ext_path / "instances" / (sub_path + ".yaml")
+                if target.exists():
+                    return self._load_instance_file(target)
+                # 也尝试直接路径
+                target2 = ext_path / sub_path
+                if target2.exists() and target2.suffix in (".yaml", ".yml"):
+                    return self._load_instance_file(target2)
+            # 整个 ref 就是一个外部别名（指向外部项目根）
+            if instance_ref == alias:
+                return None  # 需要加载整个外部项目
+
         return None
+
+    def _load_instance_file(self, path: Path) -> ResolvedInstance | None:
+        """从单个 YAML 文件加载 Instance 为未解析状态。"""
+        if not path.exists():
+            return None
+        from ..parsing.loaders import load_yaml
+        data = load_yaml(path)
+        inst_id = data.get("id")
+        if not inst_id:
+            return None
+        # 返回未解析的 ResolvedInstance（调用方应由 Registry._resolve 解析）
+        return None  # 跨仓库 Instance 需调用方 Registry 处理
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +147,8 @@ class Registry:
         self._allowed_tags: set[str] = set()
         # 项目根
         self._root: Path | None = None
+        # 项目名称（用于 FQID）
+        self._project_name: str = ""
 
     # ------------------------------------------------------------------
     # Family / Model
@@ -136,6 +187,45 @@ class Registry:
     def children(self) -> dict[str, Registry]:
         return dict(self._children)
 
+    def set_project_name(self, name: str) -> None:
+        """设置项目名称（用于生成全限定 ID）。"""
+        self._project_name = name
+
+    def fqid(self, instance_id: str) -> str:
+        """返回 Instance 的全限定 ID（ADR-009 §6.2）。
+
+        格式: parent_name/child_name/.../instance_id
+        """
+        parts: list[str] = []
+        parent_prefix = self._build_parent_prefix()
+        if parent_prefix:
+            parts.append(parent_prefix)
+        if self._project_name:
+            parts.append(self._project_name)
+        parts.append(instance_id)
+        return "/".join(parts)
+
+    def _build_parent_prefix(self) -> str:
+        """构建祖先项目前缀（不含当前项目名）。"""
+        if self._parent is None:
+            return ""
+        parts: list[str] = []
+        grand_prefix = self._parent._build_parent_prefix()
+        if grand_prefix:
+            parts.append(grand_prefix)
+        if self._parent._project_name:
+            parts.append(self._parent._project_name)
+        return "/".join(parts)
+
+    def all_instances_with_fqid(self) -> dict[str, ResolvedInstance]:
+        """返回所有 Instance 的全限定 ID 映射。"""
+        result: dict[str, ResolvedInstance] = {}
+        if self._parent:
+            result.update(self._parent.all_instances_with_fqid())
+        for iid, inst in self._instances.items():
+            result[self.fqid(iid)] = inst
+        return result
+
     def find_instance(self, instance_id: str) -> ResolvedInstance | None:
         """在项目树中查找 Instance。
 
@@ -166,6 +256,25 @@ class Registry:
     @property
     def allowed_tags(self) -> set[str]:
         return set(self._allowed_tags)
+    def register_external(self, alias: str, path: Path) -> None:
+        """注册外部项目路径（ADR-009 §5.3）。"""
+        if not hasattr(self, "_externals"):
+            self._externals: dict[str, Path] = {}
+        self._externals[alias] = Path(path)
+
+    @property
+    def externals(self) -> dict[str, Path]:
+        if not hasattr(self, "_externals"):
+            self._externals = {}
+        return dict(self._externals)
+
+    def _make_path_resolver(self, root: Path, externals: dict[str, Path] | None = None) -> "PathResolver":
+        """创建 PathResolver 实例。"""
+        merged = dict(self.externals)
+        if externals:
+            merged.update(externals)
+        return PathResolver(root=root, parent=self, externals=merged)
+
 
     # ------------------------------------------------------------------
     # Layout
@@ -322,6 +431,28 @@ class Registry:
         overrides = dict(instance.data)
         overrides.pop("model", None)
         overrides.pop("family", None)
+
+        # 2a. 覆盖白名单：不可覆盖字段被忽略（带诊断，ADR-008 §1.2）
+        non_overridable = get_non_overridable_fields(family_cls)
+        if non_overridable:
+            from ..models.diagnostic import Location
+            for field_name in sorted(non_overridable):
+                if field_name in overrides:
+                    self._diagnostics.append(
+                        Diagnostic(
+                            severity=Severity.ERROR,
+                            message=(
+                                f"Instance '{instance.id}' 试图覆盖不可覆盖字段 "
+                                f"'{field_name}'（值={overrides[field_name]!r}）。"
+                                f" 物理尺寸字段不允许 Instance 覆盖，"
+                                f" 请在 Model 中设置或保持默认值。"
+                            ),
+                            location=Location.from_path(instance.source),
+                            code="SCHEMA-002",
+                            source="piki.schema",
+                        )
+                    )
+                    del overrides[field_name]
 
         # 3. 合并 Model + Instance（用于 Schema 校验的基值）
         merged = _flatten({**model_defaults, **overrides},

@@ -21,6 +21,7 @@ from piki.core.engine.checker import Checker, rule
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets, Vec3
+from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 
 
@@ -35,9 +36,9 @@ class ContainerFamily(BaseModel):
     name: str = Field(default="")
     container_type: str = Field(...)          # liquid-cooling | air-cooling | battery | power-distribution
     standard: str = Field(default="20ft")     # 20ft | 40ft | custom
-    length_mm: float = Field(default=6058, gt=0)   # 标准 20ft = 6058mm
-    width_mm: float = Field(default=2438, gt=0)    # 标准 = 2438mm
-    height_mm: float = Field(default=2591, gt=0)   # 标准 = 2591mm
+    length_mm: float = Field(default=6058, gt=0, json_schema_extra={"piki_non_overridable": True})
+    width_mm: float = Field(default=2438, gt=0, json_schema_extra={"piki_non_overridable": True})
+    height_mm: float = Field(default=2591, gt=0, json_schema_extra={"piki_non_overridable": True})
     max_weight_kg: float = Field(default=24000, gt=0)  # 最大总重（kg）
     power_capacity_kw: float = Field(default=0, ge=0)  # 配电容量（kW）
     cooling_capacity_kw: float = Field(default=0, ge=0)  # 制冷容量（kW）
@@ -49,6 +50,7 @@ class ContainerFamily(BaseModel):
     position_z_mm: float = Field(default=0.0)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
+    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
 
 
 class PowerUnitFamily(BaseModel):
@@ -78,16 +80,18 @@ class EquipmentFamily(BaseModel):
     weight_kg: float = Field(default=100, gt=0)  # 重量（kg）
     status: str = Field(default="planned")
     # 物理尺寸（毫米），用于 3D 碰撞检测和空间边界检查
-    length_mm: float = Field(default=0, ge=0)  # 设备长度（前后方向）
-    width_mm: float = Field(default=0, ge=0)   # 设备宽度（左右方向）
-    height_mm: float = Field(default=0, ge=0)  # 设备高度（上下方向）
-    depth_mm: float = Field(default=0, ge=0)   # 设备深度（与 length_mm 等价，优先使用 length_mm）
+    length_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    height_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     # 3D 空间定位（毫米，相对于方舱原点）
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
     position_z_mm: float = Field(default=0.0)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
+    # 标签（ADR-009）
+    tags: Tags = Field(default_factory=Tags)
     # 液冷设备特有
     liquid_cooled: bool = Field(default=False)
     coolant_flow_lpm: float = Field(default=0, ge=0)  # 冷却液流量 L/min

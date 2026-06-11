@@ -3,5 +3,3 @@ family: RackFamily
 name: 机柜-A01
 location: 1层A区
 total_u: 42
-depth_mm: 1000
-width_mm: 600

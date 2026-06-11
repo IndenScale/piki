@@ -10,6 +10,7 @@ from piki.core.engine.checker import Checker, rule
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets
+from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 
 
@@ -20,12 +21,14 @@ class RackFamily(BaseModel):
     total_u: int = Field(..., ge=1, le=48)
     power_capacity_w: float = Field(default=0, ge=0)  # 机柜配电容量（W）
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
-    depth_mm: float = Field(default=0, ge=0)   # 机柜深度
-    width_mm: float = Field(default=0, ge=0)   # 机柜宽度
+    depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     # 3D 空间定位（毫米）
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
     position_z_mm: float = Field(default=0.0)
+    # 标签（ADR-009）
+    tags: Tags = Field(default_factory=Tags)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
 
@@ -36,6 +39,7 @@ class PduFamily(BaseModel):
     rack_id: str = Field(default="")
     phase: str = Field(default="L1")          # 相线，如 L1, L2, L3
     capacity_w: float = Field(..., gt=0)      # 额定功率（W）
+    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
 
 
 class ServerFamily(BaseModel):
@@ -50,15 +54,18 @@ class ServerFamily(BaseModel):
     tdp_w: float = Field(default=300, gt=0)
     psu_count: int = Field(default=1, ge=1)
     psu_redundancy: bool = Field(default=False)
+    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
-    depth_mm: float = Field(default=0, ge=0)   # 设备深度
-    width_mm: float = Field(default=0, ge=0)   # 设备宽度
-    height_mm: float = Field(default=0, ge=0)  # 设备高度（1U ≈ 44.45mm，但这里用实际物理高度）
-    weight_kg: float = Field(default=0, ge=0)  # 设备重量
+    depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    height_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})  # 设备高度（1U ≈ 44.45mm，但这里用实际物理高度）
+    weight_kg: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     # 3D 空间定位（毫米，相对于机柜原点）
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
     position_z_mm: float = Field(default=0.0)
+    # 标签（ADR-009）
+    tags: Tags = Field(default_factory=Tags)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
 
