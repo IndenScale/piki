@@ -1,9 +1,16 @@
+import type { IProjectService } from '../core/project/ProjectService.ts';
+
 export class Toolbar {
-  private onOpenProject: () => void;
+  private projectService: IProjectService;
+  private onProjectOpened: (dirHandle: FileSystemDirectoryHandle) => void;
   private element: HTMLElement | null = null;
 
-  constructor(onOpenProject: () => void) {
-    this.onOpenProject = onOpenProject;
+  constructor(
+    projectService: IProjectService,
+    onProjectOpened: (dirHandle: FileSystemDirectoryHandle) => void,
+  ) {
+    this.projectService = projectService;
+    this.onProjectOpened = onProjectOpened;
   }
 
   render(): HTMLElement {
@@ -45,12 +52,23 @@ export class Toolbar {
     actions.style.display = 'flex';
     actions.style.gap = '8px';
 
-    const openBtn = this.createButton('📁 打开项目', this.onOpenProject);
+    const openBtn = this.createButton('📁 打开项目', () => this.handleOpenProject());
     actions.appendChild(openBtn);
 
     el.appendChild(actions);
     this.element = el;
     return el;
+  }
+
+  private async handleOpenProject(): Promise<void> {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+      this.onProjectOpened(dirHandle);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Failed to open project:', err);
+      }
+    }
   }
 
   private createButton(label: string, onClick: () => void): HTMLButtonElement {

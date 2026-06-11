@@ -1,4 +1,4 @@
-import { App } from './components/App.ts';
+import { App } from './app/App.ts';
 
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('root');

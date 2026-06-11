@@ -1,8 +1,19 @@
-import type { SceneObject } from '../types/piki.ts';
+import type { ISelectionService } from '../core/selection/SelectionService.ts';
+import type { SceneObject } from '../types/index.ts';
+import { typeLabel, fmt, extractPosition, extractScale } from '../utils/index.ts';
 
 export class PropertiesPanel {
+  private selectionService: ISelectionService;
   private element: HTMLElement | null = null;
   private content: HTMLElement | null = null;
+
+  constructor(selectionService: ISelectionService) {
+    this.selectionService = selectionService;
+    // Subscribe to selection changes
+    this.selectionService.onChange((obj) => {
+      this.setObject(obj);
+    });
+  }
 
   render(): HTMLElement {
     const el = document.createElement('div');
@@ -73,33 +84,28 @@ export class PropertiesPanel {
     this.content.appendChild(this.createSection('基本信息', [
       { key: 'ID', value: obj.name },
       { key: '显示名称', value: obj.displayName || '-' },
-      { key: '类型', value: this.typeLabel(obj.type) },
+      { key: '类型', value: typeLabel(obj.type) },
     ]));
 
     // Geometry
     if (obj.geometry) {
       const geo = obj.geometry;
-      const mat = new Float32Array(geo.transform);
-      const pos = { x: mat[12], y: mat[13], z: mat[14] };
-      const scale = {
-        x: Math.sqrt(mat[0] * mat[0] + mat[1] * mat[1] + mat[2] * mat[2]),
-        y: Math.sqrt(mat[4] * mat[4] + mat[5] * mat[5] + mat[6] * mat[6]),
-        z: Math.sqrt(mat[8] * mat[8] + mat[9] * mat[9] + mat[10] * mat[10]),
-      };
+      const pos = extractPosition(geo.transform);
+      const scale = extractScale(geo.transform);
 
       this.content.appendChild(this.createSection('几何信息', [
-        { key: '位置 X', value: this.fmt(pos.x), valClass: 'number' },
-        { key: '位置 Y', value: this.fmt(pos.y), valClass: 'number' },
-        { key: '位置 Z', value: this.fmt(pos.z), valClass: 'number' },
-        { key: '缩放 X', value: this.fmt(scale.x), valClass: 'dim' },
-        { key: '缩放 Y', value: this.fmt(scale.y), valClass: 'dim' },
-        { key: '缩放 Z', value: this.fmt(scale.z), valClass: 'dim' },
-        { key: '尺寸', value: `${this.fmt(scale.x * 1000)} × ${this.fmt(scale.y * 1000)} × ${this.fmt(scale.z * 1000)} mm`, valClass: 'dim' },
+        { key: '位置 X', value: fmt(pos.x), valClass: 'number' },
+        { key: '位置 Y', value: fmt(pos.y), valClass: 'number' },
+        { key: '位置 Z', value: fmt(pos.z), valClass: 'number' },
+        { key: '缩放 X', value: fmt(scale.x), valClass: 'dim' },
+        { key: '缩放 Y', value: fmt(scale.y), valClass: 'dim' },
+        { key: '缩放 Z', value: fmt(scale.z), valClass: 'dim' },
+        { key: '尺寸', value: `${fmt(scale.x * 1000)} × ${fmt(scale.y * 1000)} × ${fmt(scale.z * 1000)} mm`, valClass: 'dim' },
       ]));
 
       // Appearance
       const colorSection = this.createSection('外观', [
-        { key: '颜色', value: `RGB(${this.fmt(geo.color.r)}, ${this.fmt(geo.color.g)}, ${this.fmt(geo.color.b)})` },
+        { key: '颜色', value: `RGB(${fmt(geo.color.r)}, ${fmt(geo.color.g)}, ${fmt(geo.color.b)})` },
       ]);
       const previewRow = document.createElement('div');
       previewRow.className = 'prop-row';
@@ -134,7 +140,7 @@ export class PropertiesPanel {
     if (obj.children.length > 0) {
       const childRows = obj.children.map((child) => ({
         key: child.displayName || child.name,
-        value: this.typeLabel(child.type),
+        value: typeLabel(child.type),
       }));
       this.content.appendChild(this.createSection('子对象', childRows));
     }
@@ -204,21 +210,5 @@ export class PropertiesPanel {
     }
 
     return section;
-  }
-
-  private typeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      rack: '机柜',
-      device: '设备',
-      pdu: 'PDU',
-      collection: '集合',
-      group: '组',
-    };
-    return labels[type] || type;
-  }
-
-  private fmt(n: number): string {
-    if (typeof n !== 'number') return String(n);
-    return n.toFixed(3).replace(/\.?0+$/, '');
   }
 }

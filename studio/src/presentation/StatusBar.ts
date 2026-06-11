@@ -1,8 +1,15 @@
+import type { ICheckService } from '../core/check/CheckService.ts';
+
 export class StatusBar {
+  private checkService: ICheckService;
   private element: HTMLElement | null = null;
   private projectLabel: HTMLElement | null = null;
   private messageLabel: HTMLElement | null = null;
   private statsLabel: HTMLElement | null = null;
+
+  constructor(checkService: ICheckService) {
+    this.checkService = checkService;
+  }
 
   render(): HTMLElement {
     const el = document.createElement('div');
@@ -49,13 +56,13 @@ export class StatusBar {
     }
   }
 
-  setStats(passed: number, failed: number, warnings: number): void {
-    if (this.statsLabel) {
-      const parts: string[] = [];
-      if (passed > 0) parts.push(`✅ ${passed}`);
-      if (failed > 0) parts.push(`❌ ${failed}`);
-      if (warnings > 0) parts.push(`⚠️ ${warnings}`);
-      this.statsLabel.textContent = parts.join('  ') || '';
-    }
+  refreshStats(): void {
+    if (!this.statsLabel) return;
+    const stats = this.checkService.getStats();
+    const parts: string[] = [];
+    if (stats.passed > 0) parts.push(`✅ ${stats.passed}`);
+    if (stats.failed > 0) parts.push(`❌ ${stats.failed}`);
+    if (stats.warnings > 0) parts.push(`⚠️ ${stats.warnings}`);
+    this.statsLabel.textContent = parts.join('  ') || '';
   }
 }

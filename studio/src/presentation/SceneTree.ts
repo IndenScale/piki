@@ -1,14 +1,19 @@
-import type { PikiProject, PikiInstance, SceneObject } from '../types/piki.ts';
+import type { PikiProject, PikiInstance, SceneObject } from '../types/index.ts';
+import type { ISelectionService } from '../core/selection/SelectionService.ts';
+import { inferTypeFromId, typeColor } from '../utils/index.ts';
 
 export class SceneTree {
-  private onSelect: (obj: SceneObject | null) => void;
+  private selectionService: ISelectionService;
   private element: HTMLElement | null = null;
   private treeContainer: HTMLElement | null = null;
   private project: PikiProject | null = null;
-  private selectedName: string | null = null;
 
-  constructor(onSelect: (obj: SceneObject | null) => void) {
-    this.onSelect = onSelect;
+  constructor(selectionService: ISelectionService) {
+    this.selectionService = selectionService;
+    // Subscribe to selection changes from other sources (e.g., Viewport)
+    this.selectionService.onChange((obj) => {
+      this.updateVisualSelection(obj);
+    });
   }
 
   render(): HTMLElement {
@@ -69,19 +74,19 @@ export class SceneTree {
     this.renderTree();
   }
 
-  selectObject(obj: SceneObject | null): void {
-    this.selectedName = obj?.name ?? null;
-    // Update visual selection
-    if (this.treeContainer) {
-      this.treeContainer.querySelectorAll('.tree-item').forEach((item) => {
-        const el = item as HTMLElement;
-        if (obj && el.dataset.name === obj.name) {
-          el.classList.add('selected');
-        } else {
-          el.classList.remove('selected');
-        }
-      });
-    }
+  private updateVisualSelection(obj: SceneObject | null): void {
+    if (!this.treeContainer) return;
+    const selectedName = obj?.name ?? null;
+    this.treeContainer.querySelectorAll('.tree-item').forEach((item) => {
+      const el = item as HTMLElement;
+      if (selectedName && el.dataset.name === selectedName) {
+        el.classList.add('selected');
+        el.style.background = '#1a2744';
+      } else {
+        el.classList.remove('selected');
+        el.style.background = 'transparent';
+      }
+    });
   }
 
   private renderEmpty(): void {
@@ -146,18 +151,15 @@ export class SceneTree {
         item.style.whiteSpace = 'nowrap';
         item.style.overflow = 'hidden';
         item.style.textOverflow = 'ellipsis';
-        if (this.selectedName === inst.id) {
-          item.classList.add('selected');
-        }
 
         const icon = document.createElement('span');
-        icon.className = `icon ${this.getTypeIcon(inst)}`;
+        icon.className = 'icon';
         icon.style.width = '14px';
         icon.style.height = '14px';
         icon.style.borderRadius = '2px';
         icon.style.flexShrink = '0';
         icon.style.display = 'inline-block';
-        icon.style.background = this.getTypeColor(inst);
+        icon.style.background = typeColor(inferTypeFromId(inst.id));
 
         const label = document.createElement('span');
         label.textContent = inst.id;
@@ -182,42 +184,18 @@ export class SceneTree {
           const sceneObj: SceneObject = {
             name: inst.id,
             displayName: (inst.raw.name as string) || null,
-            type: this.getInstanceType(inst),
+            type: inferTypeFromId(inst.id),
             depth: 1,
             parent: null,
             children: [],
             geometry: null,
           };
-          this.onSelect(sceneObj);
+          this.selectionService.setSelected(sceneObj);
         });
 
         this.treeContainer.appendChild(item);
       }
     }
-  }
-
-  private getTypeIcon(inst: PikiInstance): string {
-    const id = inst.id.toLowerCase();
-    if (id.startsWith('rack')) return 'rack';
-    if (id.startsWith('pdu')) return 'pdu';
-    if (id.startsWith('srv') || id.startsWith('device')) return 'device';
-    return 'group';
-  }
-
-  private getTypeColor(inst: PikiInstance): string {
-    const id = inst.id.toLowerCase();
-    if (id.startsWith('rack')) return '#4a90d9';
-    if (id.startsWith('pdu')) return '#f0ad4e';
-    if (id.startsWith('srv') || id.startsWith('device')) return '#5cb85c';
-    return '#6c757d';
-  }
-
-  private getInstanceType(inst: PikiInstance): SceneObject['type'] {
-    const id = inst.id.toLowerCase();
-    if (id.startsWith('rack')) return 'rack';
-    if (id.startsWith('pdu')) return 'pdu';
-    if (id.startsWith('srv') || id.startsWith('device')) return 'device';
-    return 'group';
   }
 
   private applyStyles(el: HTMLElement): void {

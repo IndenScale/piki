@@ -5,3 +5,5 @@ __pycache__/
 .piki_cache/
 reports/
 .pytest_cache/
+studio/node_modules/
+studio/dist/
