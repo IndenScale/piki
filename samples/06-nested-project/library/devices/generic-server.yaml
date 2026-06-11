@@ -1,0 +1,7 @@
+model: generic-server
+family: ServerFamily
+tdp_w: 300
+height_u: 2
+depth_mm: 700
+width_mm: 438
+weight_kg: 18

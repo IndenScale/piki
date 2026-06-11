@@ -150,7 +150,7 @@ class Project:
         # 新格式：instances/ 目录
         instances_dir = self.root / "instances"
         if instances_dir.exists() and any(instances_dir.rglob("*.yaml")):
-            self.registry.load_collection(instances_dir)
+            self.registry.load_collection(instances_dir, collection_name="devices")
 
         # 兼容旧格式：扫描所有包含 YAML 的非特殊目录
         for path in sorted(self.root.iterdir()):

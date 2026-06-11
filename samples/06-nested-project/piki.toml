@@ -1,0 +1,14 @@
+[project]
+name = "厂区"
+version = "1.0.0"
+description = "嵌套项目示例：厂区 → 安全壳内/外（ADR-009）"
+
+[plugins]
+enabled = ["telecom"]
+
+[plugins.telecom]
+power_threshold = 0.8
+rack_usage_threshold = 0.8
+
+[tags]
+allowed = ["discipline", "security_zone", "system"]

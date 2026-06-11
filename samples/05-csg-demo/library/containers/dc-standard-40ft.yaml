@@ -1,0 +1,8 @@
+model: dc-standard-40ft
+family: ContainerFamily
+container_type: air-cooling
+standard: 40ft
+length_mm: 12192
+width_mm: 2438
+height_mm: 2896
+max_weight_kg: 30480

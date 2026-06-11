@@ -2,3 +2,7 @@ id: SRV-B01-01
 name: 计算节点-B01-01
 model: generic-server
 status: planned
+tags:
+  discipline: compute
+  security_zone: standard
+  system: web-tier

@@ -337,9 +337,9 @@ class Registry:
             self.add_model(Model(id=model_id, family=family,
                                  data=model_data, source=path))
 
-    def load_collection(self, collection_dir: Path) -> str:
+    def load_collection(self, collection_dir: Path, collection_name: str | None = None) -> str:
         """扫描一个数据目录，加载所有 Instance。返回集合名。"""
-        collection_name = collection_dir.name
+        collection_name = collection_name or collection_dir.name
         loaded: dict[str, ResolvedInstance] = {}
 
         for path in sorted(collection_dir.rglob("*.yaml")):

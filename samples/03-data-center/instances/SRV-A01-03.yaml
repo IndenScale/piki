@@ -2,3 +2,7 @@ id: SRV-A01-03
 name: 存储节点-A01-03
 model: high-density-server
 status: installed
+tags:
+  discipline: storage
+  security_zone: standard
+  system: data-tier

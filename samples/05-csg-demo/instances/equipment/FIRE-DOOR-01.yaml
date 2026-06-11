@@ -1,8 +1,8 @@
-id: CABLE-TRAY-01
-name: 走线架-01
-model: cable-tray
+id: FIRE-DOOR-01
+name: 防火门-01
+model: fire-door
 family: EquipmentFamily
 equipment_type: other
 container_id: DC-MAIN
 power_unit_id: UPS-MAIN
-power_kw: 0
+power_kw: 0.1

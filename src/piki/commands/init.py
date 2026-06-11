@@ -1,6 +1,7 @@
 """piki init — 初始化项目。
 
-创建项目结构、写入配置文件、安装 Git hook、复制插件模板。
+创建项目结构（instances/ + layouts/ 符合 ADR-008）、
+写入配置文件、安装 Git hook、复制插件模板。
 """
 
 from __future__ import annotations
@@ -19,7 +20,6 @@ def _install_git_hook(target: Path) -> None:
     """
     git_dir = target / ".git"
     if not git_dir.exists():
-        # 未初始化 git，跳过
         return
 
     hook_path = git_dir / "hooks" / "pre-commit"
@@ -35,15 +35,14 @@ piki check
 
 
 def _copytree(src: Path, dst: Path) -> None:
-    """复制目录内容到目标目录（不覆盖已有文件）。"""
+    """复制目录内容到目标目录（合并已有目录，不覆盖已有文件）。"""
     dst.mkdir(parents=True, exist_ok=True)
     for item in src.iterdir():
         target = dst / item.name
-        if target.exists():
-            continue
         if item.is_dir():
-            shutil.copytree(item, target)
-        else:
+            # 目录合并：递归复制内容
+            _copytree(item, target)
+        elif not target.exists():
             shutil.copy2(item, target)
 
 
@@ -88,10 +87,14 @@ def cmd_init(path: str | None, plugin: str) -> int:
     # 安装 Git pre-commit hook
     _install_git_hook(target)
 
-    # 复制模板
+    # 先复制模板（模板可能包含自己的 instances/ layouts/ 等目录）
     template_dir = Path(__file__).parent.parent / "templates" / plugin
     if template_dir.exists():
         _copytree(template_dir, target)
+
+    # 确保 ADR-008 标准目录存在（模板可能已有，不会覆盖）
+    (target / "instances").mkdir(exist_ok=True)
+    (target / "layouts").mkdir(exist_ok=True)
 
     print(f"Initialized piki project at {target} with plugin '{plugin}'")
     return 0

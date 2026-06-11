@@ -1,0 +1,7 @@
+model: pump
+family: ServerFamily
+tdp_w: 150
+height_u: 1
+depth_mm: 500
+width_mm: 400
+weight_kg: 45

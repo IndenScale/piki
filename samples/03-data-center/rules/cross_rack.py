@@ -1,40 +1,35 @@
-"""项目自定义规则：跨机柜约束检查。
-
-本示例展示如何编写涉及多个集合的复杂规则。
-"""
+"""跨机柜分布规则：同系统设备不应全部部署在同一机柜（防单点故障），
+使用 Tag 过滤（ADR-009 §3.3）。"""
 
 from piki.core.engine.checker import rule
 from piki.core.engine.context import Context
+from piki.core.models.diagnostic import Severity
 
 
-@rule("DC-BALANCE-001", "机柜负载均衡检查")
-def check_rack_load_balance(ctx: Context) -> None:
-    """检查同一列机柜的负载是否均衡。
+@rule("CROSS-RACK-001", "跨机柜分布检查（按 system Tag）", priority=10, severity=Severity.WARNING)
+def check_cross_rack_by_system(ctx: Context) -> None:
+    """使用 Tag 过滤：同一 system 的设备应分布在至少 2 个机柜中。"""
+    all_instances = list(ctx.instances())
 
-    同一列（如 A 列）的机柜，设备数量差异不应超过 2 台。
-    """
-    from collections import defaultdict
-
-    # 按列分组统计设备数
-    rack_devices: dict[str, list[str]] = defaultdict(list)
-    for device in ctx.query("devices"):
-        rack_id = device.rack_id
-        # 提取列名（如 RACK-A01 -> A）
-        col = rack_id.split("-")[1][0] if "-" in rack_id else ""
-        rack_devices[rack_id].append(device.id)
-
-    # 按列检查均衡性
-    col_racks: dict[str, list[int]] = defaultdict(list)
-    for rack_id, devices in rack_devices.items():
-        col = rack_id.split("-")[1][0] if "-" in rack_id else ""
-        col_racks[col].append(len(devices))
-
-    for col, counts in col_racks.items():
-        if len(counts) < 2:
+    # 按 system tag 分组
+    system_groups: dict[str, list[str]] = {}
+    for inst in all_instances:
+        system_tag = inst._resolved.get("tags.system", "")
+        if not system_tag:
             continue
-        max_count = max(counts)
-        min_count = min(counts)
-        assert max_count - min_count <= 2, (
-            f"{col} 列机柜负载不均衡："
-            f"最多 {max_count} 台，最少 {min_count} 台，差异超过 2 台"
-        )
+        layout = ctx.layout_entry(inst.id)
+        if layout is None or layout.rack_id is None:
+            continue
+        if system_tag not in system_groups:
+            system_groups[system_tag] = []
+        system_groups[system_tag].append(layout.rack_id)
+
+    for system_name, racks in system_groups.items():
+        unique_racks = set(racks)
+        if len(unique_racks) < 2:
+            ctx.set_current_file(str(inst.source))
+            assert False, (
+                f"系统 '{system_name}' 的所有 {len(racks)} 台设备仅分布在 {len(unique_racks)} 个机柜中，"
+                f"建议至少分布在 2 个机柜以防止单点故障。"
+            )
+    ctx.clear_current_file()

@@ -1,0 +1,6 @@
+id: SRV-01
+name: 通用服务器-01
+model: generic-server
+tags:
+  discipline: compute
+  system: control

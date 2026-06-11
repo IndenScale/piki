@@ -39,7 +39,7 @@ def _add_device(project_dir: Path, inst_id: str, rack_id: str,
     物理尺寸字段不可被 Instance 覆盖（ADR-008），应在 Model 中设置。
     """
     # Instance 文件
-    inst = project_dir / "devices" / f"{inst_id}.yaml"
+    inst = project_dir / "instances" / f"{inst_id}.yaml"
     inst.write_text(
         f"id: {inst_id}\n"
         f"name: 服务器-{inst_id[-2:]}\n"
@@ -161,7 +161,7 @@ def test_check_files_filter(demo_project: Path) -> None:
 
     # 只检查 SRV-03.yaml（不指定其他文件）
     result = subprocess.run(
-        [*PIKI, "check", str(demo_project), "--files", "devices/SRV-03.yaml"],
+        [*PIKI, "check", str(demo_project), "--files", "instances/SRV-03.yaml"],
         capture_output=True,
         text=True,
     )

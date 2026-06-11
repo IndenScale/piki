@@ -1,0 +1,9 @@
+- instance: SRV-02
+  rack_id: RACK-E01
+  position_u: 5
+  pdu_id: PDU-E1
+
+- instance: SRV-03
+  rack_id: RACK-E01
+  position_u: 8
+  pdu_id: PDU-E1

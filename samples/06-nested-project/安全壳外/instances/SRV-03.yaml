@@ -1,0 +1,7 @@
+id: SRV-03
+name: 办公区服务器-03
+model: generic-server
+tags:
+  discipline: compute
+  security_zone: standard
+  system: office

@@ -6,10 +6,12 @@
 
 | 示例 | 插件 | 复杂度 | 说明 |
 |------|------|--------|------|
-| [01-hello-piki](01-hello-piki/) | telecom | ⭐ 入门 | 最小工作示例：单设备 Schema 校验 |
+| [01-hello-piki](01-hello-piki/) | telecom | ⭐ 入门 | 最小工作示例：Instance/Layout 分离 + Schema 校验 |
 | [02-telecom-rack](02-telecom-rack/) | telecom | ⭐⭐ 基础 | 电信机架：PDU 功率检查 + U 位冲突检查 |
-| [03-data-center](03-data-center/) | telecom | ⭐⭐⭐ 进阶 | 多机柜数据中心：自定义规则 + 报告生成 |
+| [03-data-center](03-data-center/) | telecom | ⭐⭐⭐ 进阶 | 多机柜数据中心：自定义规则 + Tag 过滤 + 报告生成 |
 | [04-modular-dc](04-modular-dc/) | datacenter | ⭐⭐⭐⭐ 高级 | 模块化数据中心：集装箱方舱 + 液冷 + 储能 |
+| [05-csg-demo](05-csg-demo/) | datacenter | ⭐⭐ 基础 | CSG 几何演示：防火门、走线架 |
+| [06-nested-project](06-nested-project/) | telecom | ⭐⭐⭐ 进阶 | 嵌套项目：厂区 → 安全壳内/外（ADR-009） |
 
 ## 快速体验
 
@@ -23,6 +25,15 @@ piki check
 # 生成报告
 piki report --format markdown
 ```
+
+## ADR 覆盖
+
+| ADR | 核心概念 | 示例 |
+|-----|---------|------|
+| ADR-002 | 一实例一文件 | 所有示例 |
+| ADR-004 | 多级质量检查 | 所有示例 |
+| ADR-008 | Instance/Layout 分离 | 01, 02, 03, 04, 05, 06 |
+| ADR-009 | 嵌套项目 + Tag + FQID | 03（Tag）, 06（嵌套/FQID） |
 
 ## 与 templates/ 的区别
 

@@ -13,3 +13,6 @@ rack_usage_threshold = 0.8
 [rules]
 # 项目自定义规则配置
 min_pdu_redundancy = true
+
+[tags]
+allowed = ["discipline", "security_zone", "system", "contract_package", "phase"]

@@ -1,0 +1,9 @@
+- instance: SRV-01
+  rack_id: RACK-C01
+  position_u: 10
+  pdu_id: PDU-C1
+
+- instance: PUMP-01
+  grid_id: B-3
+  position_x_mm: 1500
+  position_y_mm: 3000

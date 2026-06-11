@@ -1,0 +1,8 @@
+[project]
+name = "安全壳外"
+version = "1.0.0"
+description = "抗震等级 7 度，无屏蔽要求"
+
+[plugins.telecom]
+power_threshold = 0.8
+rack_usage_threshold = 0.8
