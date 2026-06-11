@@ -16,7 +16,9 @@ from piki.extensions.telecom.plugin import (
     ServerFamily,
     TelecomPlugin,
     check_pdu_budget,
+    check_pdu_phase_balance,
     check_rack_space,
+    check_device_physical_fit,
 )
 
 
@@ -147,6 +149,202 @@ class TestRackSpaceRule:
         )
         telecom_ctx._registry.load_collection(devices)
         check_rack_space(telecom_ctx)  # 不应抛异常
+
+
+class TestPduPhaseBalanceRule:
+    """测试 PDU 相线平衡规则。"""
+
+    def test_passes_single_phase(self, telecom_ctx: Context) -> None:
+        # 只有 L1 相 PDU，不检查平衡
+        check_pdu_phase_balance(telecom_ctx)  # 不应抛异常
+
+    def test_passes_balanced_phases(self, telecom_ctx: Context, tmp_path: Path) -> None:
+        # 创建全新的 registry 和 context，确保三相均衡
+        # 使用 tmp_path 下的新子目录，避免与 fixture 的目录冲突
+        base = tmp_path / "balanced"
+        base.mkdir()
+
+        registry = Registry()
+        registry.add_family("RackFamily", RackFamily)
+        registry.add_family("PduFamily", PduFamily)
+        registry.add_family("ServerFamily", ServerFamily)
+
+        lib = base / "library" / "devices"
+        lib.mkdir(parents=True)
+        (lib / "generic-server.yaml").write_text(
+            "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\n",
+            encoding="utf-8",
+        )
+        registry.load_library(lib.parent)
+
+        racks = base / "racks"
+        racks.mkdir()
+        (racks / "RACK-A01.yaml").write_text(
+            "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(racks)
+
+        pdus = base / "pdus"
+        pdus.mkdir()
+        (pdus / "PDU-L1.yaml").write_text(
+            "id: PDU-L1\nfamily: PduFamily\nrack_id: RACK-A01\nphase: L1\ncapacity_w: 2000\n",
+            encoding="utf-8",
+        )
+        (pdus / "PDU-L2.yaml").write_text(
+            "id: PDU-L2\nfamily: PduFamily\nrack_id: RACK-A01\nphase: L2\ncapacity_w: 2000\n",
+            encoding="utf-8",
+        )
+        (pdus / "PDU-L3.yaml").write_text(
+            "id: PDU-L3\nfamily: PduFamily\nrack_id: RACK-A01\nphase: L3\ncapacity_w: 2000\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(pdus)
+
+        devices = base / "devices"
+        devices.mkdir()
+        # 三相各接一台 300W 设备，完全均衡
+        (devices / "SRV-L1.yaml").write_text(
+            "id: SRV-L1\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 10\npdu_id: PDU-L1\n",
+            encoding="utf-8",
+        )
+        (devices / "SRV-L2.yaml").write_text(
+            "id: SRV-L2\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 8\npdu_id: PDU-L2\n",
+            encoding="utf-8",
+        )
+        (devices / "SRV-L3.yaml").write_text(
+            "id: SRV-L3\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 6\npdu_id: PDU-L3\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(devices)
+
+        ctx = Context(registry, {"power_phase_imbalance_threshold": 0.15})
+        check_pdu_phase_balance(ctx)  # 不应抛异常
+
+    def test_fails_imbalanced_phases(self, telecom_ctx: Context, tmp_path: Path) -> None:
+        # 创建全新场景：L1 满载，L2 空载
+        base = tmp_path / "imbalanced"
+        base.mkdir()
+
+        registry = Registry()
+        registry.add_family("RackFamily", RackFamily)
+        registry.add_family("PduFamily", PduFamily)
+        registry.add_family("ServerFamily", ServerFamily)
+
+        lib = base / "library" / "devices"
+        lib.mkdir(parents=True)
+        (lib / "generic-server.yaml").write_text(
+            "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\n",
+            encoding="utf-8",
+        )
+        registry.load_library(lib.parent)
+
+        racks = base / "racks"
+        racks.mkdir()
+        (racks / "RACK-A01.yaml").write_text(
+            "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(racks)
+
+        pdus = base / "pdus"
+        pdus.mkdir()
+        (pdus / "PDU-L1.yaml").write_text(
+            "id: PDU-L1\nfamily: PduFamily\nrack_id: RACK-A01\nphase: L1\ncapacity_w: 2000\n",
+            encoding="utf-8",
+        )
+        (pdus / "PDU-L2.yaml").write_text(
+            "id: PDU-L2\nfamily: PduFamily\nrack_id: RACK-A01\nphase: L2\ncapacity_w: 2000\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(pdus)
+
+        devices = base / "devices"
+        devices.mkdir()
+        # L1 接两台设备共 550W，L2 空载
+        (devices / "SRV-01.yaml").write_text(
+            "id: SRV-01\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 10\npdu_id: PDU-L1\n",
+            encoding="utf-8",
+        )
+        (devices / "SRV-02.yaml").write_text(
+            "id: SRV-02\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 8\npdu_id: PDU-L1\ntdp_w: 250\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(devices)
+
+        ctx = Context(registry, {})
+
+        # 默认阈值 15%，L1=550W，L2=0W，不平衡度 = (550-0)/275 = 200% > 15%
+        with pytest.raises(AssertionError, match="负载不平衡度"):
+            check_pdu_phase_balance(ctx)
+
+
+class TestDevicePhysicalFitRule:
+    """测试设备物理尺寸与机柜匹配规则。"""
+
+    def test_skips_when_no_dimensions(self, telecom_ctx: Context) -> None:
+        # 默认机柜和设备都没有尺寸数据，应跳过
+        check_device_physical_fit(telecom_ctx)  # 不应抛异常
+
+    def test_passes_when_fits(self, telecom_ctx: Context, tmp_path: Path) -> None:
+        # 给机柜和设备添加尺寸数据，设备能装下
+        racks = tmp_path / "racks"
+        (racks / "RACK-A01.yaml").write_text(
+            "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\ndepth_mm: 1000\nwidth_mm: 600\n",
+            encoding="utf-8",
+        )
+        # 重新加载机柜
+        telecom_ctx._registry.load_collection(racks)
+
+        check_device_physical_fit(telecom_ctx)  # 不应抛异常
+
+    def test_fails_when_too_deep(self, telecom_ctx: Context, tmp_path: Path) -> None:
+        # 给机柜和设备添加尺寸数据，设备深度超过机柜
+        # 但 fixture 中的型号库没有 depth_mm，需要创建新场景
+        base = tmp_path / "toodeep"
+        base.mkdir()
+
+        registry = Registry()
+        registry.add_family("RackFamily", RackFamily)
+        registry.add_family("PduFamily", PduFamily)
+        registry.add_family("ServerFamily", ServerFamily)
+
+        lib = base / "library" / "devices"
+        lib.mkdir(parents=True)
+        (lib / "generic-server.yaml").write_text(
+            "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\ndepth_mm: 715\nwidth_mm: 445\n",
+            encoding="utf-8",
+        )
+        registry.load_library(lib.parent)
+
+        racks = base / "racks"
+        racks.mkdir()
+        (racks / "RACK-A01.yaml").write_text(
+            "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\ndepth_mm: 500\nwidth_mm: 600\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(racks)
+
+        pdus = base / "pdus"
+        pdus.mkdir()
+        (pdus / "PDU-A.yaml").write_text(
+            "id: PDU-A\nfamily: PduFamily\nrack_id: RACK-A01\nphase: L1\ncapacity_w: 2000\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(pdus)
+
+        devices = base / "devices"
+        devices.mkdir()
+        (devices / "SRV-01.yaml").write_text(
+            "id: SRV-01\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 10\npdu_id: PDU-A\n",
+            encoding="utf-8",
+        )
+        registry.load_collection(devices)
+
+        ctx = Context(registry, {})
+
+        with pytest.raises(AssertionError, match="深度 .* 超过机柜"):
+            check_device_physical_fit(ctx)
 
 
 class TestCheckerIntegration:

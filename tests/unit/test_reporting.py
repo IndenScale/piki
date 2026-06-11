@@ -41,6 +41,36 @@ class TestFormatHuman:
         output = format_human(report)
         assert "[FAIL] R-001: 规则1" in output
 
+    def test_fail_with_suggestion(self) -> None:
+        from piki.core.models.diagnostic import Location
+        report = CheckReport(results=[
+            RuleResult(
+                "R-001", "规则1", False,
+                message="PDU 过载",
+                suggestion="将设备迁移到 PDU-B",
+            ),
+        ])
+        output = format_human(report)
+        assert "💡 建议: 将设备迁移到 PDU-B" in output
+
+    def test_fail_with_related_info(self) -> None:
+        from piki.core.models.diagnostic import Location, RelatedInformation
+        report = CheckReport(results=[
+            RuleResult(
+                "R-001", "规则1", False,
+                message="外键引用错误",
+                related_information=[
+                    RelatedInformation(
+                        location=Location(uri="file:///racks/RACK-A01.yaml"),
+                        message="机柜定义在此处",
+                    ),
+                ],
+            ),
+        ])
+        output = format_human(report)
+        assert "->" in output
+        assert "机柜定义在此处" in output
+
 
 class TestFormatJson:
     """测试 JSON 格式。"""

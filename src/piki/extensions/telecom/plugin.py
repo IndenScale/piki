@@ -18,6 +18,9 @@ class RackFamily(BaseModel):
     location: str = Field(default="")
     total_u: int = Field(..., ge=1, le=48)
     power_capacity_w: float = Field(default=0, ge=0)  # 机柜配电容量（W）
+    # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
+    depth_mm: float = Field(default=0, ge=0)   # 机柜深度
+    width_mm: float = Field(default=0, ge=0)   # 机柜宽度
 
 
 class PduFamily(BaseModel):
@@ -40,6 +43,10 @@ class ServerFamily(BaseModel):
     tdp_w: float = Field(default=300, gt=0)
     psu_count: int = Field(default=1, ge=1)
     psu_redundancy: bool = Field(default=False)
+    # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
+    depth_mm: float = Field(default=0, ge=0)   # 设备深度
+    width_mm: float = Field(default=0, ge=0)   # 设备宽度
+    weight_kg: float = Field(default=0, ge=0)  # 设备重量
 
 
 class TelecomPlugin(Plugin):
@@ -57,8 +64,10 @@ class TelecomPlugin(Plugin):
 
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule("TELECOM-POWER-001", "PDU 功率预算检查", check_pdu_budget, priority=10, severity=Severity.ERROR)
+        checker.add_rule("TELECOM-POWER-002", "PDU 相线平衡检查", check_pdu_phase_balance, priority=5, severity=Severity.WARNING)
         checker.add_rule("TELECOM-RACK-001", "U 位冲突检查", check_rack_space, priority=5, severity=Severity.ERROR)
         checker.add_rule("TELECOM-RACK-002", "机柜容量检查", check_rack_capacity, priority=5, severity=Severity.ERROR)
+        checker.add_rule("TELECOM-RACK-003", "设备物理尺寸与机柜匹配检查", check_device_physical_fit, priority=3, severity=Severity.WARNING)
         checker.add_rule("TELECOM-FK-001", "外键完整性检查", check_foreign_keys, priority=10, severity=Severity.WARNING)
 
     def register_generators(self, checker: Checker) -> None:
@@ -124,6 +133,95 @@ def check_rack_capacity(ctx):
         assert total_height <= rack.resolved.total_u, (
             f"机柜 {rack.id} 已用 U 位 {total_height}，超过总容量 {rack.resolved.total_u}"
         )
+    ctx.clear_current_file()
+
+
+def check_pdu_phase_balance(ctx):
+    """检查同一机柜内三相 PDU 的负载是否均衡。
+
+    三相负载不平衡度 = (最大相功率 - 最小相功率) / 平均相功率
+    阈值由项目配置 power_phase_imbalance_threshold 控制（默认 15%）。
+    只有机柜内存在多相 PDU 时才检查。
+    """
+    from collections import defaultdict
+
+    threshold = ctx.config.get("power_phase_imbalance_threshold", 0.15)
+
+    # 按机柜分组统计各相功率
+    rack_phases: dict[str, dict[str, float]] = defaultdict(dict)
+    for pdu in ctx.query("pdus"):
+        devices = ctx.query("devices", pdu_id=pdu.id)
+        total_power = sum(d.resolved.tdp_w for d in devices)
+        rack_phases[pdu.rack_id][pdu.phase] = total_power
+
+    for rack_id, phases in rack_phases.items():
+        # 只有多相才检查平衡
+        if len(phases) < 2:
+            continue
+
+        powers = list(phases.values())
+        avg_power = sum(powers) / len(powers)
+        if avg_power <= 0:
+            continue
+
+        max_power = max(powers)
+        min_power = min(powers)
+        imbalance = (max_power - min_power) / avg_power
+
+        if imbalance > threshold:
+            rack = ctx.query("racks", id=rack_id).first()
+            ctx.set_current_file(str(rack.source) if rack else "")
+            phase_info = ", ".join(f"{ph}={pw:.0f}W" for ph, pw in phases.items())
+            assert False, (
+                f"机柜 {rack_id} 三相负载不平衡度 {imbalance:.1%}，"
+                f"超过阈值 {threshold:.1%}。"
+                f"各相功率: {phase_info}"
+            )
+    ctx.clear_current_file()
+
+
+def check_device_physical_fit(ctx):
+    """检查设备物理尺寸是否适合机柜。
+
+    当设备和机柜的 depth_mm/width_mm 都有非零值时：
+    - 设备深度 ≤ 机柜深度
+    - 设备宽度 ≤ 机柜宽度
+
+    任一尺寸缺失（为 0）时跳过检查，避免误报。
+    """
+    racks = {r.id: r for r in ctx.query("racks")}
+
+    for device in ctx.query("devices"):
+        rack = racks.get(device.rack_id)
+        if rack is None:
+            continue
+
+        dev_depth = device.resolved.depth_mm
+        dev_width = device.resolved.width_mm
+        rack_depth = rack.resolved.depth_mm
+        rack_width = rack.resolved.width_mm
+
+        # 跳过：任一方缺少尺寸数据
+        if dev_depth <= 0 or rack_depth <= 0:
+            dev_depth = 0
+        if dev_width <= 0 or rack_width <= 0:
+            dev_width = 0
+        if dev_depth == 0 and dev_width == 0:
+            continue
+
+        ctx.set_current_file(str(device.source))
+
+        if dev_depth > 0 and dev_depth > rack_depth:
+            assert False, (
+                f"设备 {device.id} 深度 {dev_depth}mm 超过机柜 {rack.id} "
+                f"深度 {rack_depth}mm，无法安装。"
+            )
+
+        if dev_width > 0 and dev_width > rack_width:
+            assert False, (
+                f"设备 {device.id} 宽度 {dev_width}mm 超过机柜 {rack.id} "
+                f"宽度 {rack_width}mm，无法安装。"
+            )
     ctx.clear_current_file()
 
 

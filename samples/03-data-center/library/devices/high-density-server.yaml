@@ -5,3 +5,8 @@ height_u: 4
 tdp_w: 800
 psu_count: 2
 psu_redundancy: true
+
+# 物理尺寸（毫米）
+depth_mm: 900
+width_mm: 445
+weight_kg: 35

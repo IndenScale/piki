@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
+from ..models.diagnostic import Location, RelatedInformation
 from .query import QuerySet
 from .registry import Registry
 
@@ -17,6 +17,8 @@ class Context:
         self._config = config
         self._current_file: str = ""
         self._files_filter: set[str] | None = None
+        self._related_info: list[RelatedInformation] = []
+        self._suggestion: str = ""
 
     @property
     def config(self) -> dict[str, Any]:
@@ -48,3 +50,32 @@ class Context:
     def clear_current_file(self) -> None:
         """清除当前文件路径。"""
         self._current_file = ""
+        self._related_info.clear()
+        self._suggestion = ""
+
+    def add_related_info(self, location: Location, message: str) -> None:
+        """添加关联诊断信息。
+
+        规则函数可以在 assert 之前调用此方法，将关联信息附加到诊断报告中。
+        例如："错误发生在这里，但原因是那里的那个值"。
+        """
+        self._related_info.append(RelatedInformation(location=location, message=message))
+
+    def set_suggestion(self, suggestion: str) -> None:
+        """设置修复建议。
+
+        规则函数可以在 assert 之前调用此方法，为用户提供修复指导。
+        """
+        self._suggestion = suggestion
+
+    def pop_related_info(self) -> list[RelatedInformation]:
+        """取出并清空当前累积的关联信息（供 Checker 调用）。"""
+        info = list(self._related_info)
+        self._related_info.clear()
+        return info
+
+    def pop_suggestion(self) -> str:
+        """取出并清空当前修复建议（供 Checker 调用）。"""
+        suggestion = self._suggestion
+        self._suggestion = ""
+        return suggestion

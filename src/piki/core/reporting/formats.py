@@ -30,6 +30,12 @@ def format_human(report: CheckReport) -> str:
         if not result.passed and result.message:
             for msg_line in result.message.splitlines():
                 lines.append(f"       {msg_line}")
+        # related_information
+        for ri in result.related_information:
+            lines.append(f"       -> {ri.location}: {ri.message}")
+        # 修复建议
+        if result.suggestion:
+            lines.append(f"       💡 建议: {result.suggestion}")
 
     # 2. Diagnostic 输出（带 severity 和位置）
     for diag in report.diagnostics:
@@ -42,6 +48,10 @@ def format_human(report: CheckReport) -> str:
         # related_information
         for ri in diag.related_information:
             lines.append(f"       -> {ri.location}: {ri.message}")
+        # 修复建议（来自 Diagnostic.data）
+        suggestion = diag.data.get("suggestion", "") if diag.data else ""
+        if suggestion:
+            lines.append(f"       💡 建议: {suggestion}")
 
     lines.append("")
     lines.append("=" * 60)
@@ -146,6 +156,10 @@ def format_markdown(report: CheckReport) -> str:
             if not r.passed and r.message:
                 for msg_line in r.message.splitlines():
                     lines.append(f"  > {msg_line}")
+            for ri in r.related_information:
+                lines.append(f"  > → {ri.location}: {ri.message}")
+            if r.suggestion:
+                lines.append(f"  > 💡 **建议**: {r.suggestion}")
         lines.append("")
 
     # Diagnostic
@@ -156,6 +170,11 @@ def format_markdown(report: CheckReport) -> str:
             icon = "✅" if d.passed else "❌"
             loc = f" `{d.location}`" if d.location.uri else ""
             lines.append(f"- {icon} **{d.code or d.source}**{loc}: {d.message}")
+            for ri in d.related_information:
+                lines.append(f"  > → {ri.location}: {ri.message}")
+            suggestion = d.data.get("suggestion", "") if d.data else ""
+            if suggestion:
+                lines.append(f"  > 💡 **建议**: {suggestion}")
         lines.append("")
 
     return "\n".join(lines)

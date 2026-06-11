@@ -70,6 +70,11 @@ class EquipmentFamily(BaseModel):
     power_kw: float = Field(default=5, gt=0)  # 额定功耗（kW）
     weight_kg: float = Field(default=100, gt=0)  # 重量（kg）
     status: str = Field(default="planned")
+    # 物理尺寸（毫米），用于 3D 碰撞检测和空间边界检查
+    length_mm: float = Field(default=0, ge=0)  # 设备长度（前后方向）
+    width_mm: float = Field(default=0, ge=0)   # 设备宽度（左右方向）
+    height_mm: float = Field(default=0, ge=0)  # 设备高度（上下方向）
+    depth_mm: float = Field(default=0, ge=0)   # 设备深度（与 length_mm 等价，优先使用 length_mm）
     # 液冷设备特有
     liquid_cooled: bool = Field(default=False)
     coolant_flow_lpm: float = Field(default=0, ge=0)  # 冷却液流量 L/min
@@ -111,6 +116,7 @@ class DatacenterPlugin(Plugin):
         checker.add_rule("DC-POWER-001", "方舱功率预算检查", check_container_power_budget, priority=10, severity=Severity.ERROR)
         checker.add_rule("DC-COOLING-001", "液冷方舱制冷容量检查", check_liquid_cooling_capacity, priority=10, severity=Severity.ERROR)
         checker.add_rule("DC-WEIGHT-001", "方舱总重检查", check_container_weight, priority=5, severity=Severity.ERROR)
+        checker.add_rule("DC-SPACE-001", "方舱内设备空间边界检查", check_equipment_container_fit, priority=5, severity=Severity.WARNING)
         checker.add_rule("DC-CONN-001", "连接完整性检查", check_connection_integrity, priority=10, severity=Severity.ERROR)
         checker.add_rule("DC-CONN-002", "连接容量检查", check_connection_capacity, priority=5, severity=Severity.WARNING)
         checker.add_rule("DC-FK-001", "外键完整性检查", check_dc_foreign_keys, priority=10, severity=Severity.WARNING)
@@ -199,31 +205,128 @@ def check_connection_integrity(ctx):
     ctx.clear_current_file()
 
 
+def check_equipment_container_fit(ctx):
+    """检查方舱内设备是否超出方舱物理边界。
+
+    当 equipment 和 container 都有尺寸字段时：
+    - 设备长度 ≤ 方舱长度
+    - 设备宽度 ≤ 方舱宽度
+    - 设备高度 ≤ 方舱高度
+
+    任一尺寸缺失（为 0）时跳过检查，避免误报。
+    """
+    containers = {c.id: c for c in ctx.query("containers")}
+
+    for device in ctx.query("equipment"):
+        container = containers.get(device.container_id)
+        if container is None:
+            continue
+
+        dev_length = device.length_mm or device.depth_mm
+        dev_width = device.width_mm
+        dev_height = device.height_mm
+        cnt_length = container.length_mm
+        cnt_width = container.width_mm
+        cnt_height = container.height_mm
+
+        # 跳过：任一方缺少尺寸数据
+        if dev_length <= 0 or cnt_length <= 0:
+            dev_length = 0
+        if dev_width <= 0 or cnt_width <= 0:
+            dev_width = 0
+        if dev_height <= 0 or cnt_height <= 0:
+            dev_height = 0
+        if dev_length == 0 and dev_width == 0 and dev_height == 0:
+            continue
+
+        ctx.set_current_file(str(device.source))
+
+        if dev_length > 0 and dev_length > cnt_length:
+            assert False, (
+                f"设备 {device.id} 长度 {dev_length}mm 超过方舱 {container.id} "
+                f"长度 {cnt_length}mm，无法容纳。"
+            )
+
+        if dev_width > 0 and dev_width > cnt_width:
+            assert False, (
+                f"设备 {device.id} 宽度 {dev_width}mm 超过方舱 {container.id} "
+                f"宽度 {cnt_width}mm，无法容纳。"
+            )
+
+        if dev_height > 0 and dev_height > cnt_height:
+            assert False, (
+                f"设备 {device.id} 高度 {dev_height}mm 超过方舱 {container.id} "
+                f"高度 {cnt_height}mm，无法容纳。"
+            )
+    ctx.clear_current_file()
+
+
 def check_connection_capacity(ctx):
-    """检查连接的容量是否满足传输需求。"""
+    """检查连接的容量是否满足传输需求（双向校验）。
+
+    对每种连接类型：
+    - 液冷：检查 from_container 的供液能力 ≥ to_container 的需求
+    - 电力：检查 from_container 的供电能力 ≥ to_container 的需求
+    - 光纤：检查带宽容量 ≥ 目标方舱内网络设备的带宽需求
+    """
     for conn in ctx.query("connections"):
         ctx.set_current_file(str(conn.source))
         cap = conn.capacity
         if cap <= 0:
             continue
 
-        # 液冷连接：检查流量需求
+        # 液冷连接：检查 to_container 的流量需求
         if conn.connection_type == "liquid":
-            # 获取目标方舱内所有液冷设备的流量需求
             target_devices = ctx.query("equipment", container_id=conn.to_container, liquid_cooled=True)
             total_flow = sum(d.coolant_flow_lpm for d in target_devices)
             if total_flow > 0:
                 assert cap >= total_flow, (
-                    f"液冷连接 {conn.id} 容量 {cap}L/min 小于需求 {total_flow}L/min"
+                    f"液冷连接 {conn.id} 容量 {cap}L/min 小于目标方舱 {conn.to_container} "
+                    f"需求 {total_flow}L/min"
                 )
 
-        # 电力连接：检查功率需求
+            # 双向校验：同时检查 from_container 是否能提供足够的供液
+            source_devices = ctx.query("equipment", container_id=conn.from_container, liquid_cooled=True)
+            source_flow = sum(d.coolant_flow_lpm for d in source_devices)
+            if source_flow > 0 and cap < source_flow:
+                # 源方舱也有液冷需求时，连接容量应至少满足较大的一方
+                max_demand = max(total_flow, source_flow)
+                assert cap >= max_demand, (
+                    f"液冷连接 {conn.id} 容量 {cap}L/min 小于 "
+                    f"源方舱 {conn.from_container} 需求 {source_flow}L/min 与 "
+                    f"目标方舱 {conn.to_container} 需求 {total_flow}L/min 中的较大值 {max_demand}L/min"
+                )
+
+        # 电力连接：检查 to_container 的功率需求
         elif conn.connection_type == "power":
             target_devices = ctx.query("equipment", container_id=conn.to_container)
             total_power = sum(d.power_kw for d in target_devices)
             if total_power > 0:
                 assert cap >= total_power, (
-                    f"电力连接 {conn.id} 容量 {cap}kW 小于需求 {total_power}kW"
+                    f"电力连接 {conn.id} 容量 {cap}kW 小于目标方舱 {conn.to_container} "
+                    f"需求 {total_power}kW"
+                )
+
+            # 双向校验：同时检查 from_container 的供电需求
+            source_devices = ctx.query("equipment", container_id=conn.from_container)
+            source_power = sum(d.power_kw for d in source_devices)
+            if source_power > 0 and cap < source_power:
+                max_demand = max(total_power, source_power)
+                assert cap >= max_demand, (
+                    f"电力连接 {conn.id} 容量 {cap}kW 小于 "
+                    f"源方舱 {conn.from_container} 需求 {source_power}kW 与 "
+                    f"目标方舱 {conn.to_container} 需求 {total_power}kW 中的较大值 {max_demand}kW"
+                )
+
+        # 光纤连接：检查带宽需求
+        elif conn.connection_type == "fiber":
+            target_devices = ctx.query("equipment", container_id=conn.to_container, equipment_type="network")
+            # 简化：假设每个网络设备需要 10Gbps
+            total_bandwidth = len(target_devices) * 10
+            if total_bandwidth > 0:
+                assert cap >= total_bandwidth, (
+                    f"光纤连接 {conn.id} 容量 {cap}Gbps 小于目标方舱 {conn.to_container} "
+                    f"网络设备带宽需求 {total_bandwidth}Gbps"
                 )
     ctx.clear_current_file()
 

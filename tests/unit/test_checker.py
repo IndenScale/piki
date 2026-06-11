@@ -234,4 +234,78 @@ class TestCheckReport:
         assert report.passed is True
 
 
+class TestRelatedInformationAndSuggestion:
+    """测试 related_information 和 suggestion 在规则结果中的传递。"""
+
+    def test_related_info_in_rule_result(self) -> None:
+        from piki.core.models.diagnostic import Location, RelatedInformation
+
+        checker = Checker()
+        ctx = Context(Registry(), {})
+
+        def rule_with_related(ctx: Context) -> None:
+            ctx.set_current_file("/path/to/file.yaml")
+            ctx.add_related_info(
+                Location(uri="file:///path/to/other.yaml"),
+                "关联信息：请检查此处",
+            )
+            assert False, "主错误"
+
+        checker.add_rule("R-REL", "关联信息测试", rule_with_related)
+        report = checker.run(ctx)
+
+        assert report.error_count == 1
+        result = report.results[0]
+        assert result.rule_id == "R-REL"
+        assert len(result.related_information) == 1
+        assert result.related_information[0].message == "关联信息：请检查此处"
+
+    def test_suggestion_in_rule_result(self) -> None:
+        checker = Checker()
+        ctx = Context(Registry(), {})
+
+        def rule_with_suggestion(ctx: Context) -> None:
+            ctx.set_current_file("/path/to/file.yaml")
+            ctx.set_suggestion("将设备迁移到另一个 PDU")
+            assert False, "PDU 过载"
+
+        checker.add_rule("R-SUG", "建议测试", rule_with_suggestion)
+        report = checker.run(ctx)
+
+        assert report.error_count == 1
+        result = report.results[0]
+        assert result.suggestion == "将设备迁移到另一个 PDU"
+
+    def test_suggestion_in_diagnostic(self) -> None:
+        from piki.core.models.diagnostic import Severity
+
+        checker = Checker()
+        ctx = Context(Registry(), {})
+
+        def rule_with_suggestion(ctx: Context) -> None:
+            ctx.set_suggestion("检查配置文件")
+            assert False, "配置错误"
+
+        checker.add_rule("R-DIAG", "诊断测试", rule_with_suggestion)
+        report = checker.run(ctx)
+
+        diag = report.results[0].to_diagnostic()
+        assert diag.data.get("suggestion") == "检查配置文件"
+        assert diag.severity == Severity.ERROR
+
+    def test_clear_current_file_clears_related(self) -> None:
+        from piki.core.models.diagnostic import Location
+
+        ctx = Context(Registry(), {})
+        ctx.add_related_info(
+            Location(uri="file:///a.yaml"),
+            "info",
+        )
+        ctx.set_suggestion("建议")
+        ctx.clear_current_file()
+
+        assert ctx.pop_related_info() == []
+        assert ctx.pop_suggestion() == ""
+
+
 import pytest

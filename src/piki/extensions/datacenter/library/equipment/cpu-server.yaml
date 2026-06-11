@@ -5,3 +5,8 @@ equipment_type: compute
 power_kw: 3
 weight_kg: 25
 liquid_cooled: false
+
+# 物理尺寸（毫米）
+length_mm: 750
+width_mm: 440
+height_mm: 44

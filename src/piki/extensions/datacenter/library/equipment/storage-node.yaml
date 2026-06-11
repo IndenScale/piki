@@ -5,3 +5,8 @@ equipment_type: storage
 power_kw: 1.5
 weight_kg: 35
 liquid_cooled: false
+
+# 物理尺寸（毫米）
+length_mm: 700
+width_mm: 440
+height_mm: 44

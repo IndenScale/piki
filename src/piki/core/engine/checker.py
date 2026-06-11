@@ -24,9 +24,14 @@ class RuleResult:
     message: str = ""
     file: str = ""
     severity: Severity = Severity.ERROR
+    related_information: list = field(default_factory=list)
+    suggestion: str = ""
 
     def to_diagnostic(self) -> Diagnostic:
         """转换为 Diagnostic。"""
+        data: dict[str, Any] = {}
+        if self.suggestion:
+            data["suggestion"] = self.suggestion
         return Diagnostic(
             severity=Severity.INFO if self.passed else self.severity,
             message=self.message or ("通过" if self.passed else "失败"),
@@ -34,6 +39,8 @@ class RuleResult:
             code=self.rule_id,
             source="piki.checker",
             name=self.name,
+            related_information=self.related_information,
+            data=data,
         )
 
 
@@ -130,6 +137,8 @@ class Checker:
                 message = str(exc) if str(exc) else "Assertion failed"
                 # 尝试从异常中提取 file 信息（如果规则通过 ctx 设置了）
                 file = getattr(ctx, "_current_file", "")
+                related = getattr(ctx, "pop_related_info", lambda: [])()
+                suggestion = getattr(ctx, "pop_suggestion", lambda: "")()
                 report.results.append(
                     RuleResult(
                         rule_id=rule_id,
@@ -138,10 +147,14 @@ class Checker:
                         message=message,
                         file=file,
                         severity=severity,
+                        related_information=related,
+                        suggestion=suggestion,
                     )
                 )
             except Exception as exc:  # pragma: no cover
                 file = getattr(ctx, "_current_file", "")
+                related = getattr(ctx, "pop_related_info", lambda: [])()
+                suggestion = getattr(ctx, "pop_suggestion", lambda: "")()
                 report.results.append(
                     RuleResult(
                         rule_id=rule_id,
@@ -150,6 +163,8 @@ class Checker:
                         message=f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}",
                         file=file,
                         severity=severity,
+                        related_information=related,
+                        suggestion=suggestion,
                     )
                 )
         return report

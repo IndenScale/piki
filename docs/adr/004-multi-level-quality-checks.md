@@ -75,6 +75,34 @@ Layer 6: 基于 AI 的评估（未来）
 | **L5** | 物理仿真验证 | 外部物理引擎（PhysX/Bullet） | `piki check --deep` | 1s-1min  |
 | **L6** | AI 评估      | LLM/ML 模型                  | `piki check --ai`   | 1-10s    |
 
+### 2.3 L3 规则清单（当前已实现）
+
+**telecom 插件：**
+
+| 规则 ID | 名称 | 优先级 | Severity | 说明 |
+|---------|------|--------|----------|------|
+| TELECOM-POWER-001 | PDU 功率预算检查 | 10 | ERROR | 单 PDU 负载率不超过阈值 |
+| **TELECOM-POWER-002** | **PDU 相线平衡检查** | 5 | WARNING | 同一机柜多相 PDU 负载均衡 |
+| TELECOM-RACK-001 | U 位冲突检查 | 5 | ERROR | 同一机柜内设备 U 位不重叠 |
+| TELECOM-RACK-002 | 机柜容量检查 | 5 | ERROR | 设备总高度不超过机柜容量 |
+| **TELECOM-RACK-003** | **设备物理尺寸与机柜匹配检查** | 3 | WARNING | 设备 depth/width 不超过机柜 |
+| TELECOM-FK-001 | 外键完整性检查 | 10 | WARNING | rack_id / pdu_id 引用有效性 |
+
+**datacenter 插件：**
+
+| 规则 ID | 名称 | 优先级 | Severity | 说明 |
+|---------|------|--------|----------|------|
+| DC-POWER-001 | 方舱功率预算检查 | 10 | ERROR | 方舱内设备总功耗不超过配电容量 |
+| DC-COOLING-001 | 液冷方舱制冷容量检查 | 10 | ERROR | 液冷设备热负荷不超过制冷容量 |
+| DC-WEIGHT-001 | 方舱总重检查 | 5 | ERROR | 设备总重不超过方舱最大承重 |
+| **DC-SPACE-001** | **方舱内设备空间边界检查** | 5 | WARNING | 设备尺寸不超过方舱物理边界 |
+| DC-CONN-001 | 连接完整性检查 | 10 | ERROR | 连接两端方舱存在且不相同 |
+| DC-CONN-002 | 连接容量检查 | 5 | WARNING | 连接容量满足双向传输需求 |
+| DC-FK-001 | 外键完整性检查 | 10 | WARNING | container_id / power_unit_id 引用有效性 |
+| DC-REDUNDANCY-001 | 配电冗余检查 | 5 | WARNING | 配电单元冗余配置满足项目要求 |
+
+> **新增规则**（本次迭代）：TELECOM-POWER-002、TELECOM-RACK-003、DC-SPACE-001，以及 DC-CONN-002 的双向校验增强。
+
 ### 2.3 分层执行策略
 
 ```python
@@ -192,10 +220,23 @@ def check_pdu_budget(ctx: Context):
 - 优先级排序（`priority` 参数）
 - severity 分级（ERROR/WARNING）
 
-### 3.5 L4: 几何检查（规划中）
+### 3.5 L4: 几何检查（依赖条件已就绪）
+
+L4 几何检查的**前置条件**已在本次迭代中完成：
+
+1. **物理尺寸字段已添加到 Family**：
+   - `ServerFamily`：`depth_mm`、`width_mm`、`weight_kg`
+   - `RackFamily`：`depth_mm`、`width_mm`
+   - `EquipmentFamily`：`length_mm`、`width_mm`、`height_mm`、`depth_mm`
+
+2. **L3 规则已覆盖物理尺寸校验**：
+   - `TELECOM-RACK-003`：设备深度/宽度 ≤ 机柜深度/宽度
+   - `DC-SPACE-001`：设备长/宽/高 ≤ 方舱长/宽/高
+
+这些 L3 规则确保了几何引擎集成时，输入数据具有有效的物理尺寸。
 
 ```python
-# rules/geometry.py —— 纯 Python 几何算法
+# rules/geometry.py —— 纯 Python 几何算法（规划中）
 @rule("TELECOM-COLLISION-001", "3D 空间碰撞检查")
 def check_3d_collision(ctx: Context):
     from piki.ext.geometry import AABB, intersect
@@ -219,6 +260,7 @@ def check_3d_collision(ctx: Context):
 - 不依赖外部物理引擎
 - 结果可嵌入 USD 元数据供可视化
 - 可扩展为 OBB（定向包围盒）提高精度
+- **前置条件已满足**：物理尺寸字段已就绪，L3 规则已验证数据有效性
 
 ### 3.6 L5: 物理仿真验证（未来）
 

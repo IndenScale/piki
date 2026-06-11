@@ -7,3 +7,8 @@ weight_kg: 120
 liquid_cooled: true
 coolant_flow_lpm: 80
 coolant_inlet_temp_c: 35
+
+# 物理尺寸（毫米）
+length_mm: 1200
+width_mm: 300
+height_mm: 2000
