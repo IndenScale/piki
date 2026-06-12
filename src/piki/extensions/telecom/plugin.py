@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from piki.core.engine.checker import Checker
+from piki.core.engine.generator_registry import GeneratorResult
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets
@@ -191,6 +192,10 @@ class TelecomPlugin(Plugin):
 
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("bom-csv", "BOM CSV 导出", generate_bom_csv)
+        checker.add_generator("rack-face-panel", "机柜面板图", generate_rack_face_panel)
+        checker.add_generator("rack-face-panel-svg", "机柜面板图 SVG", generate_rack_face_panel_svg)
+        checker.add_generator("power-budget", "功率预算汇总", generate_power_budget)
+        checker.add_generator("cable-list", "线缆清单", generate_cable_list)
 
     def register_mate_types(self, registry: Registry) -> None:
         """注册 telecom 领域的 Mate 类型 (ADR-008)."""
@@ -478,8 +483,33 @@ def check_rack_3d_collision(ctx):
     ctx.clear_current_file()
 
 
-def generate_bom_csv(ctx, config):
-    """生成 BOM CSV。"""
+# New generator functions to append to telecom/plugin.py
+
+
+# ── 产物输出辅助 ──
+
+def _resolve_output_path(config, default_filename: str) -> tuple[str | None, Path | None]:
+    """解析产物输出路径。
+
+    优先级：config["output"] (--output 显式指定) > config["target_dir"] (dist/ 约定目录) + default_filename
+    """
+    out_path = config.get("output")
+    if out_path:
+        return None, Path(str(out_path))
+    target_dir = config.get("target_dir")
+    if target_dir:
+        file_path = Path(target_dir) / default_filename
+        return None, file_path
+    return None, None
+
+def _write_and_return(gen_id, gen_name, content, file_path, content_type="text/plain") -> GeneratorResult:
+    """写入文件并返回 GeneratorResult。"""
+    if file_path:
+        file_path.write_text(content, encoding="utf-8")
+    return GeneratorResult.ok(gen_id, gen_name, content, file_path, content_type)
+
+def generate_bom_csv(ctx, config) -> GeneratorResult:
+    """生成 BOM CSV：设备清单汇总。"""
     import csv
     import io
     from pathlib import Path
@@ -501,9 +531,508 @@ def generate_bom_csv(ctx, config):
             ]
         )
 
-    content = output.getvalue()
-    out_path = config.get("output")
-    if out_path:
-        Path(out_path).write_text(content, encoding="utf-8")
+    csv_content = output.getvalue()
+    _, file_path = _resolve_output_path(config, "bom.csv")
+    return _write_and_return("bom-csv", "BOM CSV 导出", csv_content, file_path, "text/csv")
+
+
+def generate_rack_face_panel(ctx, config) -> GeneratorResult:
+    """生成机柜面板图：按机柜列出每个 U 位的设备占用情况。"""
+    from pathlib import Path
+
+    lines: list[str] = []
+    racks = ctx.query("racks").order_by("id").list()
+
+    if not racks:
+        lines.append("No racks found.")
     else:
-        print(content)
+        for rack in racks:
+            lines.append(f"{'=' * 60}")
+            lines.append(
+                f"Rack: {rack.id} ({rack.name or 'unnamed'})"
+                f" | Location: {rack.location or 'N/A'}"
+                f" | Total: {rack.total_u}U"
+            )
+            lines.append(f"{'=' * 60}")
+
+            devices = ctx.query("devices", rack_id=rack.id).order_by("position_u").list()
+
+            if not devices:
+                for u in range(rack.total_u, 0, -1):
+                    lines.append(f"  U{u:>3}: [empty]")
+            else:
+                dev_map: dict[int, object] = {}
+                for d in devices:
+                    start = d.position_u
+                    height = d.resolved.height_u
+                    for u in range(start, start + height):
+                        dev_map[u] = d
+
+                for u in range(rack.total_u, 0, -1):
+                    d = dev_map.get(u)
+                    if d is None:
+                        lines.append(f"  U{u:>3}: [empty]")
+                    else:
+                        start = d.position_u
+                        height = d.resolved.height_u
+                        if u == start + height - 1:
+                            label = (
+                                f"{d.id} ({d.model or 'N/A'}, "
+                                f"{d.resolved.tdp_w}W, {height}U)"
+                            )
+                            lines.append(f"  U{u:>3}: {label}")
+                        elif u == start:
+                            lines.append(f"  U{u:>3}: {d.id} ^ (bottom)")
+
+            lines.append("")
+
+    text_content = "\n".join(lines)
+    _, file_path = _resolve_output_path(config, "rack-panel.txt")
+    return _write_and_return("rack-face-panel", "机柜面板图", text_content, file_path)
+
+
+
+
+def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
+    """生成机柜面板 SVG 图：彩色 U 位可视化，含图例。"""
+    from pathlib import Path
+    from xml.etree import ElementTree as ET
+    from xml.dom import minidom
+
+    racks = ctx.query("racks").order_by("id").list()
+    if not racks:
+        return GeneratorResult.ok(
+            "rack-face-panel-svg", "机柜面板图 SVG", "",
+            content_type="image/svg+xml",
+        )
+
+    # ── Layout constants (mm scaled to SVG px) ──
+    U_HEIGHT = 18          # px per U
+    PANEL_WIDTH = 240      # total panel width
+    LABEL_WIDTH = 140      # right side label area
+    DEVICE_AREA_X = 10     # device block left edge
+    DEVICE_AREA_W = PANEL_WIDTH - LABEL_WIDTH - DEVICE_AREA_X - 5
+    MARGIN_TOP = 30
+    MARGIN_BOTTOM = 30
+    RACK_LEFT = 30
+    RACK_RIGHT = 30
+    FONT_FAMILY = "monospace"
+    FONT_SIZE = 10
+
+    # Device color palette (cycling)
+    COLORS = [
+        "#4A90D9", "#5CB85C", "#F0AD4E", "#D9534F",
+        "#8E44AD", "#1ABC9C", "#E67E22", "#2C3E50",
+    ]
+    color_map: dict[str, str] = {}
+
+    # ── Build per-rack SVG content ──
+    svg_outputs: dict[str, str] = {}
+
+    for rack in racks:
+        total_u = rack.resolved.total_u
+        canvas_h = MARGIN_TOP + total_u * U_HEIGHT + MARGIN_BOTTOM
+
+        devices = ctx.query("devices", rack_id=rack.id).order_by("-position_u").list()
+
+        # Build U-map: which device occupies each U
+        dev_map: dict[int, object] = {}
+        dev_metadata: dict[str, dict] = {}
+        for d in devices:
+            start = d.resolved.position_u
+            height = d.resolved.height_u
+            for u in range(start, start + height):
+                dev_map[u] = d
+            dev_id = d.id
+            if dev_id not in color_map:
+                color_map[dev_id] = COLORS[len(color_map) % len(COLORS)]
+            dev_metadata[dev_id] = {
+                "name": getattr(d.resolved, "name", "") or d.id,
+                "model": d.resolved.model or d.family or "",
+                "family": d.family or "",
+                "tdp_w": d.resolved.tdp_w,
+                "height_u": height,
+                "position_u": start,
+            }
+
+        # Build SVG elements
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        svg = ET.Element(
+            "svg",
+            {
+                "xmlns": "http://www.w3.org/2000/svg",
+                "width": str(PANEL_WIDTH + RACK_LEFT + RACK_RIGHT),
+                "height": str(canvas_h),
+                "viewBox": f"0 0 {PANEL_WIDTH + RACK_LEFT + RACK_RIGHT} {canvas_h}",
+            },
+        )
+
+        style = ET.SubElement(svg, "style")
+        style.text = (
+            f".title          {{ font-family: {FONT_FAMILY}; font-size: 13px; font-weight: bold; fill: #222; }}"
+            "\n"
+            f".u-label         {{ font-family: {FONT_FAMILY}; font-size: {FONT_SIZE}px; fill: #666; }}"
+            "\n"
+            f".dev-label       {{ font-family: {FONT_FAMILY}; font-size: {FONT_SIZE - 1}px; fill: #222; }}"
+            "\n"
+            ".rack-outline    { fill: none; stroke: #999; stroke-width: 1.5; }"
+            "\n"
+            ".grid-line       { stroke: #e0e0e0; stroke-width: 0.5; }"
+            "\n"
+            f".empty-text      {{ font-family: {FONT_FAMILY}; font-size: {FONT_SIZE - 1}px; fill: #bbb; }}"
+            "\n"
+            f".legend-text     {{ font-family: {FONT_FAMILY}; font-size: {FONT_SIZE - 1}px; fill: #444; }}"
+            "\n"
+            f".legend-title    {{ font-family: {FONT_FAMILY}; font-size: {FONT_SIZE}px; font-weight: bold; fill: #333; }}"
+        )
+
+        # Background
+        ET.SubElement(
+            svg, "rect",
+            {"x": "0", "y": "0", "width": "100%", "height": "100%", "fill": "#FAFAFA"},
+        )
+
+        # Title
+        title_text = f"Rack: {rack.id}"
+        if rack.resolved.name:
+            title_text += f" — {rack.resolved.name}"
+        title_text += f"  ({rack.resolved.total_u}U)"
+        ET.SubElement(
+            svg, "text",
+            {
+                "x": str(RACK_LEFT), "y": str(MARGIN_TOP - 12),
+                "class": "title",
+            },
+        ).text = title_text
+
+        # Rack outline (the 19-inch rack border)
+        rack_x = DEVICE_AREA_X
+        rack_y = MARGIN_TOP
+        rack_w = DEVICE_AREA_W
+        rack_h = total_u * U_HEIGHT
+        ET.SubElement(
+            svg, "rect",
+            {
+                "x": str(rack_x), "y": str(rack_y),
+                "width": str(rack_w), "height": str(rack_h),
+                "class": "rack-outline",
+            },
+        )
+
+        # Grid lines + U labels + device blocks
+        for u in range(total_u, 0, -1):
+            # Y position: U1 at bottom, highest U at top
+            y = MARGIN_TOP + (total_u - u) * U_HEIGHT
+
+            # Grid line
+            ET.SubElement(
+                svg, "line",
+                {
+                    "x1": str(rack_x), "y1": str(y + U_HEIGHT),
+                    "x2": str(rack_x + rack_w), "y2": str(y + U_HEIGHT),
+                    "class": "grid-line",
+                },
+            )
+
+            # U label (left of rack)
+            ET.SubElement(
+                svg, "text",
+                {
+                    "x": str(rack_x - 8), "y": str(y + U_HEIGHT - 4),
+                    "text-anchor": "end", "class": "u-label",
+                },
+            ).text = str(u)
+
+            # Device block
+            d = dev_map.get(u)
+            if d is not None:
+                dev_id = d.id
+                start = d.resolved.position_u
+                height_u = d.resolved.height_u
+                # Only draw at the bottom of the device block
+                if u == start:
+                    block_y = MARGIN_TOP + (total_u - start - height_u + 1) * U_HEIGHT
+                    block_h = height_u * U_HEIGHT
+                    c = color_map.get(dev_id, "#999")
+                    ET.SubElement(
+                        svg, "rect",
+                        {
+                            "x": str(rack_x + 1), "y": str(block_y + 1),
+                            "width": str(rack_w - 2), "height": str(block_h - 2),
+                            "fill": c, "rx": "2", "ry": "2",
+                        },
+                    )
+                    # Device label on block
+                    label = dev_id
+                    text_y = block_y + block_h / 2 + 3
+                    ET.SubElement(
+                        svg, "text",
+                        {
+                            "x": str(rack_x + rack_w / 2), "y": str(text_y),
+                            "text-anchor": "middle", "class": "dev-label",
+                            "fill": "#fff",
+                        },
+                    ).text = label
+            else:
+                # Empty U
+                ET.SubElement(
+                    svg, "text",
+                    {
+                        "x": str(rack_x + rack_w / 2),
+                        "y": str(y + U_HEIGHT - 5),
+                        "text-anchor": "middle", "class": "empty-text",
+                    },
+                ).text = "—"
+
+        # ── Legend (right side) ──
+        legend_x = rack_x + rack_w + 12
+        legend_y = MARGIN_TOP
+
+        ET.SubElement(
+            svg, "text",
+            {"x": str(legend_x), "y": str(legend_y), "class": "legend-title"},
+        ).text = "图例"
+
+        legend_idx = 0
+        for d in devices:
+            dev_id = d.id
+            meta = dev_metadata.get(dev_id, {})
+            ly = legend_y + 16 + legend_idx * 38
+            c = color_map.get(dev_id, "#999")
+
+            # Color swatch
+            ET.SubElement(
+                svg, "rect",
+                {
+                    "x": str(legend_x), "y": str(ly),
+                    "width": "12", "height": "12",
+                    "fill": c, "rx": "2", "ry": "2",
+                },
+            )
+            # Device info
+            ET.SubElement(
+                svg, "text",
+                {
+                    "x": str(legend_x + 18), "y": str(ly + 10),
+                    "class": "legend-text",
+                },
+            ).text = (
+                f"{meta.get('name') or dev_id}"
+                + (f" ({meta.get('model') or meta.get('family') or ''})" if (meta.get('model') or meta.get('family')) else "")
+            )
+            ET.SubElement(
+                svg, "text",
+                {
+                    "x": str(legend_x + 18), "y": str(ly + 22),
+                    "class": "legend-text", "fill": "#888",
+                },
+            ).text = (
+                f"U{meta.get('position_u', '?')}—U{meta.get('position_u', 0) + meta.get('height_u', 0) - 1}"
+                f"  {meta.get('tdp_w', 0)}W  {meta.get('height_u', 0)}U"
+            )
+            legend_idx += 1
+
+        # Pretty-print SVG
+        raw = ET.tostring(svg, encoding="unicode")
+        dom = minidom.parseString(raw)
+        svg_str = dom.toprettyxml(indent="  ")
+
+        svg_outputs[rack.id] = svg_str
+
+    # ── Output: single SVG with all racks, or per-rack files ──
+    if len(svg_outputs) == 1:
+        full_svg = list(svg_outputs.values())[0]
+        rack_id = list(svg_outputs.keys())[0]
+        default_name = f"rack-panel-{rack_id}.svg"
+        _, file_path = _resolve_output_path(config, default_name)
+        return _write_and_return(
+            "rack-face-panel-svg", "机柜面板图 SVG", full_svg,
+            file_path, "image/svg+xml",
+        )
+    else:
+        # Multiple racks: assemble into one combined SVG
+        combined = _compose_multi_svg(svg_outputs, ET, minidom)
+        _, file_path = _resolve_output_path(config, "rack-panels.svg")
+        return _write_and_return(
+            "rack-face-panel-svg", "机柜面板图 SVG", combined,
+            file_path, "image/svg+xml",
+        )
+
+
+def _compose_multi_svg(svg_outputs, ET, minidom) -> str:
+    """Combine multiple rack SVGs into a single multi-rack SVG document."""
+    GAP = 40
+    total_width = 0
+    max_height = 0
+
+    # Parse each SVG to measure
+    parsed: list[tuple[str, ET.Element, int, int]] = []
+    for rack_id, svg_str in svg_outputs.items():
+        root = ET.fromstring(svg_str)
+        w = int(root.get("width", "0"))
+        h = int(root.get("height", "0"))
+        parsed.append((rack_id, root, w, h))
+        max_height = max(max_height, h)
+        total_width += w
+
+    total_width += GAP * (len(parsed) - 1)
+
+    svg = ET.Element(
+        "svg",
+        {
+            "xmlns": "http://www.w3.org/2000/svg",
+            "width": str(total_width + 20),
+            "height": str(max_height + 20),
+            "viewBox": f"0 0 {total_width + 20} {max_height + 20}",
+        },
+    )
+
+    ET.SubElement(
+        svg, "rect",
+        {"x": "0", "y": "0", "width": "100%", "height": "100%", "fill": "#FAFAFA"},
+    )
+
+    offset_x = 10
+    for _rack_id, root, w, h in parsed:
+        g = ET.SubElement(svg, "g", {"transform": f"translate({offset_x}, 10)"})
+        for child in root:
+            g.append(child)
+        offset_x += w + GAP
+
+    raw = ET.tostring(svg, encoding="unicode")
+    dom = minidom.parseString(raw)
+    return dom.toprettyxml(indent="  ")
+
+
+def generate_power_budget(ctx, config) -> GeneratorResult:
+    """生成功率预算汇总表。"""
+    import csv
+    import io
+    from collections import defaultdict
+    from pathlib import Path
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    all_devices = ctx.query("devices").list()
+    all_pdus = ctx.query("pdus").list()
+    all_racks = ctx.query("racks").list()
+
+    total_it_power = sum(d.resolved.tdp_w for d in all_devices)
+    total_pdu_capacity = sum(p.resolved.capacity_w for p in all_pdus)
+
+    writer.writerow(["=== 功率预算汇总 ==="])
+    writer.writerow(["Metric", "Value"])
+    writer.writerow(["Total IT Power (W)", total_it_power])
+    writer.writerow(["Total PDU Capacity (W)", total_pdu_capacity])
+    if total_pdu_capacity > 0:
+        writer.writerow(
+            ["Overall Load Ratio", f"{total_it_power / total_pdu_capacity:.1%}"]
+        )
+    writer.writerow([])
+
+    writer.writerow(["=== 按 PDU 功率明细 ==="])
+    writer.writerow(
+        [
+            "PDU ID", "Phase", "Capacity (W)", "Connected Devices",
+            "Total Load (W)", "Load Ratio", "Margin (W)",
+        ]
+    )
+    for pdu in sorted(all_pdus, key=lambda p: p.id):
+        devices = ctx.query("devices", pdu_id=pdu.id).list()
+        load = sum(d.resolved.tdp_w for d in devices)
+        cap = pdu.resolved.capacity_w
+        ratio = load / cap if cap > 0 else 0
+        margin = cap - load
+        writer.writerow(
+            [
+                pdu.id, pdu.phase, cap, len(devices), load,
+                f"{ratio:.1%}", margin,
+            ]
+        )
+    writer.writerow([])
+
+    writer.writerow(["=== 按机柜功率明细 ==="])
+    writer.writerow(
+        ["Rack ID", "Devices", "Total Load (W)", "Rack Capacity (W)", "Load Ratio"]
+    )
+    for rack in sorted(all_racks, key=lambda r: r.id):
+        devices = ctx.query("devices", rack_id=rack.id).list()
+        load = sum(d.resolved.tdp_w for d in devices)
+        cap = rack.resolved.power_capacity_w
+        writer.writerow(
+            [
+                rack.id, len(devices), load, cap,
+                f"{load / cap:.1%}" if cap > 0 else "N/A",
+            ]
+        )
+    writer.writerow([])
+
+    phase_power: dict[str, float] = defaultdict(float)
+    for pdu in all_pdus:
+        devices = ctx.query("devices", pdu_id=pdu.id).list()
+        phase_power[pdu.phase] += sum(d.resolved.tdp_w for d in devices)
+
+    if phase_power:
+        writer.writerow(["=== 各相功率汇总 ==="])
+        writer.writerow(["Phase", "Total Load (W)"])
+        for phase in sorted(phase_power):
+            writer.writerow([phase, phase_power[phase]])
+
+    csv_content = output.getvalue()
+    _, file_path = _resolve_output_path(config, "power-budget.csv")
+    return _write_and_return("power-budget", "功率预算汇总", csv_content, file_path, "text/csv")
+
+
+def generate_cable_list(ctx, config) -> GeneratorResult:
+    """生成线缆清单：汇总光纤跳线和光模块。"""
+    import csv
+    import io
+    from pathlib import Path
+
+    cable_type = config.get("cable_type", "all")
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    if cable_type in ("all", "fiber"):
+        fibers = ctx.query("fibers").list()
+        if fibers:
+            writer.writerow(["=== 光纤跳线 ==="])
+            writer.writerow(
+                ["ID", "Model", "Type", "Connector", "Length (m)",
+                 "Attenuation (dB)", "Status"]
+            )
+            for f in sorted(fibers, key=lambda x: x.id):
+                writer.writerow(
+                    [
+                        f.id, f.model or "N/A", f.fiber_type, f.connector,
+                        f.length_m, f.attenuation_db, f.status,
+                    ]
+                )
+        else:
+            writer.writerow(["=== 光纤跳线 === (none)"])
+        writer.writerow([])
+
+    if cable_type in ("all", "transceiver"):
+        transceivers = ctx.query("transceivers").list()
+        if transceivers:
+            writer.writerow(["=== 光模块 ==="])
+            writer.writerow(
+                ["ID", "Model", "Form Factor", "Reach", "Speed (Gbps)",
+                 "Wavelength (nm)", "Status"]
+            )
+            for t in sorted(transceivers, key=lambda x: x.id):
+                writer.writerow(
+                    [
+                        t.id, t.model or "N/A", t.form_factor, t.reach,
+                        t.speed_gbps, t.wavelength_nm, t.status,
+                    ]
+                )
+        else:
+            writer.writerow(["=== 光模块 === (none)"])
+        writer.writerow([])
+
+    csv_content = output.getvalue()
+    _, file_path = _resolve_output_path(config, "cable-list.csv")
+    return _write_and_return("cable-list", "线缆清单", csv_content, file_path, "text/csv")
+

@@ -192,15 +192,57 @@ def check_project_power(ctx: Context):
 
 ## 缓存与生成产物
 
+### `.piki_cache/` — 解析缓存
+
 以下目录建议加入 `.gitignore`：
 
 ```gitignore
 .piki_cache/
-reports/
 ```
 
 - `.piki_cache/`: 解析缓存，加速增量检查
-- `reports/`: `piki check` 或 `piki generate` 的输出目录
+
+### `dist/` — 交付产物
+
+`dist/` 是生成器（Generator）的默认输出根目录，按交付场景分类：
+
+```text
+dist/
+├── 施工图/                 # 施工队看图施工
+│   ├── rack-panel-RACK-A01.svg
+│   └── rack-panel-RACK-A02.svg
+├── 采购清单/               # 采购/供应链
+│   ├── bom.csv
+│   └── cable-list.csv
+└── 设计评审/               # 方案交底/甲方沟通
+    └── power-budget.csv
+```
+
+| 约定 | 说明 |
+|---|---|
+| 目录名 | `dist/` 固定根目录，子目录按交付场景命名 |
+| Git 策略 | 建议 `gitignore`；可对里程碑版本 `git add` 做快照存档 |
+| 场景映射 | 在 `piki.toml` 的 `[generators.dist.targets]` 中配置 |
+| 显式覆盖 | `piki generate --output /path/to/file.csv` 优先级高于 dist 约定 |
+| 受众 | 子目录使用中文命名，面向施工队/采购/甲方等非开发人员 |
+
+**配置示例**（`piki.toml`）：
+
+```toml
+[generators]
+enabled = ["bom-csv", "rack-face-panel-svg", "power-budget", "cable-list"]
+
+[generators.dist]
+root = "dist"
+
+[generators.dist.targets]
+bom-csv = "采购清单"
+rack-face-panel-svg = "施工图"
+power-budget = "设计评审"
+cable-list = "采购清单"
+```
+
+产物可从 YAML 随时重新生成，不应进入日常版本 diff。
 
 ---
 

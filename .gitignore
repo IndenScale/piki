@@ -7,3 +7,4 @@ reports/
 .pytest_cache/
 studio/node_modules/
 studio/dist/
+samples/**/dist/
