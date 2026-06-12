@@ -1,0 +1,12 @@
+id: PBT
+family: MaterialFamily
+name: PBT 塑料
+material_type: plastic
+min_temperature_c: -20
+max_temperature_c: 80
+uv_resistant: true
+salt_spray_resistant: false
+waterproof: false
+compatible_ip_ratings: []
+fire_rating: UL94-HB
+description: 聚对苯二甲酸丁二醇酯，耐磨、耐油、抗 UV 较好

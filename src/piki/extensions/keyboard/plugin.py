@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from piki.core.engine.checker import Checker
 from piki.core.engine.generator_registry import GeneratorResult
 from piki.core.engine.registry import Registry
+from piki.core.models.assembly import AssemblyFamily
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets
 from piki.core.models.interface import FootprintSpec, InterfaceSpec, register_interface_types
@@ -52,11 +53,9 @@ KEYBOARD_INTERFACE_TYPES = [
 # ---------------------------------------------------------------------------
 
 
-class KeyboardAssemblyFamily(BaseModel):
-    """整把键盘的装配体定义。"""
+class KeyboardAssemblyFamily(AssemblyFamily):
+    """整把键盘的装配体定义，继承核心 AssemblyFamily。"""
 
-    id: str = Field(...)
-    name: str = Field(default="")
     layout: str = Field(...)  # 60%, 65%, 75%, tkl, full-size, numpad
     key_count: int = Field(default=0, ge=0)
     connectivity: list[str] = Field(default_factory=list)  # usb, bluetooth, 2.4g
@@ -64,6 +63,8 @@ class KeyboardAssemblyFamily(BaseModel):
     wireless: bool = Field(default=False)
     led_support: bool = Field(default=False)
     operating_environment: str = Field(default="indoor")
+    environment_id: str = Field(default="")
+    assembly_type: str = Field(default="keyboard")
     # 顶层组件引用
     case_id: str = Field(default="")
     plate_id: str = Field(default="")
@@ -83,6 +84,9 @@ class CaseFamily(BaseModel):
     width_mm: float = Field(default=0, ge=0)
     height_mm: float = Field(default=0, ge=0)
     weight_g: float = Field(default=0, ge=0)
+    wall_thickness_mm: float = Field(default=0, ge=0)
+    process_id: str = Field(default="")
+    surface_finish: str = Field(default="")
     has_usb_cutout: bool = Field(default=True)
     usb_cutout_position_x_mm: float = Field(default=0)
     usb_cutout_position_y_mm: float = Field(default=0)
@@ -161,6 +165,7 @@ class KeycapFamily(BaseModel):
     id: str = Field(...)
     name: str = Field(default="")
     material: str = Field(...)  # pbt, abs, pom, resin
+    material_id: str = Field(default="")  # 引用 MaterialFamily 实例
     profile: str = Field(...)  # cherry, oem, sa, dsa, xda, mda, kca, mt3
     stem_mount: str = Field(...)  # mx, choc, alps
     legend_method: str = Field(default="")  # double-shot, dye-sub, laser, none
@@ -264,6 +269,9 @@ class KeyboardPlugin(Plugin):
     def register_families(self, registry: Registry) -> None:
         # 注册键盘领域接口类型到核心全局表
         register_interface_types(KEYBOARD_INTERFACE_TYPES)
+
+        # 注册核心 AssemblyFamily，使键盘装配体可复用核心层级遍历能力
+        registry.add_family("AssemblyFamily", AssemblyFamily)
 
         registry.add_family("KeyboardAssemblyFamily", KeyboardAssemblyFamily)
         registry.add_family("CaseFamily", CaseFamily)
@@ -470,6 +478,13 @@ class KeyboardPlugin(Plugin):
             priority=5,
             severity=Severity.ERROR,
         )
+        checker.add_rule(
+            "KB-ASSEMBLY-001",
+            "子装配体引用必须存在且为装配体 Family",
+            check_keyboard_sub_assemblies,
+            priority=10,
+            severity=Severity.ERROR,
+        )
 
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("keyboard-bom", "键盘 BOM CSV 导出", generate_keyboard_bom_csv)
@@ -487,19 +502,19 @@ def _find_mates_by_type(ctx, instance_id: str, mate_type: str):
 
 
 def _get_mated_child_instance(ctx, mate):
-    """从 Mate 中获取 child 对应的 ResolvedInstance。"""
-    from piki.core.models.mating import parse_mate_ref
+    """从 Mate 中获取 child 对应的 ResolvedInstance。
 
-    child_id, _ = parse_mate_ref(mate.child)
-    return ctx.find_instance(child_id)
+    已迁移到核心 Context API：ctx.mate_child_instance(mate)
+    """
+    return ctx.mate_child_instance(mate)
 
 
 def _get_mated_parent_instance(ctx, mate):
-    """从 Mate 中获取 parent 对应的 ResolvedInstance。"""
-    from piki.core.models.mating import parse_mate_ref
+    """从 Mate 中获取 parent 对应的 ResolvedInstance。
 
-    parent_id, _ = parse_mate_ref(mate.parent)
-    return ctx.find_instance(parent_id)
+    已迁移到核心 Context API：ctx.mate_parent_instance(mate)
+    """
+    return ctx.mate_parent_instance(mate)
 
 
 def check_keycap_stem_compatibility(ctx):
@@ -732,11 +747,11 @@ def check_keycap_environmental_fit(ctx):
 def check_key_cluster_models(ctx):
     """检查 KeyCluster 引用的 switch/keycap 型号存在。"""
     for cluster in ctx.query("key_clusters"):
-        sw_model = ctx._registry.find_model(cluster.resolved.switch_model)
+        sw_model = ctx.find_model(cluster.resolved.switch_model)
         assert sw_model is not None, (
             f"KeyCluster {cluster.id} 引用的轴体型号 {cluster.resolved.switch_model} 不存在"
         )
-        kc_model = ctx._registry.find_model(cluster.resolved.keycap_model)
+        kc_model = ctx.find_model(cluster.resolved.keycap_model)
         assert kc_model is not None, (
             f"KeyCluster {cluster.id} 引用的键帽型号 {cluster.resolved.keycap_model} 不存在"
         )
@@ -756,11 +771,12 @@ def check_key_cluster_matrix_bounds(ctx):
     """检查 KeyCluster 的矩阵位置在 PCB 矩阵范围内。"""
     assemblies = ctx.query("assembly").list()
     for cluster in ctx.query("key_clusters"):
-        # 找到引用该 cluster 的 assembly（简化：取第一个）
+        # 找到引用 PCB 的 assembly（支持多装配体场景）
         pcb_id = ""
         for assembly in assemblies:
-            pcb_id = getattr(assembly.resolved, "pcb_id", "")
-            if pcb_id:
+            candidate = getattr(assembly.resolved, "pcb_id", "")
+            if candidate:
+                pcb_id = candidate
                 break
         if not pcb_id:
             continue
@@ -777,6 +793,18 @@ def check_key_cluster_matrix_bounds(ctx):
             )
             assert 0 <= col < max_col, (
                 f"KeyCluster {cluster.id} 矩阵位置 col={col} 超出 PCB {pcb_id} 范围 [0, {max_col})"
+            )
+
+
+def check_keyboard_sub_assemblies(ctx):
+    """检查 KeyboardAssembly 声明的子装配体存在且为装配体 Family。"""
+    assembly_families = {"AssemblyFamily", "KeyboardAssemblyFamily"}
+    for assembly in ctx.query("assembly"):
+        for sub_id in getattr(assembly.resolved, "sub_assemblies", []):
+            sub = ctx.find_instance(sub_id)
+            assert sub is not None, f"装配体 {assembly.id} 引用的子装配体 {sub_id} 不存在"
+            assert sub.family in assembly_families, (
+                f"装配体 {assembly.id} 引用的 {sub_id} 不是装配体 (family={sub.family})"
             )
 
 

@@ -186,7 +186,13 @@ _OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
     "gte": lambda a, b: a is not None and b is not None and a >= b,
     "lt": lambda a, b: a is not None and b is not None and a < b,
     "lte": lambda a, b: a is not None and b is not None and a <= b,
-    "in": lambda a, b: a in b if isinstance(b, (list, tuple, set, dict)) else False,
+    "in": lambda a, b: (
+        any(x in b for x in a)
+        if isinstance(a, (list, tuple, set)) and isinstance(b, (list, tuple, set, dict))
+        else a in b
+        if isinstance(b, (list, tuple, set, dict))
+        else False
+    ),
     "contains": lambda a, b: b in a if a is not None else False,
     "startswith": lambda a, b: str(a).startswith(str(b)) if a is not None else False,
     "endswith": lambda a, b: str(a).endswith(str(b)) if a is not None else False,

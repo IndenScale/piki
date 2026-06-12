@@ -1,0 +1,14 @@
+id: SUB-ALPHA
+family: KeyboardAssemblyFamily
+name: 字母区子装配体
+layout: alpha-cluster
+key_count: 4
+connectivity:
+  - internal
+mounting_style: gasket
+wireless: false
+led_support: true
+operating_environment: indoor
+environment_id: INDOOR-USE
+assembly_type: sub-assembly
+pcb_id: PCB-01

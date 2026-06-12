@@ -102,6 +102,8 @@ def check_floor_load(ctx: Context):
 
 `ctx.query()` 通过数据目录名（`"rooms"`、`"racks"`）而非插件名查询，实现松耦合。插件之间不直接依赖彼此。
 
+实践中，跨插件协作也体现在共享抽象上。例如 `keyboard` 插件的装配体声明 `environment_id` 和 `material_id`，由 `environments` 插件的 `ENV-*` 规则校验；`manufacturing` 插件读取 `keyboard` 零件的 `process_id` 执行 DFX 检查。各插件只声明自己理解的字段，规则由对应插件提供。
+
 ---
 
 ## 3. 决策总结

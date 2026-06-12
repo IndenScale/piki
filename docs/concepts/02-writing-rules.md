@@ -89,7 +89,9 @@ $ piki check
 | `__lt` | 小于 | `ctx.query("devices", position_u__lt=20)` |
 | `__lte` | 小于等于 | `ctx.query("devices", height_u__lte=4)` |
 | `__in` | 在列表中 | `ctx.query("devices", rack_id__in=["A01","A02"])` |
+| `__in`（list 字段） | 字段中任一元素在期望集合中 | `ctx.query("devices", tags__in=["dev", "ops"])` |
 | `__contains` | 包含 | `ctx.query("devices", name__contains="DB")` |
+| `__contains`（list 字段） | 字段值包含期望元素 | `ctx.query("assembly", connectivity__contains="bluetooth")` |
 | `__startswith` | 前缀 | `ctx.query("devices", id__startswith="SRV-")` |
 | `__endswith` | 后缀 | `ctx.query("devices", id__endswith="-PROD")` |
 
@@ -232,6 +234,27 @@ def check_foreign_keys(ctx: Context):
         assert device.pdu_id in pdus, (
             f"设备 {device.id} 引用的 PDU {device.pdu_id} 不存在"
         )
+```
+
+## Context 辅助 API
+
+piki 核心 `Context` 提供一组便捷 API，让规则代码更简洁：
+
+```python
+# 获取 Instance 的 Family 名称
+family = ctx.instance_family("SW-A")
+
+# 获取 Mate 两端对应的 ResolvedInstance（自动解析 interface ref）
+for mate in ctx.mate_graph.related_to("SW-A"):
+    parent = ctx.mate_parent_instance(mate)
+    child = ctx.mate_child_instance(mate)
+
+# 递归遍历 Mate 层级
+descendants = ctx.mated_descendants("PLATE-01")   # 所有被定位板承载的实例
+ancestors = ctx.mated_ancestors("SW-A")           # 承载轴体的所有祖先实例
+
+# 公开查找 Model（替代内部 ctx._registry.find_model）
+model = ctx.find_model("gateron-yellow-pro")
 ```
 
 ## 规则的组织

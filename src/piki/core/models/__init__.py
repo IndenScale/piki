@@ -1,5 +1,6 @@
 """数据模型层 —— 核心数据结构、Diagnostic 系统。"""
 
+from .assembly import AssemblyFamily
 from .base import Instance, Model, ResolvedInstance, _make_namespace, _unflatten
 from .diagnostic import (
     CodeDescription,
@@ -31,6 +32,8 @@ __all__ = [
     "ResolvedInstance",
     "_make_namespace",
     "_unflatten",
+    # assembly
+    "AssemblyFamily",
     # interface
     "InterfaceSpec",
     "resolve_interface_ref",

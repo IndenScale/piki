@@ -1,0 +1,18 @@
+id: CNC-ALU-65
+family: ManufacturingProcessFamily
+name: 铝合金外壳 CNC 加工
+process_type: cnc
+min_wall_thickness_mm: 1.5
+max_wall_thickness_mm: 6.0
+min_hole_diameter_mm: 1.0
+max_part_size_x_mm: 400
+max_part_size_y_mm: 200
+max_part_size_z_mm: 80
+available_surface_finishes:
+  - anodized-black
+  - anodized-silver
+  - bead-blasted
+compatible_material_types:
+  - aluminum
+  - titanium
+description: 6061 铝合金 CNC 加工，支持阳极氧化

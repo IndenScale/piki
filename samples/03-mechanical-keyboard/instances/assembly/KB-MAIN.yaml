@@ -11,6 +11,9 @@ mounting_style: gasket
 wireless: true
 led_support: true
 operating_environment: indoor
+environment_id: INDOOR-USE
+sub_assemblies:
+  - SUB-ALPHA
 case_id: CASE-01
 plate_id: PLATE-01
 pcb_id: PCB-01

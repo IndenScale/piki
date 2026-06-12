@@ -79,6 +79,26 @@ class TestOperators:
         assert qs.count() == 3
         assert {i.id for i in qs} == {"A", "B", "D"}
 
+    def test_in_list_field(self) -> None:
+        """list 字段的 __in：字段中任一元素在期望集合中即匹配。"""
+        items = _make_items()
+        qs = QuerySet(items).filter(tags__in=["dev", "ops"])
+        assert qs.count() == 4
+        assert {i.id for i in qs} == {"A", "B", "C", "D"}
+
+    def test_in_list_field_no_overlap(self) -> None:
+        items = _make_items()
+        qs = QuerySet(items).filter(tags__in=["qa"])
+        assert qs.count() == 1
+        assert qs.first().id == "D"
+
+    def test_in_scalar_field_unchanged(self) -> None:
+        """标量字段的 __in 保持原有语义：字段值在期望集合中。"""
+        items = _make_items()
+        qs = QuerySet(items).filter(age__in=[25, 35])
+        assert qs.count() == 2
+        assert {i.id for i in qs} == {"B", "C"}
+
     def test_startswith(self) -> None:
         items = _make_items()
         qs = QuerySet(items).filter(name__startswith="C")

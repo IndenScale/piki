@@ -1,0 +1,12 @@
+id: INDOOR-USE
+family: OperatingEnvironmentFamily
+name: 室内桌面使用
+temperature_min_c: 0
+temperature_max_c: 45
+humidity_min_pct: 20
+humidity_max_pct: 80
+uv_exposure_hours_per_year: 100
+salt_spray: false
+ip_rating_required: ""
+fire_rating_required: ""
+description: 普通室内办公/家庭环境

@@ -1,0 +1,12 @@
+id: ABS
+family: MaterialFamily
+name: ABS 塑料
+material_type: plastic
+min_temperature_c: -10
+max_temperature_c: 60
+uv_resistant: false
+salt_spray_resistant: false
+waterproof: false
+compatible_ip_ratings: []
+fire_rating: UL94-HB
+description: 丙烯腈-丁二烯-苯乙烯，易打油、黄变，不推荐户外

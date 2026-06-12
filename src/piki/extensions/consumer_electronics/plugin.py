@@ -2,8 +2,9 @@
 
 提供跨产品域共享的 Family、Rule 和工具函数：
 - NetFamily：电气网络（多节点连接）
-- OperatingEnvironmentFamily：使用环境谱
 - 功耗/电流预算辅助函数
+
+使用环境谱已迁移到 piki-environments 插件。
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from piki.core.models.interface import (
 )
 from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
+from piki.extensions.environments.plugin import OperatingEnvironmentFamily
 
 # ---------------------------------------------------------------------------
 # 消费电子通用接口类型
@@ -101,23 +103,6 @@ class NetFamily(BaseModel):
             if "/" not in node:
                 raise ValueError(f"Net node '{node}' 格式无效，应为 'instance_id/interface_id'")
         return self
-
-
-class OperatingEnvironmentFamily(BaseModel):
-    """使用环境谱：描述产品预期运行的环境条件。"""
-
-    id: str = Field(...)
-    name: str = Field(default="")
-    temperature_min_c: float = Field(default=-20)
-    temperature_max_c: float = Field(default=60)
-    humidity_min_pct: float = Field(default=0, ge=0, le=100)
-    humidity_max_pct: float = Field(default=95, ge=0, le=100)
-    uv_exposure_hours_per_year: float = Field(default=0, ge=0)
-    salt_spray: bool = Field(default=False)
-    ip_rating_required: str = Field(default="")  # IP65, IP67
-    fire_rating_required: str = Field(default="")  # UL94-V0
-    description: str = Field(default="")
-    tags: Tags = Field(default_factory=Tags)
 
 
 # ---------------------------------------------------------------------------

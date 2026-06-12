@@ -2,3 +2,5 @@ id: CASE-01
 family: CaseFamily
 name: 65% 铝坨坨外壳
 model: aluminum-65
+process_id: CNC-ALU-65
+surface_finish: anodized-black

@@ -14,7 +14,7 @@ from typing import Any
 
 from ..models.diagnostic import Location, RelatedInformation
 from ..models.layout import Layout, LayoutEntry
-from ..models.mating import MateGraph, MateSpec
+from ..models.mating import MateGraph, MateSpec, parse_mate_ref
 from .query import QuerySet
 from .registry import Registry
 
@@ -93,6 +93,17 @@ class Context:
         """在项目树中查找 Instance。"""
         return self._registry.find_instance(instance_id)
 
+    def instance_family(self, instance_id: str) -> str | None:
+        """返回指定 Instance 的 Family 名称，不存在则返回 None。"""
+        inst = self.find_instance(instance_id)
+        if inst is None:
+            return None
+        return inst.family
+
+    def find_model(self, model_id: str):
+        """在项目树中查找 Model（替代内部 ctx._registry.find_model 的公开 API）。"""
+        return self._registry.find_model(model_id)
+
     # ------------------------------------------------------------------
     # Mating 图遍历（ADR-006）
     # ------------------------------------------------------------------
@@ -137,6 +148,62 @@ class Context:
             配合路径列表，每条路径是一个 MateSpec 列表（从近到远）。
         """
         return self._registry.mate_graph.chain(instance_id)
+
+    def mate_parent_instance(self, mate: MateSpec):
+        """返回 Mate 中 parent 对应的 ResolvedInstance。"""
+        parent_id, _ = parse_mate_ref(mate.parent)
+        return self.find_instance(parent_id)
+
+    def mate_child_instance(self, mate: MateSpec):
+        """返回 Mate 中 child 对应的 ResolvedInstance。"""
+        child_id, _ = parse_mate_ref(mate.child)
+        return self.find_instance(child_id)
+
+    def mated_descendants(self, instance_id: str) -> list[str]:
+        """返回该 Instance 通过 Mate 承载的所有后代实例 ID（递归）。
+
+        沿 Mate 的 parent→child 方向遍历，直到叶子节点。
+        """
+        result: list[str] = []
+        visited: set[str] = set()
+
+        def dfs(current: str) -> None:
+            for mate in self.mated_children(current):
+                child_inst = self.mate_child_instance(mate)
+                if child_inst is None:
+                    continue
+                child_id = child_inst.id
+                if child_id in visited:
+                    continue
+                visited.add(child_id)
+                result.append(child_id)
+                dfs(child_id)
+
+        dfs(instance_id)
+        return result
+
+    def mated_ancestors(self, instance_id: str) -> list[str]:
+        """返回承载该 Instance 的所有祖先实例 ID（递归，直到根）。
+
+        沿 Mate 的 child→parent 方向遍历。
+        """
+        result: list[str] = []
+        visited: set[str] = set()
+
+        def dfs(current: str) -> None:
+            for mate in self.mated_parents(current):
+                parent_inst = self.mate_parent_instance(mate)
+                if parent_inst is None:
+                    continue
+                parent_id = parent_inst.id
+                if parent_id in visited:
+                    continue
+                visited.add(parent_id)
+                result.append(parent_id)
+                dfs(parent_id)
+
+        dfs(instance_id)
+        return result
 
     # ------------------------------------------------------------------
     # 文件过滤

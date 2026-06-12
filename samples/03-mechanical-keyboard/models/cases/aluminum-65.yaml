@@ -8,6 +8,7 @@ length_mm: 320
 width_mm: 112
 height_mm: 35
 weight_g: 850
+wall_thickness_mm: 3.0
 has_usb_cutout: true
 usb_cutout_position_x_mm: 160
 usb_cutout_position_y_mm: 8
