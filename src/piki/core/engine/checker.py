@@ -10,6 +10,9 @@ from typing import Any, Callable
 from ..models.diagnostic import Diagnostic, Location, Severity
 from ..models.mating import parse_mate_ref
 from .context import Context
+from .generator_registry import (
+    GeneratorRegistry,
+)
 
 
 @dataclass
@@ -86,7 +89,7 @@ class Checker:
 
     def __init__(self) -> None:
         self._rules: list[tuple[str, str, int, Severity, RuleFunc]] = []
-        self._generators: dict[str, tuple[str, GenFunc]] = {}
+        self.generator_registry = GeneratorRegistry()
 
     def add_rule(
         self,
@@ -99,7 +102,8 @@ class Checker:
         self._rules.append((rule_id, name, priority, severity, func))
 
     def add_generator(self, gen_id: str, name: str, func: GenFunc) -> None:
-        self._generators[gen_id] = (name, func)
+        """向后兼容：委托给 GeneratorRegistry。"""
+        self.generator_registry.register(gen_id, name, func)
 
     def run(
         self,
@@ -625,13 +629,14 @@ class Checker:
         ctx.clear_current_file()
 
     def generate(self, gen_id: str, ctx: Context, config: dict[str, Any]) -> None:
-        if gen_id not in self._generators:
-            raise KeyError(f"Unknown generator: {gen_id}")
-        _name, func = self._generators[gen_id]
-        func(ctx, config)
+        """向后兼容：委托给 GeneratorRegistry。"""
+        result = self.generator_registry.generate(gen_id, ctx, config)
+        if not result.success:
+            raise RuntimeError(f"Generator {gen_id} failed: {result.error}")
 
     def list_generators(self) -> list[tuple[str, str, GenFunc]]:
-        return [(gid, name, fn) for gid, (name, fn) in self._generators.items()]
+        """向后兼容：委托给 GeneratorRegistry。"""
+        return self.generator_registry.list_all()
 
 
 # ---------------------------------------------------------------------------
@@ -696,7 +701,7 @@ def register_module_rules(checker: Checker, module: Any) -> None:
                 else:
                     rule_id, name, priority, severity = rule_meta
                 checker.add_rule(rule_id, name, obj, priority, severity)
-            gen_meta = getattr(obj, _GEN_ATTR, None)
+            gen_meta = getattr(obj, "__piki_gen_meta__", None)
             if gen_meta is not None:
                 gen_id, name = gen_meta
                 checker.add_generator(gen_id, name, obj)

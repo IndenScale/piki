@@ -488,6 +488,7 @@ def check_rack_3d_collision(ctx):
 
 # ── 产物输出辅助 ──
 
+
 def _resolve_output_path(config, default_filename: str) -> tuple[str | None, Path | None]:
     """解析产物输出路径。
 
@@ -502,17 +503,20 @@ def _resolve_output_path(config, default_filename: str) -> tuple[str | None, Pat
         return None, file_path
     return None, None
 
-def _write_and_return(gen_id, gen_name, content, file_path, content_type="text/plain") -> GeneratorResult:
+
+def _write_and_return(
+    gen_id, gen_name, content, file_path, content_type="text/plain"
+) -> GeneratorResult:
     """写入文件并返回 GeneratorResult。"""
     if file_path:
         file_path.write_text(content, encoding="utf-8")
     return GeneratorResult.ok(gen_id, gen_name, content, file_path, content_type)
 
+
 def generate_bom_csv(ctx, config) -> GeneratorResult:
     """生成 BOM CSV：设备清单汇总。"""
     import csv
     import io
-    from pathlib import Path
 
     devices = ctx.query("devices").list()
     output = io.StringIO()
@@ -538,7 +542,6 @@ def generate_bom_csv(ctx, config) -> GeneratorResult:
 
 def generate_rack_face_panel(ctx, config) -> GeneratorResult:
     """生成机柜面板图：按机柜列出每个 U 位的设备占用情况。"""
-    from pathlib import Path
 
     lines: list[str] = []
     racks = ctx.query("racks").order_by("id").list()
@@ -576,10 +579,7 @@ def generate_rack_face_panel(ctx, config) -> GeneratorResult:
                         start = d.position_u
                         height = d.resolved.height_u
                         if u == start + height - 1:
-                            label = (
-                                f"{d.id} ({d.model or 'N/A'}, "
-                                f"{d.resolved.tdp_w}W, {height}U)"
-                            )
+                            label = f"{d.id} ({d.model or 'N/A'}, {d.resolved.tdp_w}W, {height}U)"
                             lines.append(f"  U{u:>3}: {label}")
                         elif u == start:
                             lines.append(f"  U{u:>3}: {d.id} ^ (bottom)")
@@ -591,26 +591,25 @@ def generate_rack_face_panel(ctx, config) -> GeneratorResult:
     return _write_and_return("rack-face-panel", "机柜面板图", text_content, file_path)
 
 
-
-
 def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
     """生成机柜面板 SVG 图：彩色 U 位可视化，含图例。"""
-    from pathlib import Path
-    from xml.etree import ElementTree as ET
     from xml.dom import minidom
+    from xml.etree import ElementTree as ET
 
     racks = ctx.query("racks").order_by("id").list()
     if not racks:
         return GeneratorResult.ok(
-            "rack-face-panel-svg", "机柜面板图 SVG", "",
+            "rack-face-panel-svg",
+            "机柜面板图 SVG",
+            "",
             content_type="image/svg+xml",
         )
 
     # ── Layout constants (mm scaled to SVG px) ──
-    U_HEIGHT = 18          # px per U
-    PANEL_WIDTH = 240      # total panel width
-    LABEL_WIDTH = 140      # right side label area
-    DEVICE_AREA_X = 10     # device block left edge
+    U_HEIGHT = 18  # px per U
+    PANEL_WIDTH = 240  # total panel width
+    LABEL_WIDTH = 140  # right side label area
+    DEVICE_AREA_X = 10  # device block left edge
     DEVICE_AREA_W = PANEL_WIDTH - LABEL_WIDTH - DEVICE_AREA_X - 5
     MARGIN_TOP = 30
     MARGIN_BOTTOM = 30
@@ -621,8 +620,14 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
 
     # Device color palette (cycling)
     COLORS = [
-        "#4A90D9", "#5CB85C", "#F0AD4E", "#D9534F",
-        "#8E44AD", "#1ABC9C", "#E67E22", "#2C3E50",
+        "#4A90D9",
+        "#5CB85C",
+        "#F0AD4E",
+        "#D9534F",
+        "#8E44AD",
+        "#1ABC9C",
+        "#E67E22",
+        "#2C3E50",
     ]
     color_map: dict[str, str] = {}
 
@@ -688,7 +693,8 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
 
         # Background
         ET.SubElement(
-            svg, "rect",
+            svg,
+            "rect",
             {"x": "0", "y": "0", "width": "100%", "height": "100%", "fill": "#FAFAFA"},
         )
 
@@ -698,9 +704,11 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
             title_text += f" — {rack.resolved.name}"
         title_text += f"  ({rack.resolved.total_u}U)"
         ET.SubElement(
-            svg, "text",
+            svg,
+            "text",
             {
-                "x": str(RACK_LEFT), "y": str(MARGIN_TOP - 12),
+                "x": str(RACK_LEFT),
+                "y": str(MARGIN_TOP - 12),
                 "class": "title",
             },
         ).text = title_text
@@ -711,10 +719,13 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
         rack_w = DEVICE_AREA_W
         rack_h = total_u * U_HEIGHT
         ET.SubElement(
-            svg, "rect",
+            svg,
+            "rect",
             {
-                "x": str(rack_x), "y": str(rack_y),
-                "width": str(rack_w), "height": str(rack_h),
+                "x": str(rack_x),
+                "y": str(rack_y),
+                "width": str(rack_w),
+                "height": str(rack_h),
                 "class": "rack-outline",
             },
         )
@@ -726,20 +737,26 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
 
             # Grid line
             ET.SubElement(
-                svg, "line",
+                svg,
+                "line",
                 {
-                    "x1": str(rack_x), "y1": str(y + U_HEIGHT),
-                    "x2": str(rack_x + rack_w), "y2": str(y + U_HEIGHT),
+                    "x1": str(rack_x),
+                    "y1": str(y + U_HEIGHT),
+                    "x2": str(rack_x + rack_w),
+                    "y2": str(y + U_HEIGHT),
                     "class": "grid-line",
                 },
             )
 
             # U label (left of rack)
             ET.SubElement(
-                svg, "text",
+                svg,
+                "text",
                 {
-                    "x": str(rack_x - 8), "y": str(y + U_HEIGHT - 4),
-                    "text-anchor": "end", "class": "u-label",
+                    "x": str(rack_x - 8),
+                    "y": str(y + U_HEIGHT - 4),
+                    "text-anchor": "end",
+                    "class": "u-label",
                 },
             ).text = str(u)
 
@@ -755,32 +772,42 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
                     block_h = height_u * U_HEIGHT
                     c = color_map.get(dev_id, "#999")
                     ET.SubElement(
-                        svg, "rect",
+                        svg,
+                        "rect",
                         {
-                            "x": str(rack_x + 1), "y": str(block_y + 1),
-                            "width": str(rack_w - 2), "height": str(block_h - 2),
-                            "fill": c, "rx": "2", "ry": "2",
+                            "x": str(rack_x + 1),
+                            "y": str(block_y + 1),
+                            "width": str(rack_w - 2),
+                            "height": str(block_h - 2),
+                            "fill": c,
+                            "rx": "2",
+                            "ry": "2",
                         },
                     )
                     # Device label on block
                     label = dev_id
                     text_y = block_y + block_h / 2 + 3
                     ET.SubElement(
-                        svg, "text",
+                        svg,
+                        "text",
                         {
-                            "x": str(rack_x + rack_w / 2), "y": str(text_y),
-                            "text-anchor": "middle", "class": "dev-label",
+                            "x": str(rack_x + rack_w / 2),
+                            "y": str(text_y),
+                            "text-anchor": "middle",
+                            "class": "dev-label",
                             "fill": "#fff",
                         },
                     ).text = label
             else:
                 # Empty U
                 ET.SubElement(
-                    svg, "text",
+                    svg,
+                    "text",
                     {
                         "x": str(rack_x + rack_w / 2),
                         "y": str(y + U_HEIGHT - 5),
-                        "text-anchor": "middle", "class": "empty-text",
+                        "text-anchor": "middle",
+                        "class": "empty-text",
                     },
                 ).text = "—"
 
@@ -789,7 +816,8 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
         legend_y = MARGIN_TOP
 
         ET.SubElement(
-            svg, "text",
+            svg,
+            "text",
             {"x": str(legend_x), "y": str(legend_y), "class": "legend-title"},
         ).text = "图例"
 
@@ -802,29 +830,40 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
 
             # Color swatch
             ET.SubElement(
-                svg, "rect",
+                svg,
+                "rect",
                 {
-                    "x": str(legend_x), "y": str(ly),
-                    "width": "12", "height": "12",
-                    "fill": c, "rx": "2", "ry": "2",
+                    "x": str(legend_x),
+                    "y": str(ly),
+                    "width": "12",
+                    "height": "12",
+                    "fill": c,
+                    "rx": "2",
+                    "ry": "2",
                 },
             )
             # Device info
             ET.SubElement(
-                svg, "text",
+                svg,
+                "text",
                 {
-                    "x": str(legend_x + 18), "y": str(ly + 10),
+                    "x": str(legend_x + 18),
+                    "y": str(ly + 10),
                     "class": "legend-text",
                 },
-            ).text = (
-                f"{meta.get('name') or dev_id}"
-                + (f" ({meta.get('model') or meta.get('family') or ''})" if (meta.get('model') or meta.get('family')) else "")
+            ).text = f"{meta.get('name') or dev_id}" + (
+                f" ({meta.get('model') or meta.get('family') or ''})"
+                if (meta.get("model") or meta.get("family"))
+                else ""
             )
             ET.SubElement(
-                svg, "text",
+                svg,
+                "text",
                 {
-                    "x": str(legend_x + 18), "y": str(ly + 22),
-                    "class": "legend-text", "fill": "#888",
+                    "x": str(legend_x + 18),
+                    "y": str(ly + 22),
+                    "class": "legend-text",
+                    "fill": "#888",
                 },
             ).text = (
                 f"U{meta.get('position_u', '?')}—U{meta.get('position_u', 0) + meta.get('height_u', 0) - 1}"
@@ -846,16 +885,22 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
         default_name = f"rack-panel-{rack_id}.svg"
         _, file_path = _resolve_output_path(config, default_name)
         return _write_and_return(
-            "rack-face-panel-svg", "机柜面板图 SVG", full_svg,
-            file_path, "image/svg+xml",
+            "rack-face-panel-svg",
+            "机柜面板图 SVG",
+            full_svg,
+            file_path,
+            "image/svg+xml",
         )
     else:
         # Multiple racks: assemble into one combined SVG
         combined = _compose_multi_svg(svg_outputs, ET, minidom)
         _, file_path = _resolve_output_path(config, "rack-panels.svg")
         return _write_and_return(
-            "rack-face-panel-svg", "机柜面板图 SVG", combined,
-            file_path, "image/svg+xml",
+            "rack-face-panel-svg",
+            "机柜面板图 SVG",
+            combined,
+            file_path,
+            "image/svg+xml",
         )
 
 
@@ -888,7 +933,8 @@ def _compose_multi_svg(svg_outputs, ET, minidom) -> str:
     )
 
     ET.SubElement(
-        svg, "rect",
+        svg,
+        "rect",
         {"x": "0", "y": "0", "width": "100%", "height": "100%", "fill": "#FAFAFA"},
     )
 
@@ -909,7 +955,6 @@ def generate_power_budget(ctx, config) -> GeneratorResult:
     import csv
     import io
     from collections import defaultdict
-    from pathlib import Path
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -926,16 +971,19 @@ def generate_power_budget(ctx, config) -> GeneratorResult:
     writer.writerow(["Total IT Power (W)", total_it_power])
     writer.writerow(["Total PDU Capacity (W)", total_pdu_capacity])
     if total_pdu_capacity > 0:
-        writer.writerow(
-            ["Overall Load Ratio", f"{total_it_power / total_pdu_capacity:.1%}"]
-        )
+        writer.writerow(["Overall Load Ratio", f"{total_it_power / total_pdu_capacity:.1%}"])
     writer.writerow([])
 
     writer.writerow(["=== 按 PDU 功率明细 ==="])
     writer.writerow(
         [
-            "PDU ID", "Phase", "Capacity (W)", "Connected Devices",
-            "Total Load (W)", "Load Ratio", "Margin (W)",
+            "PDU ID",
+            "Phase",
+            "Capacity (W)",
+            "Connected Devices",
+            "Total Load (W)",
+            "Load Ratio",
+            "Margin (W)",
         ]
     )
     for pdu in sorted(all_pdus, key=lambda p: p.id):
@@ -946,23 +994,29 @@ def generate_power_budget(ctx, config) -> GeneratorResult:
         margin = cap - load
         writer.writerow(
             [
-                pdu.id, pdu.phase, cap, len(devices), load,
-                f"{ratio:.1%}", margin,
+                pdu.id,
+                pdu.phase,
+                cap,
+                len(devices),
+                load,
+                f"{ratio:.1%}",
+                margin,
             ]
         )
     writer.writerow([])
 
     writer.writerow(["=== 按机柜功率明细 ==="])
-    writer.writerow(
-        ["Rack ID", "Devices", "Total Load (W)", "Rack Capacity (W)", "Load Ratio"]
-    )
+    writer.writerow(["Rack ID", "Devices", "Total Load (W)", "Rack Capacity (W)", "Load Ratio"])
     for rack in sorted(all_racks, key=lambda r: r.id):
         devices = ctx.query("devices", rack_id=rack.id).list()
         load = sum(d.resolved.tdp_w for d in devices)
         cap = rack.resolved.power_capacity_w
         writer.writerow(
             [
-                rack.id, len(devices), load, cap,
+                rack.id,
+                len(devices),
+                load,
+                cap,
                 f"{load / cap:.1%}" if cap > 0 else "N/A",
             ]
         )
@@ -988,7 +1042,6 @@ def generate_cable_list(ctx, config) -> GeneratorResult:
     """生成线缆清单：汇总光纤跳线和光模块。"""
     import csv
     import io
-    from pathlib import Path
 
     cable_type = config.get("cable_type", "all")
     output = io.StringIO()
@@ -999,14 +1052,18 @@ def generate_cable_list(ctx, config) -> GeneratorResult:
         if fibers:
             writer.writerow(["=== 光纤跳线 ==="])
             writer.writerow(
-                ["ID", "Model", "Type", "Connector", "Length (m)",
-                 "Attenuation (dB)", "Status"]
+                ["ID", "Model", "Type", "Connector", "Length (m)", "Attenuation (dB)", "Status"]
             )
             for f in sorted(fibers, key=lambda x: x.id):
                 writer.writerow(
                     [
-                        f.id, f.model or "N/A", f.fiber_type, f.connector,
-                        f.length_m, f.attenuation_db, f.status,
+                        f.id,
+                        f.model or "N/A",
+                        f.fiber_type,
+                        f.connector,
+                        f.length_m,
+                        f.attenuation_db,
+                        f.status,
                     ]
                 )
         else:
@@ -1018,14 +1075,18 @@ def generate_cable_list(ctx, config) -> GeneratorResult:
         if transceivers:
             writer.writerow(["=== 光模块 ==="])
             writer.writerow(
-                ["ID", "Model", "Form Factor", "Reach", "Speed (Gbps)",
-                 "Wavelength (nm)", "Status"]
+                ["ID", "Model", "Form Factor", "Reach", "Speed (Gbps)", "Wavelength (nm)", "Status"]
             )
             for t in sorted(transceivers, key=lambda x: x.id):
                 writer.writerow(
                     [
-                        t.id, t.model or "N/A", t.form_factor, t.reach,
-                        t.speed_gbps, t.wavelength_nm, t.status,
+                        t.id,
+                        t.model or "N/A",
+                        t.form_factor,
+                        t.reach,
+                        t.speed_gbps,
+                        t.wavelength_nm,
+                        t.status,
                     ]
                 )
         else:
@@ -1035,4 +1096,3 @@ def generate_cable_list(ctx, config) -> GeneratorResult:
     csv_content = output.getvalue()
     _, file_path = _resolve_output_path(config, "cable-list.csv")
     return _write_and_return("cable-list", "线缆清单", csv_content, file_path, "text/csv")
-

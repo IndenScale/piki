@@ -79,24 +79,24 @@ piki 当前有三层数据模型，各司其职：
 L1: 机械配合（结构配合）
     挂耳/导轨/螺栓孔/方孔条。
     一个设备物理上"装进"另一个承载物。
-    
+
     mate rack-mount:
       type: rack-mount-19inch
       child: SRV-01
       parent: RACK-A01
-      
+
 L2: 接口配合（电气/信号配对）
     依附于 L1 配合。设备装进承载物时，电源口和管理口自然归入配合关系。
-    
+
     pairings:
       - from: SRV-01/power-a
         to: PDU-A/out-3
         type: power-iec-c14-c13
-        
+
 L3: 跨配合链的链路配合
     双方不在同一个 L1 配合关系中（跨机柜光纤、跨方舱液冷管路）。
     存在于独立的 Connection Instance 中，但需通过接口配合来验证两端兼容性。
-    
+
     mate optical-link:
       type: optical-link
       endpoints:
@@ -144,10 +144,10 @@ class MateSpec(BaseModel):
     parent: str                # 配合方 Instance ID（承载物）
     child: str                 # 被配合方 Instance ID
     at: dict[str, Any] | None = None  # 配合锚点：{u_start: 10, u_span: 2} 或 {grid_id: "B-3"}
-    
+
     # 配合的固有约束（引擎加载时自动验证）
     constrains: list[MateConstraint] = Field(default_factory=list)
-    
+
     # 通过这个配合关系建立的接口配对（L2）
     pairings: list[InterfacePairing] = Field(default_factory=list)
 ```
@@ -266,13 +266,13 @@ for constraint in mate.constrains:
 class Context:
     def mated_children(self, instance_id: str, mate_type: str | None = None) -> list:
         """返回指定 Instance 的所有子设备（顺配合图向下）。"""
-    
+
     def mated_parents(self, instance_id: str) -> list:
         """返回指定 Instance 的所有父承载物（顺配合图向上）。"""
-    
+
     def mated_chain(self, instance_id: str) -> list:
         """返回从根承载物到该 Instance 的完整配合路径。"""
-    
+
     def mated_pairings(self, instance_id: str) -> list:
         """返回该 Instance 通过所有 Mate 建立的接口配对。"""
 ```

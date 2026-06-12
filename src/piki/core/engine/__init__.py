@@ -1,4 +1,4 @@
-"""规则引擎层 —— Checker、Registry、Query、Context。"""
+"""规则引擎层 —— Checker、Registry、Query、Context、Generator。"""
 
 from .checker import (
     Checker,
@@ -6,11 +6,15 @@ from .checker import (
     GenFunc,
     RuleFunc,
     RuleResult,
-    generator,
     register_module_rules,
     rule,
 )
 from .context import Context
+from .generator_registry import (
+    GeneratorRegistry,
+    GeneratorResult,
+    generator,
+)
 from .query import QuerySet
 from .registry import Registry
 
@@ -23,6 +27,8 @@ __all__ = [
     "rule",
     "generator",
     "register_module_rules",
+    "GeneratorRegistry",
+    "GeneratorResult",
     "Context",
     "Registry",
     "QuerySet",

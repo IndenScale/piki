@@ -116,7 +116,7 @@ class TestGenerator:
     def test_unknown_generator(self) -> None:
         checker = Checker()
         ctx = Context(Registry(), {})
-        with pytest.raises(KeyError, match="Unknown generator"):
+        with pytest.raises(RuntimeError, match="Unknown generator"):
             checker.generate("missing", ctx, {})
 
 
@@ -176,15 +176,14 @@ class TestDecorators:
 
         assert len(checker._rules) == 1
         assert checker._rules[0][0] == "MOD-001"
-        assert len(checker._generators) == 1
-        assert "MOD-GEN-001" in checker._generators
+        assert checker.generator_registry.has("MOD-GEN-001")
 
     def test_register_module_rules_with_none_module(self) -> None:
         """传入 None 时应安全返回，不报错。"""
         checker = Checker()
         register_module_rules(checker, None)
         assert len(checker._rules) == 0
-        assert len(checker._generators) == 0
+        assert len(checker.generator_registry.ids) == 0
 
     def test_register_module_rules_isolation(self) -> None:
         """不同模块的规则应相互隔离，不会互相污染。"""

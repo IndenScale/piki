@@ -18,6 +18,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from piki.core.engine.checker import Checker
+from piki.core.engine.generator_registry import GeneratorResult
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets
@@ -502,7 +503,7 @@ def check_power_redundancy(ctx):
 # ---------------------------------------------------------------------------
 
 
-def generate_dc_bom_csv(ctx, config):
+def generate_dc_bom_csv(ctx, config) -> GeneratorResult:
     """生成数据中心 BOM CSV。"""
     import csv
     import io
@@ -515,7 +516,6 @@ def generate_dc_bom_csv(ctx, config):
     output = io.StringIO()
     writer = csv.writer(output)
 
-    # 方舱清单
     writer.writerow(["=== 方舱清单 ==="])
     writer.writerow(["ID", "Type", "Standard", "Power_kW", "Cooling_kW", "Status"])
     for c in containers:
@@ -532,7 +532,6 @@ def generate_dc_bom_csv(ctx, config):
 
     writer.writerow([])
 
-    # 设备清单
     writer.writerow(["=== 设备清单 ==="])
     writer.writerow(
         ["ID", "Type", "Model", "Container", "Power_kW", "Weight_kg", "LiquidCooled", "Status"]
@@ -553,7 +552,6 @@ def generate_dc_bom_csv(ctx, config):
 
     writer.writerow([])
 
-    # 配电清单
     writer.writerow(["=== 配电清单 ==="])
     writer.writerow(["ID", "Type", "Container", "Capacity_kW", "Redundancy", "Status"])
     for p in power:
@@ -568,9 +566,12 @@ def generate_dc_bom_csv(ctx, config):
             ]
         )
 
-    content = output.getvalue()
+    csv_content = output.getvalue()
     out_path = config.get("output")
     if out_path:
-        Path(out_path).write_text(content, encoding="utf-8")
-    else:
-        print(content)
+        file_path = Path(str(out_path))
+        file_path.write_text(csv_content, encoding="utf-8")
+        return GeneratorResult.ok(
+            "dc-bom-csv", "DC BOM CSV 导出", csv_content, file_path, "text/csv"
+        )
+    return GeneratorResult.ok("dc-bom-csv", "DC BOM CSV 导出", csv_content, content_type="text/csv")

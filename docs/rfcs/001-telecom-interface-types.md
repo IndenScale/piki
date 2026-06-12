@@ -20,14 +20,14 @@
 
 ### 现状问题
 
-| 问题                    | 具体表现                                                                                    | 影响                                       |
-| ----------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| 无类型约束              | `interface_type: str`，写 `SFP-28`、`sfp28`、`SSFP28` 都能通过 Schema 校验                  | 拼写错误到连接阶段才暴露                   |
-| 严格相等比较            | `INTERFACE-COMPAT-001` 只做 `==`，不知道 `SFP28` 口兼容 `SFP+` 模块                         | 合法连接误报错误                           |
-| 无 cable_type 映射      | `FiberConnectionFamily.cable_type` 和 `InterfaceSpec.interface_type` 是两个独立自由字符串   | 写 `SFP28` 口配 `OM3-SC-SC` 跳线可通过校验 |
-| 无领域知识              | IDE 不提示有效值，工程师需查手册或靠记忆                                                    | 新人上手慢                                 |
-| datacenter 无 Interface | `datacenter` 插件的 `ConnectionFamily` 用 `from_container/to_container`，不参与接口兼容检查 | 方舱间连接失去自动校验                     |
-| 零测试覆盖              | `InterfaceSpec` 和 `INTERFACE-COMPAT-001` 无任何测试                                        | 回归风险                                   |
+| 问题                    | 具体表现                                                                              | 影响                                 |
+| ----------------------- | ------------------------------------------------------------------------------------- | ------------------------------------ |
+| 无类型约束              | `interface_type: str`，写 `SFP-28`、`sfp28`、`SSFP28` 都能通过 Schema 校验            | 拼写错误到连接阶段才暴露             |
+| 严格相等比较            | `INTERFACE-COMPAT-001` 只做 `==`，不知道 `SFP28` 口兼容 `SFP+` 模块                   | 合法连接误报错误                     |
+| 无 cable_type 映射      | `FiberConnectionFamily.cable_type` 和 `InterfaceSpec.interface_type` 是两个独立自由字符串 | 写 `SFP28` 口配 `OM3-SC-SC` 跳线可通过校验 |
+| 无领域知识              | IDE 不提示有效值，工程师需查手册或靠记忆                                                | 新人上手慢                           |
+| datacenter 无 Interface | `datacenter` 插件的 `ConnectionFamily` 用 `from_container/to_container`，不参与接口兼容检查 | 方舱间连接失去自动校验               |
+| 零测试覆盖              | `InterfaceSpec` 和 `INTERFACE-COMPAT-001` 无任何测试                                  | 回归风险                             |
 
 ### 期望状态
 
@@ -311,14 +311,14 @@ def check_cable_interface_match(self, ctx: Context) -> None:
 
 ### 代码变更
 
-| 文件                                         | 变更类型 | 说明                                                                |
-| -------------------------------------------- | -------- | ------------------------------------------------------------------- |
-| `src/piki/extensions/telecom/types.py`       | **新增** | InterfaceType 枚举 + 兼容性矩阵 + 映射表                            |
-| `src/piki/core/models/interface.py`          | 修改     | InterfaceSpec 增加 field_validator                                  |
+| 文件                                         | 变更类型 | 说明                                                           |
+| -------------------------------------------- | -------- | -------------------------------------------------------------- |
+| `src/piki/extensions/telecom/types.py`       | **新增** | InterfaceType 枚举 + 兼容性矩阵 + 映射表                         |
+| `src/piki/core/models/interface.py`          | 修改     | InterfaceSpec 增加 field_validator                               |
 | `src/piki/core/engine/checker.py`            | 修改     | INTERFACE-COMPAT-001 替换为兼容性矩阵查询；新增 INTERFACE-CABLE-001 |
-| `src/piki/extensions/telecom/plugin.py`      | 修改     | FiberConnectionFamily / CopperConnectionFamily 使用枚举             |
-| `tests/unit/test_interface_types.py`         | **新增** | 接口类型测试                                                        |
-| `tests/integration/test_interface_compat.py` | **新增** | 兼容性规则集成测试                                                  |
+| `src/piki/extensions/telecom/plugin.py`      | 修改     | FiberConnectionFamily / CopperConnectionFamily 使用枚举          |
+| `tests/unit/test_interface_types.py`         | **新增** | 接口类型测试                                                   |
+| `tests/integration/test_interface_compat.py` | **新增** | 兼容性规则集成测试                                             |
 
 ### 向后兼容
 

@@ -14,19 +14,25 @@
 | 核心 | 嵌套项目 + FQID (ADR-009) | 0.1.0 |
 | 核心 | Connection 实例化 + Interface 模型 (ADR-007) | 0.1.0 |
 | 核心 | 通用 FK-001 外键检查 + INTERFACE-COMPAT-001 接口兼容 | 0.1.0 |
-| 插件 | telecom 光纤/铜缆连接 Family (FiberConnectionFamily, CopperConnectionFamily) | 0.1.0 |
 | 核心 | Tag 正交过滤（tags__discipline=compute） | 0.1.0 |
-| 核心 | Django-style QuerySet（__gt / __in / __contains 等 9 个操作符） | 0.1.0 |
+| 核心 | Django-style QuerySet（`__gt` / `__in` / `__contains` 等 9 个操作符） | 0.1.0 |
 | 核心 | LSP 兼容诊断（severity / range / relatedInformation） | 0.1.0 |
 | 核心 | Schema 校验 + 行级错误定位 | 0.1.0 |
+| 核心 | GeneratorRegistry + GeneratorResult（独立的生成器引擎，结构化返回值） | 0.1.0 |
 | 核心 | 4 种输出格式（human / json / junit / markdown） | 0.1.0 |
-| 插件 | telecom（机柜 + PDU + 服务器，7 条规则 + BOM CSV） | 0.1.0 |
-| 插件 | datacenter（方舱 + 配电 + 设备 + 连接，5 条规则 + DC BOM CSV） | 0.1.0 |
-| 几何 | USD 场景生成（外部引用 / InlineGeometry / CSG / 代理 Box） | 0.1.0 |
+| 插件 | telecom：7 条规则 + 4 个生成器（BOM / 面板图 / 功率预算 / 线缆清单） | 0.1.0 |
+| 插件 | telecom：光纤/铜缆连接 Family + 光模块 + 光纤跳线型号库 | 0.1.0 |
+| 插件 | datacenter：5 条规则 + DC BOM CSV 生成器（方舱 / 配电 / 设备） | 0.1.0 |
 | 几何 | AABB 碰撞检测（同一机柜内设备） | 0.1.0 |
 | 几何 | CSG 布尔运算（依赖 manifold3d，可选安装） | 0.1.0 |
-| Studio | 浏览器端 3D 预览 IDE（Three.js + USDA 解析器 + File System Access API） | 0.1.0 |
+| Studio | 浏览器端 3D 预览 IDE（Three.js + File System Access API） | 0.1.0 |
 | Git | `piki init` 自动安装 pre-commit hook | 0.1.0 |
+
+### 已移除
+
+| 模块 | 说明 | 原因 |
+|------|------|------|
+| USD 场景生成 | `piki generate usd-scene` | 核心重构后暂不兼容，待后续重新设计 |
 
 ---
 

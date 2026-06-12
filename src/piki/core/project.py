@@ -8,6 +8,7 @@ from typing import Any
 
 from .engine.checker import Checker, CheckReport, RuleResult, register_module_rules
 from .engine.context import Context
+from .engine.generator_registry import GeneratorRegistry
 from .engine.registry import Registry
 from .parsing.loaders import load_toml
 from .plugin import Plugin, discover_plugins
@@ -272,6 +273,11 @@ class Project:
     @property
     def children(self) -> dict[str, "Project"]:
         return dict(self._children)
+
+    @property
+    def generator_registry(self) -> GeneratorRegistry:
+        """获取项目的 GeneratorRegistry 实例。"""
+        return self.checker.generator_registry
 
     def plugin_config(self, name: str) -> dict[str, Any]:
         plugins = self.config.get("plugins", {})

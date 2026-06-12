@@ -177,6 +177,7 @@ git commit -m "docs: 补充 CLI 命令参考文档"
 - **讨论**：[GitHub Discussions](https://github.com/indenscale/piki/discussions)
 
 反馈时请提供：
+
 - piki 版本（`piki --version`）
 - Python 版本
 - 操作系统

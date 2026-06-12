@@ -133,7 +133,9 @@ project/
 - **与 PRD 中的用户故事对齐**：US-5 "面板图"，US-4 "BOM 清单"，US-6 "端口图"
 - **降低沟通成本**：说"看 dist/施工图/rack-panel-RACK-A01.svg"不需要解释
 
-### 随时可改回英文\*\*：目录名是在生成器元数据中声明的字符串，不是硬编码在核心引擎中。如果团队约定用英文，修改 telecom 插件中一行即可。
+### 随时可改回英文
+
+目录名是在生成器元数据中声明的字符串，不是硬编码在核心引擎中。如果团队约定用英文，修改 telecom 插件中一行即可。
 
 ---
 
@@ -221,6 +223,7 @@ cable-list = "采购清单"
 **阶段一（当前）**：工程师手动运行 `piki generate`，产物写入 `dist/`，人工审查后通过邮件或 IM 发给施工队/采购。
 
 **阶段二（自动化）**：CI/CD 触发 `piki check && piki generate`，外部脚本消费 `GeneratorResult`：
+
 - `content_type == "text/csv"` → 写入飞书多维表格，自动更新 BOM 台账
 - `content_type == "image/svg+xml"` → 作为邮件附件或飞书消息卡片发送给施工队长
 - `file_path` → 上传至企业网盘或 OSS，生成分享链接

@@ -241,7 +241,6 @@ cable_type: SMF
 
 > Interface 不是独立的 Instance，而是内嵌在 Instance 的 `interfaces` 列表中，随 Instance 一起解析和管理。
 
-
 ## 解析后的完整对象
 
 piki 运行时合并 Model 默认值 + Instance 覆盖值 + Layout 部署值：

@@ -9,7 +9,9 @@
 
 piki 是 [SDE (Software Defined Engineering)](../Software%20Defined%20Engineering/) 规范的一个参考实现。
 
-**要求：Python 3.11+**
+## 要求
+
+- Python 3.11+
 
 ---
 
@@ -43,7 +45,10 @@ def check_pdu_budget(ctx):
 | **Tag 过滤** | 正交维度标签（专业、安全分区、所属系统），规则按 Tag 过滤 | ✅ |
 | **嵌套项目** | 厂区→子区域→方舱，FQID 全限定引用，跨项目引用 | ✅ |
 | **报告生成** | human / json / junit / markdown 四种格式 | ✅ |
-| **USD 3D 导出** | `piki generate usd-scene`，外部引用 / 代理几何 / CSG 程序化几何 | ✅ |
+| **BOM CSV 导出** | `piki generate bom-csv`，设备清单一键导出 | ✅ |
+| **机柜面板图** | `piki generate rack-face-panel`，U 位占用可视化 | ✅ |
+| **功率预算汇总** | `piki generate power-budget`，PDU/机柜/各相功率明细 | ✅ |
+| **线缆清单** | `piki generate cable-list`，光纤跳线 + 光模块清单 | ✅ |
 | **AABB 碰撞检测** | 同一机柜内设备 3D 空间冲突检测 | ✅ |
 | **Piki Studio** | 浏览器端 3D 预览 IDE，打开项目即看布局 | ✅ |
 | **Git 集成** | `piki init` 自动安装 pre-commit hook，CI/CD 原生支持 | ✅ |
@@ -58,7 +63,7 @@ pip install piki                # Python 3.11+
 piki init --plugin telecom      # 初始化项目
 piki check                      # 运行检查
 piki report --format markdown   # 生成报告
-piki generate usd-scene         # 导出 3D 场景
+piki generate bom-csv           # 导出 BOM 清单
 ```
 
 完整教程：[10 分钟上手 →](docs/concepts/01-quickstart.md)
