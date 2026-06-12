@@ -1,9 +1,0 @@
-id: POWER-P01-AI
-family: ConnectionFamily
-name: 供电电缆-配电→智算
-connection_type: power
-from_container: POWER-01
-to_container: AI-LIQUID-01
-capacity: 600
-length_m: 20
-status: installed

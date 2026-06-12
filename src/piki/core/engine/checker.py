@@ -135,12 +135,6 @@ class Checker:
                 self.check_interface_compatibility,
             ),
             (
-                "INTERFACE-CABLE-001",
-                "线缆-接口类型匹配检查",
-                Severity.ERROR,
-                self.check_cable_interface_match,
-            ),
-            (
                 "MATE-001",
                 "Mate Instance 引用完整性",
                 Severity.ERROR,

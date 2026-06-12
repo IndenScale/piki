@@ -1,9 +1,0 @@
-id: FIBER-S01-SW01
-family: FiberConnectionFamily
-name: "SRV-01 eth1 → SW-01 Gi1/0/1 （SFP+ ↔ SFP28 兼容连接）"
-from_interface: SRV-01/eth1
-to_interface: SW-01/Gi1/0/1
-cable_type: OM4-LC-LC
-length_m: 3.0
-attenuation_db: 0.5
-status: installed

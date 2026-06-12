@@ -1,9 +1,0 @@
-id: POWER-BAT-P01
-family: ConnectionFamily
-name: 供电电缆-储能→配电
-connection_type: power
-from_container: BAT-01
-to_container: POWER-01
-capacity: 1000
-length_m: 10
-status: installed

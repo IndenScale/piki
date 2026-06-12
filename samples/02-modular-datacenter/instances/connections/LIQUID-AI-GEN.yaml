@@ -1,9 +1,0 @@
-id: LIQUID-AI-GEN
-family: ConnectionFamily
-name: 液冷主管路-AI→GEN
-connection_type: liquid
-from_container: AI-LIQUID-01
-to_container: GEN-AIR-01
-capacity: 150
-length_m: 15
-status: planned
