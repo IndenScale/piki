@@ -10,6 +10,7 @@ from piki.core.engine.checker import Checker
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets
+from piki.core.models.interface import InterfaceSpec
 from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 
@@ -40,6 +41,9 @@ class PduFamily(BaseModel):
     phase: str = Field(default="L1")  # 相线，如 L1, L2, L3
     capacity_w: float = Field(..., gt=0)  # 额定功率（W）
     tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
+    interfaces: list[InterfaceSpec] = Field(
+        default_factory=list, description="可连接接口 (ADR-007)"
+    )
 
 
 class ServerFamily(BaseModel):
@@ -47,6 +51,9 @@ class ServerFamily(BaseModel):
     name: str = Field(default="")
     model: str = Field(default="")
     status: str = Field(default="planned")
+    interfaces: list[InterfaceSpec] = Field(
+        default_factory=list, description="可连接接口 (ADR-007)"
+    )
     rack_id: str = Field(default="")
     position_u: int = Field(default=1, ge=1, le=48)
     pdu_id: str = Field(default="")  # 引用 PduFamily.id
@@ -72,6 +79,32 @@ class ServerFamily(BaseModel):
     assets: GeometryAssets | None = Field(default=None)
 
 
+class FiberConnectionFamily(BaseModel):
+    """光纤连接 (ADR-007)."""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    from_interface: str = Field(..., description="'SRV-01/eth0' format")
+    to_interface: str = Field(..., description="'SW-01/Gi1-0-1' format")
+    cable_type: str = Field(default="OM4-LC-LC")
+    length_m: float = Field(default=3.0, gt=0)
+    attenuation_db: float = Field(default=0.3, ge=0)
+    status: str = Field(default="planned")
+
+
+class CopperConnectionFamily(BaseModel):
+    """铜缆连接 (ADR-007)."""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    from_interface: str = Field(..., description="'SRV-01/eth0' format")
+    to_interface: str = Field(..., description="'SW-01/Gi1-0-1' format")
+    cable_type: str = Field(default="Cat6A-RJ45")
+    length_m: float = Field(default=3.0, gt=0)
+    poe_w: float = Field(default=0, ge=0)
+    status: str = Field(default="planned")
+
+
 class TelecomPlugin(Plugin):
     name = "telecom"
     version = "0.1.0"
@@ -84,6 +117,8 @@ class TelecomPlugin(Plugin):
         registry.add_family("RackFamily", RackFamily)
         registry.add_family("PduFamily", PduFamily)
         registry.add_family("ServerFamily", ServerFamily)
+        registry.add_family("FiberConnectionFamily", FiberConnectionFamily)
+        registry.add_family("CopperConnectionFamily", CopperConnectionFamily)
 
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule(

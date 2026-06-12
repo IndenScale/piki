@@ -2,3 +2,12 @@ id: SRV-01
 name: 服务器-01
 model: generic-server
 status: installed
+interfaces:
+  - id: eth0
+    interface_type: SFP28
+    direction: bidirectional
+    description: "管理网口"
+  - id: power-a
+    interface_type: IEC-C14
+    direction: input
+    description: "A路电源"

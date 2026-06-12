@@ -12,6 +12,9 @@
 | 核心 | Family → Model → Instance 三层声明式建模 | 0.1.0 |
 | 核心 | Instance/Layout 分离 (ADR-008) | 0.1.0 |
 | 核心 | 嵌套项目 + FQID (ADR-009) | 0.1.0 |
+| 核心 | Connection 实例化 + Interface 模型 (ADR-007) | 0.1.0 |
+| 核心 | 通用 FK-001 外键检查 + INTERFACE-COMPAT-001 接口兼容 | 0.1.0 |
+| 插件 | telecom 光纤/铜缆连接 Family (FiberConnectionFamily, CopperConnectionFamily) | 0.1.0 |
 | 核心 | Tag 正交过滤（tags__discipline=compute） | 0.1.0 |
 | 核心 | Django-style QuerySet（__gt / __in / __contains 等 9 个操作符） | 0.1.0 |
 | 核心 | LSP 兼容诊断（severity / range / relatedInformation） | 0.1.0 |

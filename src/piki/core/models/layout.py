@@ -2,10 +2,13 @@
 
 ADR-008 将 Instance（设备身份）与 Layout（部署位置）分离。
 Layout 文件描述"这台设备部署在哪、怎么接"，不描述设备自身属性。
+
+ADR-007 将连接关系提升为独立 Instance，废弃 LayoutEntry.connections。
 """
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -25,13 +28,32 @@ class LayoutEntry:
     position_x_mm: float | None = None
     position_y_mm: float | None = None
     position_z_mm: float | None = None
-    # 连接关系
-    connections: list[dict[str, str]] = field(default_factory=list)
+    # 连接关系 — 已废弃（ADR-007）
+    # 保留字段以兼容旧数据，引擎不再消费。请改用独立 ConnectionFamily Instance。
+    _connections: list[dict[str, str]] = field(default_factory=list, repr=False)
     # 额外部署参数
     extra: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def connections(self) -> list[dict[str, str]]:
+        """Deprecated: 连接关系应使用独立的 ConnectionFamily Instance (ADR-007)."""
+        warnings.warn(
+            "LayoutEntry.connections is deprecated. "
+            "Use standalone ConnectionFamily instances instead (ADR-007).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._connections
+
+    @connections.setter
+    def connections(self, value: list[dict[str, str]]) -> None:
+        self._connections = value
+
     def to_flat(self) -> dict[str, Any]:
-        """将 LayoutEntry 转为扁平 dict，用于合并到 resolved。"""
+        """将 LayoutEntry 转为扁平 dict，用于合并到 resolved。
+
+        ADR-007: connections 不再合并到 flat，作为独立 Instance 存在。
+        """
         flat: dict[str, Any] = {}
         if self.rack_id is not None:
             flat["rack_id"] = self.rack_id
@@ -47,9 +69,6 @@ class LayoutEntry:
             flat["position_y_mm"] = self.position_y_mm
         if self.position_z_mm is not None:
             flat["position_z_mm"] = self.position_z_mm
-        for conn in self.connections:
-            # 连接关系保持在 extra 中，规则按需读取
-            pass
         flat.update(self.extra)
         return flat
 
@@ -87,7 +106,6 @@ class Layout:
 
     def free_positions(self, rack_id: str) -> set[int]:
         """查询指定机柜的空闲 U 位（需要外部传入 total_u）。"""
-        # 需要机柜的 total_u 信息，由调用方提供
         {
             e.position_u
             for e in self.entries.values()

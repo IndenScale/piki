@@ -77,11 +77,15 @@ def load_layout_file(path: Path, name: str = "") -> Layout:
 
 
 def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
-    """从 YAML dict 解析单个 LayoutEntry。"""
+    """从 YAML dict 解析单个 LayoutEntry。
+
+    ADR-007: connections 字段保留解析以兼容旧数据，但不合并到 resolved。
+    """
     instance_id = item.get("instance")
     if not instance_id:
         return None
 
+    # ADR-007: connections 仍解析，但存入 _connections（废弃字段）。
     connections = item.get("connections", [])
     if isinstance(connections, list):
         connections = [c for c in connections if isinstance(c, dict)]
@@ -100,7 +104,7 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
     }
     extra = {k: v for k, v in item.items() if k not in known}
 
-    return LayoutEntry(
+    entry = LayoutEntry(
         instance=str(instance_id),
         rack_id=item.get("rack_id"),
         position_u=item.get("position_u"),
@@ -109,9 +113,11 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         position_x_mm=item.get("position_x_mm"),
         position_y_mm=item.get("position_y_mm"),
         position_z_mm=item.get("position_z_mm"),
-        connections=connections,
         extra=extra,
     )
+    # 通过 setter 赋值废弃的 connections 字段，绕过 DeprecationWarning 的 property getter
+    entry._connections = connections
+    return entry
 
 
 def find_layout_file(project_root: Path) -> Path | None:

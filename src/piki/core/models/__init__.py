@@ -11,6 +11,7 @@ from .diagnostic import (
     RelatedInformation,
     Severity,
 )
+from .interface import InterfaceSpec, get_interfaces_from_resolved, resolve_interface_ref
 
 __all__ = [
     # base
@@ -19,6 +20,10 @@ __all__ = [
     "ResolvedInstance",
     "_make_namespace",
     "_unflatten",
+    # interface
+    "InterfaceSpec",
+    "resolve_interface_ref",
+    "get_interfaces_from_resolved",
     # diagnostic
     "Severity",
     "Position",

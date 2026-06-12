@@ -117,35 +117,45 @@ class Checker:
         sorted_rules = sorted(self._rules, key=lambda x: x[2], reverse=True)
         report = CheckReport()
 
-        # 运行内置 L2 引用完整性检查
-        try:
-            self.check_reference_integrity(ctx)
-        except AssertionError as exc:
-            report.results.append(
-                RuleResult(
-                    rule_id="REFS-001",
-                    name="Layout-Instance 引用完整性",
-                    passed=False,
-                    message=str(exc),
-                    file=getattr(ctx, "_current_file", ""),
-                    severity=Severity.ERROR,
+        # 运行内置 L2 检查（成功时也记录 PASS）
+        for rule_id, name, severity, check_fn in [
+            (
+                "REFS-001",
+                "Layout-Instance 引用完整性",
+                Severity.ERROR,
+                self.check_reference_integrity,
+            ),
+            ("TAGS-001", "Tag Schema 合规性", Severity.WARNING, self.check_tag_schema),
+            ("FK-001", "通用外键引用完整性", Severity.ERROR, self.check_foreign_keys),
+            (
+                "INTERFACE-COMPAT-001",
+                "接口类型兼容性检查",
+                Severity.ERROR,
+                self.check_interface_compatibility,
+            ),
+        ]:
+            try:
+                check_fn(ctx)
+                report.results.append(
+                    RuleResult(
+                        rule_id=rule_id,
+                        name=name,
+                        passed=True,
+                        file=getattr(ctx, "_current_file", ""),
+                        severity=severity,
+                    )
                 )
-            )
-
-        # 运行内置 Tag Schema 检查
-        try:
-            self.check_tag_schema(ctx)
-        except AssertionError as exc:
-            report.results.append(
-                RuleResult(
-                    rule_id="TAGS-001",
-                    name="Tag Schema 合规性",
-                    passed=False,
-                    message=str(exc),
-                    file=getattr(ctx, "_current_file", ""),
-                    severity=Severity.WARNING,
+            except AssertionError as exc:
+                report.results.append(
+                    RuleResult(
+                        rule_id=rule_id,
+                        name=name,
+                        passed=False,
+                        message=str(exc),
+                        file=getattr(ctx, "_current_file", ""),
+                        severity=severity,
+                    )
                 )
-            )
 
         # 运行内置 FQID 冲突检查
         try:
@@ -287,6 +297,121 @@ class Checker:
                     f"{', '.join(sorted(unknown_keys))}。"
                     f" 允许的键: {', '.join(sorted(allowed_tags))}。"
                 )
+        ctx.clear_current_file()
+
+    def check_foreign_keys(self, ctx: Context) -> None:
+        """L2 通用外键引用完整性检查 (ADR-007).
+
+        扫描所有 Instance 中的引用字段：
+        1. 以 _id 结尾的字段 → 检查 Instance 是否存在
+        2. 以 _interface 结尾的字段 → 解析 instance_id/interface_id，
+           检查 Instance 和 Interface 是否都存在
+        """
+        from ..models.interface import get_interfaces_from_resolved, resolve_interface_ref
+
+        all_ids = set(ctx._registry.all_instances_tree().keys())
+
+        for inst in ctx.instances():
+            ctx.set_current_file(str(inst.source))
+
+            for field_name, field_value in inst._resolved.items():
+                if not isinstance(field_value, str) or not field_value:
+                    continue
+
+                # 接口引用：from_interface / to_interface
+                if field_name.endswith("_interface") and "/" in field_value:
+                    try:
+                        instance_id, interface_id = resolve_interface_ref(field_value)
+                    except ValueError as exc:
+                        assert False, (
+                            f"Instance '{inst.id}' 的字段 '{field_name}' 接口引用格式无效: {exc}"
+                        )
+                    target = ctx.find_instance(instance_id)
+                    if target is None:
+                        assert False, (
+                            f"Instance '{inst.id}' 的字段 '{field_name}' 引用了 "
+                            f"不存在的 Instance '{instance_id}'。"
+                        )
+                    interfaces = get_interfaces_from_resolved(target)
+                    if interface_id not in {i.id for i in interfaces}:
+                        assert False, (
+                            f"Instance '{inst.id}' 的字段 '{field_name}' 引用了 "
+                            f"Interface '{field_value}'，但 Instance '{instance_id}' "
+                            f"未声明该接口。"
+                        )
+                    continue
+
+                # 普通外键引用：以 _id 结尾
+                if not field_name.endswith("_id"):
+                    continue
+
+                if field_value not in all_ids:
+                    assert False, (
+                        f"Instance '{inst.id}' 的字段 '{field_name}' 引用了 "
+                        f"不存在的 Instance '{field_value}'。"
+                    )
+
+        ctx.clear_current_file()
+
+    def check_interface_compatibility(self, ctx: Context) -> None:
+        """L2 接口类型兼容性检查 (ADR-007).
+
+        对于所有 Connection Instance（以 _interface 字段标识），
+        检查 from_interface 和 to_interface 的 interface_type 是否一致。
+        """
+        from ..models.interface import get_interfaces_from_resolved, resolve_interface_ref
+
+        for inst in ctx.instances():
+            from_ref = inst._resolved.get("from_interface")
+            to_ref = inst._resolved.get("to_interface")
+
+            # 只检查同时有 from_interface 和 to_interface 的实例（即连接实例）
+            if not from_ref or not to_ref:
+                continue
+            if not isinstance(from_ref, str) or not isinstance(to_ref, str):
+                continue
+            if "/" not in from_ref or "/" not in to_ref:
+                continue
+
+            ctx.set_current_file(str(inst.source))
+
+            # 解析 from
+            try:
+                from_inst_id, from_iface_id = resolve_interface_ref(from_ref)
+            except ValueError as exc:
+                assert False, f"引用格式无效: {exc}"
+
+            from_target = ctx.find_instance(from_inst_id)
+            if from_target is None:
+                continue  # FK-001 已报错，不重复
+
+            # 解析 to
+            try:
+                to_inst_id, to_iface_id = resolve_interface_ref(to_ref)
+            except ValueError as exc:
+                assert False, f"引用格式无效: {exc}"
+
+            to_target = ctx.find_instance(to_inst_id)
+            if to_target is None:
+                continue  # FK-001 已报错
+
+            # 获取接口类型
+            from_interfaces = get_interfaces_from_resolved(from_target)
+            to_interfaces = get_interfaces_from_resolved(to_target)
+
+            from_iface = next((i for i in from_interfaces if i.id == from_iface_id), None)
+            to_iface = next((i for i in to_interfaces if i.id == to_iface_id), None)
+
+            if from_iface is None or to_iface is None:
+                continue  # FK-001 已报错
+
+            if from_iface.interface_type != to_iface.interface_type:
+                assert False, (
+                    f"接口类型不兼容: "
+                    f"{from_ref} (type={from_iface.interface_type}) vs "
+                    f"{to_ref} (type={to_iface.interface_type})"
+                )
+
         ctx.clear_current_file()
 
     def check_fqid_duplicates(self, ctx: Context) -> None:

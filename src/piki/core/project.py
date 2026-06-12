@@ -172,8 +172,8 @@ class Project:
 
         if not has_subdirs:
             raise FileNotFoundError(
-                f"instances/ 目录下没有子目录。请按类型创建子目录，"
-                f"例如 instances/devices/、instances/racks/、instances/pdus/"
+                "instances/ 目录下没有子目录。请按类型创建子目录，"
+                "例如 instances/devices/、instances/racks/、instances/pdus/"
             )
 
     def _load_layout(self) -> None:
