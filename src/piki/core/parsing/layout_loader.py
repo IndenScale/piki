@@ -43,16 +43,12 @@ def load_layout_file(path: Path, name: str = "") -> Layout:
     entries: dict[str, LayoutEntry] = {}
     sections: dict[str, list[LayoutEntry]] = {}
 
-    # 支持两种格式：
-    # 1. 列表格式（简单项目）
-    # 2. 分 section 格式（多专业项目）
     if isinstance(data, list):
         for item in data:
             entry = _parse_entry(item)
             if entry:
                 entries[entry.instance] = entry
     elif isinstance(data, dict):
-        # 按 section 组织
         for section_name, items in data.items():
             section_entries: list[LayoutEntry] = []
             if not isinstance(items, list):
@@ -64,9 +60,6 @@ def load_layout_file(path: Path, name: str = "") -> Layout:
                     section_entries.append(entry)
             if section_entries:
                 sections[section_name] = section_entries
-    else:
-        # 空 layout 或格式不支持
-        pass
 
     return Layout(
         name=name or path.stem,
@@ -77,20 +70,11 @@ def load_layout_file(path: Path, name: str = "") -> Layout:
 
 
 def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
-    """从 YAML dict 解析单个 LayoutEntry。
-
-    ADR-007: connections 字段保留解析以兼容旧数据，但不合并到 resolved。
-    """
+    """从 YAML dict 解析单个 LayoutEntry。"""
     instance_id = item.get("instance")
     if not instance_id:
         return None
 
-    # ADR-007: connections 仍解析，但存入 _connections（废弃字段）。
-    connections = item.get("connections", [])
-    if isinstance(connections, list):
-        connections = [c for c in connections if isinstance(c, dict)]
-
-    # 提取已知字段，其余作为 extra
     known = {
         "instance",
         "rack_id",
@@ -100,11 +84,10 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         "position_x_mm",
         "position_y_mm",
         "position_z_mm",
-        "connections",
     }
     extra = {k: v for k, v in item.items() if k not in known}
 
-    entry = LayoutEntry(
+    return LayoutEntry(
         instance=str(instance_id),
         rack_id=item.get("rack_id"),
         position_u=item.get("position_u"),
@@ -115,32 +98,21 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         position_z_mm=item.get("position_z_mm"),
         extra=extra,
     )
-    # 通过 setter 赋值废弃的 connections 字段，绕过 DeprecationWarning 的 property getter
-    entry._connections = connections
-    return entry
 
 
 def find_layout_file(project_root: Path) -> Path | None:
-    """在项目根目录下查找唯一的 Layout 文件。
-
-    查找顺序:
-    1. layouts/layout.yaml
-    2. layouts/ 下的第一个 .yaml 文件
-    """
+    """在项目根目录下查找唯一的 Layout 文件。"""
     layouts_dir = project_root / "layouts"
     if not layouts_dir.exists():
         return None
 
-    # 优先找 layout.yaml
     candidate = layouts_dir / "layout.yaml"
     if candidate.exists():
         return candidate
 
-    # 或者找嵌套的 layout 文件
     for yaml_file in layouts_dir.rglob("layout.yaml"):
         return yaml_file
 
-    # fallback: 找第一个 .yaml
     yaml_files = sorted(layouts_dir.rglob("*.yaml"))
     if yaml_files:
         return yaml_files[0]

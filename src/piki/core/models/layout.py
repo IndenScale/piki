@@ -3,12 +3,11 @@
 ADR-008 将 Instance（设备身份）与 Layout（部署位置）分离。
 Layout 文件描述"这台设备部署在哪、怎么接"，不描述设备自身属性。
 
-ADR-007 将连接关系提升为独立 Instance，废弃 LayoutEntry.connections。
+ADR-007 将连接关系提升为独立 Instance，从 Layout 中移除。
 """
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -28,32 +27,11 @@ class LayoutEntry:
     position_x_mm: float | None = None
     position_y_mm: float | None = None
     position_z_mm: float | None = None
-    # 连接关系 — 已废弃（ADR-007）
-    # 保留字段以兼容旧数据，引擎不再消费。请改用独立 ConnectionFamily Instance。
-    _connections: list[dict[str, str]] = field(default_factory=list, repr=False)
     # 额外部署参数
     extra: dict[str, Any] = field(default_factory=dict)
 
-    @property
-    def connections(self) -> list[dict[str, str]]:
-        """Deprecated: 连接关系应使用独立的 ConnectionFamily Instance (ADR-007)."""
-        warnings.warn(
-            "LayoutEntry.connections is deprecated. "
-            "Use standalone ConnectionFamily instances instead (ADR-007).",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._connections
-
-    @connections.setter
-    def connections(self, value: list[dict[str, str]]) -> None:
-        self._connections = value
-
     def to_flat(self) -> dict[str, Any]:
-        """将 LayoutEntry 转为扁平 dict，用于合并到 resolved。
-
-        ADR-007: connections 不再合并到 flat，作为独立 Instance 存在。
-        """
+        """将 LayoutEntry 转为扁平 dict，用于合并到 resolved。"""
         flat: dict[str, Any] = {}
         if self.rack_id is not None:
             flat["rack_id"] = self.rack_id
@@ -80,10 +58,10 @@ class Layout:
     按照 ADR-008，每个子项目只有一个 Layout 文件。
     """
 
-    name: str  # Layout 名称（通常是目录名）
-    entries: dict[str, LayoutEntry] = field(default_factory=dict)  # instance_id -> LayoutEntry
+    name: str
+    entries: dict[str, LayoutEntry] = field(default_factory=dict)
     source: Path | None = None
-    sections: dict[str, list[LayoutEntry]] = field(default_factory=dict)  # discipline -> entries
+    sections: dict[str, list[LayoutEntry]] = field(default_factory=dict)
 
     def get(self, instance_id: str) -> LayoutEntry | None:
         """按 Instance ID 查找布局条目。"""
@@ -106,9 +84,8 @@ class Layout:
 
     def free_positions(self, rack_id: str) -> set[int]:
         """查询指定机柜的空闲 U 位（需要外部传入 total_u）。"""
-        {
+        return {
             e.position_u
             for e in self.entries.values()
             if e.rack_id == rack_id and e.position_u is not None
         }
-        return set()
