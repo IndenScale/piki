@@ -38,17 +38,17 @@ piki init --plugin telecom
 ```
 my-datacenter/
 ├── piki.toml              # 项目元数据
-├── instances/             # 设备身份（ADR-008：只声明"是什么"）
-│   ├── SRV-01.yaml
-│   └── SRV-02.yaml
-├── layouts/               # 部署决策（ADR-008：只声明"放哪、接哪"）
-│   └── layout.yaml
-├── racks/                 # 机柜数据
-│   └── RACK-A01.yaml
-├── pdus/                  # PDU 数据
-│   ├── PDU-A.yaml
-│   └── PDU-B.yaml
-├── library/               # 型号库
+├── instances/             # 所有实例（ADR-008：设备身份）
+│   ├── racks/
+│   │   └── RACK-A01.yaml
+│   ├── pdus/
+│   │   ├── PDU-A.yaml
+│   │   └── PDU-B.yaml
+│   └── servers/
+│       ├── SRV-01.yaml
+│       └── SRV-02.yaml
+├── layout.yaml            # 部署决策（ADR-008：只声明"放哪、接哪"）
+├── models/                # 型号库
 │   └── devices/
 │       └── generic-server.yaml
 └── rules/                 # 检查规则
@@ -80,7 +80,7 @@ rack_usage_threshold = 0.8
 先记录机柜：
 
 ```yaml
-# racks/RACK-A01.yaml
+# instances/racks/RACK-A01.yaml
 id: RACK-A01
 family: RackFamily
 name: 主列头柜-A01
@@ -92,7 +92,7 @@ power_capacity_w: 2000
 PDU：
 
 ```yaml
-# pdus/PDU-A.yaml
+# instances/pdus/PDU-A.yaml
 id: PDU-A
 family: PduFamily
 name: PDU-A路
@@ -101,7 +101,7 @@ capacity_w: 2000
 ```
 
 ```yaml
-# pdus/PDU-B.yaml
+# instances/pdus/PDU-B.yaml
 id: PDU-B
 family: PduFamily
 name: PDU-B路
@@ -112,7 +112,7 @@ capacity_w: 2000
 已有设备身份（**只声明是什么**）：
 
 ```yaml
-# instances/SRV-01.yaml
+# instances/servers/SRV-01.yaml
 id: SRV-01
 family: ServerFamily
 name: 服务器-01
@@ -122,7 +122,7 @@ tdp_w: 300
 ```
 
 ```yaml
-# instances/SRV-02.yaml
+# instances/servers/SRV-02.yaml
 id: SRV-02
 family: ServerFamily
 name: 服务器-02
@@ -134,33 +134,29 @@ tdp_w: 250
 已有设备的部署决策（**只声明放哪、接哪**）：
 
 ```yaml
-# layouts/layout.yaml
-entries:
-  - instance: SRV-01
-    rack_id: RACK-A01
-    position_u: 10
-    pdu_id: PDU-A
+# layout.yaml
+- instance: SRV-01
+  rack_id: RACK-A01
+  position_u: 10
+  pdu_id: PDU-A
 
-  - instance: SRV-02
-    rack_id: RACK-A01
-    position_u: 8
-    pdu_id: PDU-A
+- instance: SRV-02
+  rack_id: RACK-A01
+  position_u: 8
+  pdu_id: PDU-A
 ```
 
 型号库定义了 `generic-server` 的规格：
 
 ```yaml
-# library/devices/generic-server.yaml
+# models/devices/generic-server.yaml
 model: generic-server
 family: ServerFamily
 
-physical:
-  height_u: 2
-
-power:
-  tdp_w: 300
-  psu_count: 1
-  psu_redundancy: false
+height_u: 2
+tdp_w: 300
+psu_count: 1
+psu_redundancy: false
 ```
 
 ## 步骤 4：编写新增方案
@@ -168,7 +164,7 @@ power:
 新增设备身份：
 
 ```yaml
-# instances/SRV-03.yaml
+# instances/servers/SRV-03.yaml
 id: SRV-03
 family: ServerFamily
 name: 服务器-03
@@ -180,14 +176,21 @@ tdp_w: 400
 新增部署决策：
 
 ```yaml
-# layouts/layout.yaml（追加）
-entries:
-  # ... 已有条目 ...
+# layout.yaml（追加）
+- instance: SRV-01
+  rack_id: RACK-A01
+  position_u: 10
+  pdu_id: PDU-A
 
-  - instance: SRV-03
-    rack_id: RACK-A01
-    position_u: 6
-    pdu_id: PDU-A        # ← 注意：接在 PDU-A 上
+- instance: SRV-02
+  rack_id: RACK-A01
+  position_u: 8
+  pdu_id: PDU-A
+
+- instance: SRV-03
+  rack_id: RACK-A01
+  position_u: 6
+  pdu_id: PDU-A        # ← 注意：接在 PDU-A 上
 ```
 
 ## 步骤 5：运行检查
@@ -217,11 +220,11 @@ piki check
 把 `SRV-03` 改接到 PDU-B——只需修改 layout：
 
 ```yaml
-# layouts/layout.yaml（修正 SRV-03 的条目）
-  - instance: SRV-03
-    rack_id: RACK-A01
-    position_u: 6
-    pdu_id: PDU-B        # ← 改接 PDU-B
+# layout.yaml（修正 SRV-03 的条目）
+- instance: SRV-03
+  rack_id: RACK-A01
+  position_u: 6
+  pdu_id: PDU-B        # ← 改接 PDU-B
 ```
 
 ```bash
@@ -241,7 +244,7 @@ piki check
 ============================================================
 ```
 
-> **关键洞察**：修正时只改了 `layouts/layout.yaml` 中的一行（`pdu_id: PDU-B`），设备身份文件 `instances/SRV-03.yaml` 完全没动。这就是 Instance/Layout 分离的价值——部署决策的变更不污染设备身份数据。
+> **关键洞察**：修正时只改了 `layout.yaml` 中的一行（`pdu_id: PDU-B`），设备身份文件 `instances/SRV-03.yaml` 完全没动。这就是 Instance/Layout 分离的价值——部署决策的变更不污染设备身份数据。
 
 ## 步骤 7：提交到 Git
 
@@ -265,7 +268,7 @@ git push origin HEAD:review/srv-03-addition
 
 同事在 Pull Request 中看到：
 
-- 变更的 YAML 文件（`instances/SRV-03.yaml` 新增，`layouts/layout.yaml` 修改）
+- 变更的 YAML 文件（`instances/SRV-03.yaml` 新增，`layout.yaml` 修改）
 - piki 检查报告（全部通过）
 - 设计意图（commit message 中的完整说明）
 
@@ -281,7 +284,7 @@ git merge review/srv-03-addition
 | 步骤 | 动作 | piki 的作用 |
 |------|------|------------|
 | 1 | 安装 | 提供声明式建模框架 + 行业插件 |
-| 2 | 初始化 | 创建 ADR-008 标准目录结构（instances/ + layouts/） |
+| 2 | 初始化 | 创建 ADR-008 标准目录结构（instances/ + layout.yaml） |
 | 3 | 录入现有设施 | 声明基准状态（brown field） |
 | 4 | 编写方案 | Instance 声明身份 + Layout 声明部署 |
 | 5 | 运行检查 | **自动发现 PDU 过载风险** |

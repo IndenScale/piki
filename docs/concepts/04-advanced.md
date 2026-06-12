@@ -78,7 +78,7 @@ piki report --format markdown -o report.md      # 生成独立报告文件
 enabled = ["telecom", "datacenter"]
 ```
 
-不同插件注册不同的 Family，数据放在各自的目录中，规则可以跨插件查询。
+不同插件注册不同的 Family，实例统一放在 `instances/` 目录下，通过 `family` 字段区分类型，规则可以跨插件查询。
 
 ### 跨插件规则
 
@@ -202,7 +202,23 @@ warning_only = true            # true 则只警告不报错
 
 ### Q: 如何扩展 Family？
 
-**A:** 当前通过开发插件来定义新的 Family。开发第三方插件：创建 `piki.plugins` 命名空间包，实现 `Plugin` 子类，参考 [telecom 插件源码](../../src/piki/extensions/telecom/plugin.py)。
+**A:** Family 只能用 pydantic 类定义，通过插件注册。项目不能直接扩展 Family——Family 是领域共识，不是项目配置。
+
+如果某个字段是项目特有的（如只有这个项目需要记录 BMC IP），用 `tags` 表达：
+
+```yaml
+# instances/SRV-01.yaml
+id: SRV-01
+family: ServerFamily
+model: generic-server
+
+tags:
+  bmc_ip: "192.168.1.100"
+```
+
+如果该字段是领域通用需求（如所有服务器都有 BMC），应该修改插件的 pydantic 类，或 fork 插件。
+
+详见 [reference/family-format.md](../reference/02-family-format.md)。
 
 ### Q: 规则可以访问外部 API 吗？
 

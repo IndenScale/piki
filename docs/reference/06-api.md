@@ -20,12 +20,12 @@ from piki import rule, generator, Context, Severity, Project, Plugin
 
 **参数：**
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `rule_id` | `str` | 是 | — | 规则唯一标识，建议格式：`{领域}-{主题}-{序号}`，如 `TELECOM-POWER-001` |
-| `name` | `str` | 是 | — | 规则名称（人类可读） |
-| `priority` | `int` | 否 | `0` | 优先级，数值越大越先执行 |
-| `severity` | `Severity` | 否 | `Severity.ERROR` | 失败时的严重级别 |
+| 参数       | 类型       | 必填 | 默认值           | 说明                                                                   |
+| ---------- | ---------- | ---- | ---------------- | ---------------------------------------------------------------------- |
+| `rule_id`  | `str`      | 是   | —                | 规则唯一标识，建议格式：`{领域}-{主题}-{序号}`，如 `TELECOM-POWER-001` |
+| `name`     | `str`      | 是   | —                | 规则名称（人类可读）                                                   |
+| `priority` | `int`      | 否   | `0`              | 优先级，数值越大越先执行                                               |
+| `severity` | `Severity` | 否   | `Severity.ERROR` | 失败时的严重级别                                                       |
 
 **示例：**
 
@@ -45,6 +45,7 @@ def check_pdu_budget(ctx: Context):
 ```
 
 **设计说明：**
+
 - 装饰器将元数据附加到函数对象上，**不写入全局列表**
 - `register_module_rules` 会扫描模块中所有带标记的函数并注册到 `Checker` 实例
 - 规则通过抛出 `AssertionError` 表示失败，异常消息即为失败原因
@@ -57,10 +58,10 @@ def check_pdu_budget(ctx: Context):
 
 **参数：**
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `gen_id` | `str` | 是 | 生成器唯一标识 |
-| `name` | `str` | 是 | 生成器名称（人类可读） |
+| 参数     | 类型  | 必填 | 说明                   |
+| -------- | ----- | ---- | ---------------------- |
+| `gen_id` | `str` | 是   | 生成器唯一标识         |
+| `name`   | `str` | 是   | 生成器名称（人类可读） |
 
 **示例：**
 
@@ -83,8 +84,8 @@ def export_bom(ctx: Context, config: dict):
 
 **属性：**
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
+| 属性     | 类型             | 说明                                                               |
+| -------- | ---------------- | ------------------------------------------------------------------ |
 | `config` | `dict[str, Any]` | 合并后的配置（全局规则配置 + 插件配置），可在 `piki.toml` 中自定义 |
 
 **方法：**
@@ -95,25 +96,25 @@ def export_bom(ctx: Context, config: dict):
 
 **参数：**
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
+| 参数         | 类型  | 说明                                              |
+| ------------ | ----- | ------------------------------------------------- |
 | `collection` | `str` | 集合名称（对应目录名，如 `"devices"`、`"racks"`） |
-| `**filters` | — | 过滤条件，支持 Django-style 双下划线操作符 |
+| `**filters`  | —     | 过滤条件，支持 Django-style 双下划线操作符        |
 
 **支持的操作符：**
 
-| 操作符 | 说明 | 示例 |
-|--------|------|------|
-| `__eq` | 等值（默认） | `rack_id="RACK-A01"` |
-| `__ne` | 不等 | `status__ne="removed"` |
-| `__gt` | 大于 | `tdp_w__gt=300` |
-| `__gte` | 大于等于 | `position_u__gte=10` |
-| `__lt` | 小于 | `position_u__lt=20` |
-| `__lte` | 小于等于 | `height_u__lte=4` |
-| `__in` | 在列表中 | `rack_id__in=["A01", "A02"]` |
-| `__contains` | 包含 | `tags__contains="critical"` |
-| `__startswith` | 前缀匹配 | `id__startswith="SRV-"` |
-| `__endswith` | 后缀匹配 | `id__endswith="-01"` |
+| 操作符         | 说明         | 示例                         |
+| -------------- | ------------ | ---------------------------- |
+| `__eq`         | 等值（默认） | `rack_id="RACK-A01"`         |
+| `__ne`         | 不等         | `status__ne="removed"`       |
+| `__gt`         | 大于         | `tdp_w__gt=300`              |
+| `__gte`        | 大于等于     | `position_u__gte=10`         |
+| `__lt`         | 小于         | `position_u__lt=20`          |
+| `__lte`        | 小于等于     | `height_u__lte=4`            |
+| `__in`         | 在列表中     | `rack_id__in=["A01", "A02"]` |
+| `__contains`   | 包含         | `tags__contains="critical"`  |
+| `__startswith` | 前缀匹配     | `id__startswith="SRV-"`      |
+| `__endswith`   | 后缀匹配     | `id__endswith="-01"`         |
 
 **链式操作（返回 `QuerySet`）：**
 
@@ -176,13 +177,13 @@ for d in joined:
 
 诊断严重级别枚举，与 LSP `DiagnosticSeverity` 兼容。
 
-| 级别 | 数值 | LSP 映射 | 说明 |
-|------|------|----------|------|
-| `DEBUG` | `0` | `Information` | 调试信息，仅在 verbose 模式显示 |
-| `INFO` | `1` | `Information` | 一般信息 |
-| `WARNING` | `2` | `Warning` | 警告，不影响继续执行 |
-| `ERROR` | `3` | `Error` | 错误，当前检查项失败 |
-| `FATAL` | `4` | `Error` | 致命错误，系统无法继续 |
+| 级别      | 数值 | LSP 映射      | 说明                            |
+| --------- | ---- | ------------- | ------------------------------- |
+| `DEBUG`   | `0`  | `Information` | 调试信息，仅在 verbose 模式显示 |
+| `INFO`    | `1`  | `Information` | 一般信息                        |
+| `WARNING` | `2`  | `Warning`     | 警告，不影响继续执行            |
+| `ERROR`   | `3`  | `Error`       | 错误，当前检查项失败            |
+| `FATAL`   | `4`  | `Error`       | 致命错误，系统无法继续          |
 
 **用法：**
 
@@ -207,9 +208,9 @@ def check_rack_space(ctx: Context):
 
 从指定目录向上查找 `piki.toml`，返回 `Project` 实例。
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `start` | `Path \| str \| None` | 否 | `Path.cwd()` | 起始目录 |
+| 参数    | 类型                  | 必填 | 默认值       | 说明     |
+| ------- | --------------------- | ---- | ------------ | -------- |
+| `start` | `Path \| str \| None` | 否   | `Path.cwd()` | 起始目录 |
 
 **示例：**
 
@@ -224,13 +225,13 @@ print(f"Passed: {report.passed}")
 
 **实例方法：**
 
-| 方法 | 说明 |
-|------|------|
-| `load()` | 加载插件、型号库、实例数据、项目规则 |
-| `run_check(skip=None, only=None, files=None) -> CheckReport` | 运行检查 |
-| `make_context() -> Context` | 创建规则运行时的 Context |
-| `plugin_config(name) -> dict` | 获取指定插件的配置 |
-| `enabled_generators() -> list[str]` | 获取启用的生成器列表 |
+| 方法                                                         | 说明                                 |
+| ------------------------------------------------------------ | ------------------------------------ |
+| `load()`                                                     | 加载插件、型号库、实例数据、项目规则 |
+| `run_check(skip=None, only=None, files=None) -> CheckReport` | 运行检查                             |
+| `make_context() -> Context`                                  | 创建规则运行时的 Context             |
+| `plugin_config(name) -> dict`                                | 获取指定插件的配置                   |
+| `enabled_generators() -> list[str]`                          | 获取启用的生成器列表                 |
 
 ---
 
@@ -240,18 +241,18 @@ print(f"Passed: {report.passed}")
 
 **类属性：**
 
-| 属性 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `name` | `str` | `""` | 插件名称（必须设置） |
-| `version` | `str` | `"0.1.0"` | 插件版本 |
+| 属性      | 类型  | 默认值    | 说明                 |
+| --------- | ----- | --------- | -------------------- |
+| `name`    | `str` | `""`      | 插件名称（必须设置） |
+| `version` | `str` | `"0.1.0"` | 插件版本             |
 
 **方法：**
 
-| 方法 | 说明 |
-|------|------|
-| `register_families(registry)` | 注册 Family（pydantic 模型类） |
-| `register_rules(checker)` | 注册检查规则 |
-| `register_generators(checker)` | 注册生成器 |
+| 方法                           | 说明                           |
+| ------------------------------ | ------------------------------ |
+| `register_families(registry)`  | 注册 Family（pydantic 模型类） |
+| `register_rules(checker)`      | 注册检查规则                   |
+| `register_generators(checker)` | 注册生成器                     |
 
 **示例：**
 
@@ -291,12 +292,13 @@ class TelecomPlugin(Plugin):
 
 **参数：**
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `checker` | `Checker` | 规则引擎实例 |
-| `module` | `ModuleType` | 要扫描的 Python 模块 |
+| 参数      | 类型         | 说明                 |
+| --------- | ------------ | -------------------- |
+| `checker` | `Checker`    | 规则引擎实例         |
+| `module`  | `ModuleType` | 要扫描的 Python 模块 |
 
 **说明：**
+
 - 通过 `inspect.getmembers` 遍历模块成员
 - 查找带有 `__piki_rule_meta__` 或 `__piki_gen_meta__` 属性的函数
 - 兼容旧版 3 元组和新版 4 元组规则元数据
@@ -310,6 +312,7 @@ class TelecomPlugin(Plugin):
 惰性求值的查询结果集。所有过滤和链式操作都不立即执行，直到调用终结操作（`first()`、`list()`、迭代等）时才求值。
 
 **特性：**
+
 - 每次链式操作返回新的 `QuerySet`，原对象不变
 - 支持嵌套属性访问（如 `d.resolved.height_u`）
 - 支持 dict 和对象两种数据类型的统一访问
@@ -322,15 +325,15 @@ class TelecomPlugin(Plugin):
 
 **属性：**
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `severity` | `Severity` | 严重级别 |
-| `message` | `str` | 诊断消息 |
-| `location` | `Location` | 发生位置（文件 + 行号 + 列号） |
-| `code` | `str` | 错误码 |
-| `source` | `str` | 产生诊断的组件 |
-| `name` | `str` | 规则名称 |
-| `related_information` | `list[RelatedInformation]` | 关联诊断信息 |
+| 属性                  | 类型                       | 说明                           |
+| --------------------- | -------------------------- | ------------------------------ |
+| `severity`            | `Severity`                 | 严重级别                       |
+| `message`             | `str`                      | 诊断消息                       |
+| `location`            | `Location`                 | 发生位置（文件 + 行号 + 列号） |
+| `code`                | `str`                      | 错误码                         |
+| `source`              | `str`                      | 产生诊断的组件                 |
+| `name`                | `str`                      | 规则名称                       |
+| `related_information` | `list[RelatedInformation]` | 关联诊断信息                   |
 
 **快捷构造方法：**
 
