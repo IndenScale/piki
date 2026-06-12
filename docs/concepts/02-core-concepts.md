@@ -200,7 +200,7 @@ class TelecomPlugin(Plugin):
 | `telecom` | 电信/数据中心机柜级 | Rack / PDU / Server | 7 |
 | `datacenter` | 模块化数据中心方舱级 | Container / PowerUnit / Equipment / Connection | 5 |
 
-→ 插件架构详情：[ADR-003](../adr/003-plugin-architecture.md)
+→ 插件架构详情：[ADR-002](../adr/002-plugin-architecture.md)
 
 ---
 

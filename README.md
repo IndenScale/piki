@@ -90,7 +90,7 @@ piki generate usd-scene         # 导出 3D 场景
 
 - **[核心概念 § Plugin](docs/concepts/02-core-concepts.md)** — 插件架构
 - **[编写检查规则](docs/concepts/03-writing-rules.md)** — `@rule` / `@generator` 装饰器 + QuerySet API
-- **[ADR-003: 插件架构](docs/adr/003-plugin-architecture.md)** — 为什么用插件而非硬编码
+- **[ADR-002: 插件架构](docs/adr/002-plugin-architecture.md)** — 为什么用插件而非硬编码
 - **[telecom 插件源码](src/piki/extensions/telecom/plugin.py)** — 完整参考实现
 - **[datacenter 插件源码](src/piki/extensions/datacenter/plugin.py)** — 多 Family 类型参考实现
 
