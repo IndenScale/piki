@@ -1,0 +1,5 @@
+type: switch-plate-snap
+parent: PLATE-01
+child: SW-ENT
+at:
+  key_position: R2C13

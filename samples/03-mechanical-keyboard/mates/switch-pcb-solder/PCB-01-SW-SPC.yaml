@@ -1,0 +1,7 @@
+type: switch-pcb-solder
+parent: PCB-01
+child: SW-SPC
+at:
+  matrix_position:
+    row: 4
+    col: 4

@@ -1,0 +1,18 @@
+id: KB-MAIN
+family: KeyboardAssemblyFamily
+name: 铝坨坨三模 65% 机械键盘
+layout: 65%
+key_count: 8
+connectivity:
+  - usb
+  - bluetooth
+  - 2.4g
+mounting_style: gasket
+wireless: true
+led_support: true
+operating_environment: indoor
+case_id: CASE-01
+plate_id: PLATE-01
+pcb_id: PCB-01
+battery_id: BATT-01
+cable_id: CABLE-01

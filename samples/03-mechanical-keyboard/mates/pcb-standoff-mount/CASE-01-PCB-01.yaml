@@ -1,0 +1,11 @@
+type: pcb-standoff-mount
+parent: CASE-01
+child: PCB-01
+at:
+  standoff_positions:
+    - top-left
+    - top-right
+    - bottom-left
+    - bottom-right
+    - mid-left
+    - mid-right

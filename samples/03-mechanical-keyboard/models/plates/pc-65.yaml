@@ -1,0 +1,10 @@
+model: pc-65
+family: PlateFamily
+
+name: 65% PC 定位板
+material: pc
+thickness_mm: 1.5
+layout: 65%
+switch_cutout_type: mx
+mounting_style: gasket
+flex_cuts: true

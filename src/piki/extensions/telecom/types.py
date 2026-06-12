@@ -251,3 +251,15 @@ def is_valid_interface_type(value: str) -> bool:
 def known_interface_types() -> list[str]:
     """返回所有已知接口类型字符串（排序）。"""
     return sorted(COMPATIBILITY.keys())
+
+
+# ---------------------------------------------------------------------------
+# 注册到核心全局接口类型表
+# ---------------------------------------------------------------------------
+
+try:
+    from piki.core.models.interface import register_interface_types
+
+    register_interface_types(list(COMPATIBILITY.keys()))
+except ImportError:  # pragma: no cover
+    pass

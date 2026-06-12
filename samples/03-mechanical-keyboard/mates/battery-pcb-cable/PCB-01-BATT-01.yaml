@@ -1,0 +1,3 @@
+type: battery-pcb-cable
+parent: PCB-01
+child: BATT-01

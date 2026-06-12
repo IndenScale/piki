@@ -1,0 +1,9 @@
+model: screw-in-steel
+family: StabilizerFamily
+
+name: 钢板卫星轴 螺丝固定
+stab_type: screw-in
+wire_diameter_mm: 1.6
+housing_type: mx-plus
+compatibility:
+  - mx

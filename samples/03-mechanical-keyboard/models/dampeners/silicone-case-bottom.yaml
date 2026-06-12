@@ -1,0 +1,8 @@
+model: silicone-case-bottom
+family: DampenerFamily
+
+name: 硅胶底壳隔音垫
+material: silicone
+thickness_mm: 2.0
+placement: case-bottom
+compression_ratio_max: 0.3

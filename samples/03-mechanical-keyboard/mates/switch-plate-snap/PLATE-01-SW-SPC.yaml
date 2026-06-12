@@ -1,0 +1,5 @@
+type: switch-plate-snap
+parent: PLATE-01
+child: SW-SPC
+at:
+  key_position: R5C4

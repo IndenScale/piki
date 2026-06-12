@@ -1,0 +1,20 @@
+[project]
+name = "03-mechanical-keyboard"
+version = "1.0.0"
+description = "机械键盘示例：铝坨坨 + 硅胶隔音 + 三模 + 锂电 + PBT + 国产轴体"
+
+[plugins]
+enabled = ["keyboard", "consumer-electronics"]
+
+[plugins.keyboard]
+min_wireless_runtime_hours = 30
+
+[generators]
+enabled = ["keyboard-bom", "keyboard-spec"]
+
+[generators.dist]
+root = "dist"
+
+[generators.dist.targets]
+keyboard-bom = "采购清单"
+keyboard-spec = "设计评审"

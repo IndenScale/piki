@@ -1,0 +1,7 @@
+type: switch-pcb-solder
+parent: PCB-01
+child: SW-ENT
+at:
+  matrix_position:
+    row: 1
+    col: 13

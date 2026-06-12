@@ -1,0 +1,9 @@
+id: NET-GND
+family: NetFamily
+name: 地网络
+net_type: ground
+nodes:
+  - PCB-01/usb-c/GND
+  - PCB-01/jst-batt/GND
+  - CABLE-01/usb-c-plug/GND
+  - BATT-01/jst-connector/negative

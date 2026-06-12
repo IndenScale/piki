@@ -1,0 +1,73 @@
+model: rp2040-wireless-65
+family: PcbFamily
+
+name: RP2040 三模 65% PCB
+controller: rp2040
+matrix_rows: 5
+matrix_cols: 16
+switch_footprint: hotswap-mx
+led_support: true
+led_type: per-key
+wireless: true
+usb_connector_type: usb-c
+has_battery_connector: true
+battery_connector_type: jst-ph-2pin
+mounting_holes: 6
+length_mm: 308
+width_mm: 104
+max_matrix_current_ma: 200
+max_usb_current_ma: 500
+
+interfaces:
+  - id: ROW0
+    interface_type: gpio
+    direction: output
+  - id: ROW2
+    interface_type: gpio
+    direction: output
+  - id: COL1
+    interface_type: gpio
+    direction: input
+  - id: COL4
+    interface_type: gpio
+    direction: input
+  - id: COL13
+    interface_type: gpio
+    direction: input
+  - id: SWD-IO
+    interface_type: swd-io
+    direction: bidirectional
+  - id: SWD-CLK
+    interface_type: swd-clk
+    direction: input
+
+footprints:
+  - id: usb-c
+    footprint_type: usb-c-16p
+    description: USB-C 母座
+    pins:
+      - id: VBUS
+        interface_type: vbus
+        direction: input
+      - id: GND
+        interface_type: gnd
+        direction: bidirectional
+      - id: D+
+        interface_type: usb2-dp
+        direction: bidirectional
+      - id: D-
+        interface_type: usb2-dn
+        direction: bidirectional
+      - id: CC
+        interface_type: usb-cc
+        direction: bidirectional
+  - id: jst-batt
+    footprint_type: jst-ph-2pin
+    description: 电池接口
+    pins:
+      - id: VBAT
+        interface_type: vbat
+        direction: input
+      - id: GND
+        interface_type: gnd
+        direction: bidirectional

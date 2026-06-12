@@ -1,0 +1,8 @@
+model: poron-gasket-strip
+family: DampenerFamily
+
+name: Poron gasket 缓冲条
+material: poron
+thickness_mm: 2.5
+placement: gasket
+compression_ratio_max: 0.4

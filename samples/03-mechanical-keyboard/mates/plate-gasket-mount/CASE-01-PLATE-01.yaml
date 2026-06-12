@@ -1,0 +1,6 @@
+type: plate-gasket-mount
+parent: CASE-01
+child: PLATE-01
+at:
+  gasket_strip_ids:
+    - DAMP-GASKET

@@ -66,7 +66,7 @@ piki report --format markdown   # 生成报告
 piki generate bom-csv           # 导出 BOM 清单
 ```
 
-完整教程：[10 分钟上手 →](docs/concepts/01-quickstart.md)
+完整教程见 [samples/](samples/) 目录，每个示例项目可直接运行
 
 ---
 
@@ -77,24 +77,24 @@ piki generate bom-csv           # 导出 BOM 清单
 理解 piki 解决什么问题、和现有工具的对比：
 
 - **[为什么需要 piki](docs/concepts/00-why-piki.md)** — 从真实事故出发，理解问题本质
-- **[piki vs 手绘图纸 vs Excel vs BIM](docs/concepts/05-ai-readiness.md#对比总结)** — 多维度对比
+- **[声明式建模 vs 传统工具](docs/concepts/00-why-piki.md#声明式建模的优势)** — 多维度对比
 - **[路线图](ROADMAP.md)** — 当前进展和未来计划
 
 ### 🔧 我要开始用
 
 从零开始建立第一个声明式建模项目：
 
-- **[10 分钟上手](docs/concepts/01-quickstart.md)** — 最小工作示例
-- **[核心概念](docs/concepts/02-core-concepts.md)** — Family → Model → Instance 三层模型
-- **[编写检查规则](docs/concepts/03-writing-rules.md)** — 从实际问题出发学习写规则
+- **[核心概念与快速上手](docs/concepts/01-core-concepts.md)** — 最小工作示例
+- **[编写检查规则](docs/concepts/02-writing-rules.md)** — @rule 装饰器 + QuerySet API
+- **[高级用法](docs/concepts/03-advanced.md)** — CI/CD、Generator、嵌套项目
 - **[示例项目](samples/)** — 6 个可直接运行的示例：从入门到嵌套项目
 
 ### 🧩 我要扩展 piki
 
 开发行业插件、编写自定义规则和生成器：
 
-- **[核心概念 § Plugin](docs/concepts/02-core-concepts.md)** — 插件架构
-- **[编写检查规则](docs/concepts/03-writing-rules.md)** — `@rule` / `@generator` 装饰器 + QuerySet API
+- **[核心概念 § Plugin](docs/concepts/01-core-concepts.md)** — 插件架构
+- **[编写检查规则](docs/concepts/02-writing-rules.md)** — `@rule` / `@generator` 装饰器 + QuerySet API
 - **[ADR-002: 插件架构](docs/adr/002-plugin-architecture.md)** — 为什么用插件而非硬编码
 - **[telecom 插件源码](src/piki/extensions/telecom/plugin.py)** — 完整参考实现
 - **[datacenter 插件源码](src/piki/extensions/datacenter/plugin.py)** — 多 Family 类型参考实现

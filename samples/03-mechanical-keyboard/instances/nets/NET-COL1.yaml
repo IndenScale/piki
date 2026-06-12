@@ -1,0 +1,7 @@
+id: NET-COL1
+family: NetFamily
+name: 矩阵列 1
+net_type: matrix_col
+nodes:
+  - PCB-01/COL1
+  - SW-A/pin-2

@@ -1,0 +1,5 @@
+type: stabilizer-pcb-screw
+parent: PCB-01
+child: STAB-SPC
+at:
+  key_position: R5C4

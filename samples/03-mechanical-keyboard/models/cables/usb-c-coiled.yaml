@@ -1,0 +1,30 @@
+model: usb-c-coiled
+family: CableFamily
+
+name: USB-C 航插弹簧线
+connector_type: usb-c
+cable_type: coiled
+length_m: 1.5
+supports_data: true
+supports_power_a: 1.5
+
+footprints:
+  - id: usb-c-plug
+    footprint_type: usb-c-16p-male
+    description: USB-C 公头
+    pins:
+      - id: VBUS
+        interface_type: vbus
+        direction: output
+      - id: GND
+        interface_type: gnd
+        direction: bidirectional
+      - id: D+
+        interface_type: usb2-dp
+        direction: bidirectional
+      - id: D-
+        interface_type: usb2-dn
+        direction: bidirectional
+      - id: CC
+        interface_type: usb-cc
+        direction: bidirectional

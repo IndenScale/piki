@@ -567,6 +567,7 @@ class Registry:
                     raw=flat,
                     _resolved=flat,
                     source=instance.source,
+                    model_id=instance.model,
                 )
             loaded[resolved.id] = resolved
             self._instances[resolved.id] = resolved
@@ -691,6 +692,7 @@ class Registry:
                 raw=flat,
                 _resolved=flat,
                 source=instance.source,
+                model_id=instance.model,
                 _validation_error=str(exc),
             )
 
@@ -708,6 +710,7 @@ class Registry:
             raw=overrides,
             _resolved=resolved_dict,
             source=instance.source,
+            model_id=model_id,
         )
 
     # ------------------------------------------------------------------

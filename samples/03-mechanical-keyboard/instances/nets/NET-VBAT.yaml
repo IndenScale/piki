@@ -1,0 +1,9 @@
+id: NET-VBAT
+family: NetFamily
+name: 电池供电网络
+net_type: power
+voltage_v: 3.7
+current_limit_ma: 2000
+nodes:
+  - PCB-01/jst-batt/VBAT
+  - BATT-01/jst-connector/positive

@@ -1,0 +1,23 @@
+model: li-po-4000
+family: BatteryFamily
+
+chemistry: li-po
+capacity_mah: 4000
+voltage_v: 3.7
+max_discharge_current_ma: 2000
+length_mm: 80
+width_mm: 60
+thickness_mm: 8
+weight_g: 75
+
+footprints:
+  - id: jst-connector
+    footprint_type: jst-ph-2pin-female
+    description: 电池 JST 母座
+    pins:
+      - id: positive
+        interface_type: battery-positive
+        direction: output
+      - id: negative
+        interface_type: battery-negative
+        direction: output

@@ -88,6 +88,7 @@ class ResolvedInstance:
     raw: dict[str, Any]  # 原始 instance 字段（扁平）
     _resolved: dict[str, Any]  # 合并 model 后的字段（扁平）
     source: Path
+    model_id: str | None = None  # 引用的型号 ID（ADR-001 扩展）
     _validation_error: str = ""  # Schema 校验失败时的错误详情
 
     def __getattr__(self, name: str) -> Any:

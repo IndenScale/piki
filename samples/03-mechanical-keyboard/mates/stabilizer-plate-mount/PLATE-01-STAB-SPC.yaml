@@ -1,0 +1,5 @@
+type: stabilizer-plate-mount
+parent: PLATE-01
+child: STAB-SPC
+at:
+  key_position: R5C4

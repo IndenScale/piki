@@ -1,0 +1,17 @@
+id: ALPHA-CLUSTER
+family: KeyClusterFamily
+name: 字母区键簇
+switch_model: gateron-yellow-pro
+keycap_model: pbt-dye-sub-oem-65
+key_count: 4
+led_per_key: true
+description: 代表其余 60+ 颗字母/数字键，避免创建大量 YAML
+matrix_positions:
+  - row: 0
+    col: 1
+  - row: 0
+    col: 2
+  - row: 0
+    col: 3
+  - row: 1
+    col: 0

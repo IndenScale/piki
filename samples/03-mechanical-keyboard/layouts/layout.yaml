@@ -1,0 +1,24 @@
+- instance: CASE-01
+  position_x_mm: 0
+  position_y_mm: 0
+  position_z_mm: 0
+
+- instance: PLATE-01
+  position_x_mm: 6
+  position_y_mm: 6
+  position_z_mm: 8
+
+- instance: PCB-01
+  position_x_mm: 6
+  position_y_mm: 6
+  position_z_mm: 10
+
+- instance: BATT-01
+  position_x_mm: 160
+  position_y_mm: 40
+  position_z_mm: 15
+
+- instance: CABLE-01
+  position_x_mm: 160
+  position_y_mm: 0
+  position_z_mm: 0

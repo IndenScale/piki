@@ -1,0 +1,9 @@
+id: NET-VBUS
+family: NetFamily
+name: USB 5V 电源网络
+net_type: power
+voltage_v: 5.0
+current_limit_ma: 500
+nodes:
+  - PCB-01/usb-c/VBUS
+  - CABLE-01/usb-c-plug/VBUS

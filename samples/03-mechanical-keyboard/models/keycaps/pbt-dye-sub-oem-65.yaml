@@ -1,0 +1,9 @@
+model: pbt-dye-sub-oem-65
+family: KeycapFamily
+
+name: PBT 热升华 OEM 65% 键帽套装
+material: pbt
+profile: oem
+stem_mount: mx
+legend_method: dye-sub
+color: 奶白灰

@@ -1,0 +1,22 @@
+model: gateron-yellow-pro
+family: SwitchFamily
+
+name: Gateron Yellow Pro
+manufacturer: gateron
+stem_type: mx
+pin_count: 5
+led_support: true
+led_pin_position: south
+operating_force_gf: 50
+bottom_out_force_gf: 63
+pre_travel_mm: 2.0
+total_travel_mm: 4.0
+lifetime_cycles: 60000000
+
+interfaces:
+  - id: pin-1
+    interface_type: switch-pin
+    direction: bidirectional
+  - id: pin-2
+    interface_type: switch-pin
+    direction: bidirectional

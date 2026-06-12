@@ -1,0 +1,7 @@
+id: NET-ROW0
+family: NetFamily
+name: 矩阵行 0
+net_type: matrix_row
+nodes:
+  - PCB-01/ROW0
+  - SW-ESC/pin-1
