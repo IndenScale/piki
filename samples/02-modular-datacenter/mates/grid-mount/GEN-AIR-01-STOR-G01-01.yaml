@@ -1,0 +1,3 @@
+type: grid-mount
+parent: GEN-AIR-01
+child: STOR-G01-01

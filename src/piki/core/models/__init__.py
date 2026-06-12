@@ -12,6 +12,17 @@ from .diagnostic import (
     Severity,
 )
 from .interface import InterfaceSpec, get_interfaces_from_resolved, resolve_interface_ref
+from .mating import (
+    InterfacePairing,
+    MateConstraint,
+    MateConstraintOperator,
+    MateGraph,
+    MateSpec,
+    MateTypeMeta,
+    evaluate_operator,
+    is_interface_ref,
+    parse_mate_ref,
+)
 
 __all__ = [
     # base
@@ -24,6 +35,16 @@ __all__ = [
     "InterfaceSpec",
     "resolve_interface_ref",
     "get_interfaces_from_resolved",
+    # mating
+    "MateSpec",
+    "MateConstraint",
+    "MateConstraintOperator",
+    "MateTypeMeta",
+    "InterfacePairing",
+    "MateGraph",
+    "parse_mate_ref",
+    "is_interface_ref",
+    "evaluate_operator",
     # diagnostic
     "Severity",
     "Position",

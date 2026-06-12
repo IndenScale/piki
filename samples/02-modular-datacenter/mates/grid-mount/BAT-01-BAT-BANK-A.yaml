@@ -1,0 +1,3 @@
+type: grid-mount
+parent: BAT-01
+child: BAT-BANK-A

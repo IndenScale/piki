@@ -117,6 +117,7 @@ class Project:
         self._load_models()
         self._load_layout()  # Layout 必须在 Instance 之前加载（_resolve 依赖它）
         self._load_instances()
+        self._load_mates()
         self._load_rules()
         self._load_tag_config()
         # 加载子项目
@@ -175,6 +176,28 @@ class Project:
                 "instances/ 目录下没有子目录。请按类型创建子目录，"
                 "例如 instances/devices/、instances/racks/、instances/pdus/"
             )
+
+    def _load_mates(self) -> None:
+        """扫描 mates/ 目录、加载 Mate 定义、构建 MateGraph。"""
+        self.registry.load_mates(self.root)
+        if self.registry.mates:
+            logger.debug(
+                "Loaded %d mate(s) across %d type(s)",
+                len(self.registry.mates),
+                len(self.registry.mate_types),
+            )
+        # 插件注册 Mate types
+        for plugin in self._plugins:
+            try:
+                register_fn = getattr(plugin, "register_mate_types", None)
+                if register_fn:
+                    register_fn(self.registry)
+            except Exception as exc:
+                logger.warning(
+                    "Failed to register mate types from plugin %s: %s",
+                    getattr(plugin, "name", plugin.__class__.__name__),
+                    exc,
+                )
 
     def _load_layout(self) -> None:
         """加载项目 Layout 文件。"""

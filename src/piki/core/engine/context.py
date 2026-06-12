@@ -3,6 +3,7 @@
 支持：
 - 集合查询（query）
 - Layout 查询（layout）
+- Mating 图遍历（mated_children, mated_parents, mated_chain）
 - Tag 过滤（tags__discipline=hvac）
 - 跨项目 Instance 查找
 """
@@ -13,6 +14,7 @@ from typing import Any
 
 from ..models.diagnostic import Location, RelatedInformation
 from ..models.layout import Layout, LayoutEntry
+from ..models.mating import MateGraph, MateSpec
 from .query import QuerySet
 from .registry import Registry
 
@@ -90,6 +92,51 @@ class Context:
     def find_instance(self, instance_id: str):
         """在项目树中查找 Instance。"""
         return self._registry.find_instance(instance_id)
+
+    # ------------------------------------------------------------------
+    # Mating 图遍历（ADR-008）
+    # ------------------------------------------------------------------
+
+    @property
+    def mate_graph(self) -> MateGraph:
+        """获取当前项目的 MateGraph。"""
+        return self._registry.mate_graph
+
+    def mated_children(self, ref: str) -> list[MateSpec]:
+        """返回被该引用承载的所有 Mate（"我承载了什么"）。
+
+        Args:
+            ref: Instance ID (如 "RACK-A01") 或 Interface 引用 (如 "PDU-A/out-3")。
+
+        Returns:
+            该引用作为 parent 的所有 MateSpec 列表。
+        """
+        return self._registry.mate_graph.children_of(ref)
+
+    def mated_parents(self, ref: str) -> list[MateSpec]:
+        """返回承载该引用的所有 Mate（"谁承载了我"）。
+
+        Args:
+            ref: Instance ID 或 Interface 引用。
+
+        Returns:
+            该引用作为 child 的所有 MateSpec 列表。
+        """
+        return self._registry.mate_graph.parents_of(ref)
+
+    def mated_chain(self, instance_id: str) -> list[list[MateSpec]]:
+        """返回从该 Instance 到根承载物的所有配合路径。
+
+        每条路径是从该 Instance 出发，沿 Mate 的 child→parent 方向
+        追溯到根节点为止的完整配合链。
+
+        Args:
+            instance_id: Instance ID。
+
+        Returns:
+            配合路径列表，每条路径是一个 MateSpec 列表（从近到远）。
+        """
+        return self._registry.mate_graph.chain(instance_id)
 
     # ------------------------------------------------------------------
     # 文件过滤

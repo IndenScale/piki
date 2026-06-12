@@ -1,0 +1,3 @@
+type: grid-mount
+parent: AI-LIQUID-01
+child: GPU-A01-02

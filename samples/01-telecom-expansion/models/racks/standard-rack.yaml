@@ -1,0 +1,6 @@
+model: standard-rack
+family: RackFamily
+
+total_u: 42
+depth_mm: 800
+width_mm: 600

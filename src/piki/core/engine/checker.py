@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from ..models.diagnostic import Diagnostic, Location, Severity
+from ..models.mating import parse_mate_ref
 from .context import Context
 
 
@@ -138,6 +139,24 @@ class Checker:
                 "线缆-接口类型匹配检查",
                 Severity.ERROR,
                 self.check_cable_interface_match,
+            ),
+            (
+                "MATE-001",
+                "Mate Instance 引用完整性",
+                Severity.ERROR,
+                self.check_mate_references,
+            ),
+            (
+                "MATE-002",
+                "Mate Family 兼容性检查",
+                Severity.ERROR,
+                self.check_mate_family_compat,
+            ),
+            (
+                "MATE-003",
+                "Mate 约束验证",
+                Severity.ERROR,
+                self.check_mate_constraints,
             ),
         ]:
             try:
@@ -524,6 +543,61 @@ class Checker:
                         f"支持的线缆: {', '.join(sorted(valid_cables))}"
                     )
 
+        ctx.clear_current_file()
+
+    def check_mate_references(self, ctx: Context) -> None:
+        """L2: Mate parent/child Instance references must exist."""
+        reg = ctx._registry
+        for mate in reg.mates:
+            parent_inst_id, _ = parse_mate_ref(mate.parent)
+            child_inst_id, _ = parse_mate_ref(mate.child)
+            parent_inst = reg.find_instance(parent_inst_id)
+            child_inst = reg.find_instance(child_inst_id)
+            ctx.set_current_file(str(getattr(mate, "_source", "")))
+            if parent_inst is None:
+                assert False, f"Mate '{mate.type}' parent instance '{parent_inst_id}' not found"
+            if child_inst is None:
+                assert False, f"Mate '{mate.type}' child instance '{child_inst_id}' not found"
+        ctx.clear_current_file()
+
+    def check_mate_family_compat(self, ctx: Context) -> None:
+        """L2: Mate Family must match Mate type restrictions."""
+        reg = ctx._registry
+        for mate in reg.mates:
+            type_meta = reg.mate_types.get(mate.type)
+            if not type_meta:
+                continue
+            parent_inst_id, _ = parse_mate_ref(mate.parent)
+            child_inst_id, _ = parse_mate_ref(mate.child)
+            parent_inst = reg.find_instance(parent_inst_id)
+            child_inst = reg.find_instance(child_inst_id)
+            if not parent_inst or not child_inst:
+                continue
+            ctx.set_current_file(str(getattr(mate, "_source", "")))
+            if type_meta.applicable_parent_families:
+                if parent_inst.family not in type_meta.applicable_parent_families:
+                    assert False, (
+                        f"Mate '{mate.type}' parent '{parent_inst_id}' "
+                        f"has family '{parent_inst.family}', restricted to: "
+                        f"{type_meta.applicable_parent_families}"
+                    )
+            if type_meta.applicable_child_families:
+                if child_inst.family not in type_meta.applicable_child_families:
+                    assert False, (
+                        f"Mate '{mate.type}' child '{child_inst_id}' "
+                        f"has family '{child_inst.family}', restricted to: "
+                        f"{type_meta.applicable_child_families}"
+                    )
+        ctx.clear_current_file()
+
+    def check_mate_constraints(self, ctx: Context) -> None:
+        """L2: Mate constraint conditions must pass."""
+        reg = ctx._registry
+        diagnostics = reg.validate_mates()
+        for d in diagnostics:
+            if d.code == "MATE-003":
+                ctx.set_current_file(str(d.location.uri) if d.location.uri else "")
+                assert False, d.message
         ctx.clear_current_file()
 
     def check_fqid_duplicates(self, ctx: Context) -> None:

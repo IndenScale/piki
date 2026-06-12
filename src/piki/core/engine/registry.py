@@ -16,9 +16,18 @@ from pydantic import BaseModel, ValidationError
 
 from ..models.base import Instance, Model, ResolvedInstance, get_non_overridable_fields
 from ..models.diagnostic import Diagnostic, Location, Range, Severity
+from ..models.interface import InterfaceSpec, get_interfaces_from_resolved
 from ..models.layout import Layout, LayoutEntry
+from ..models.mating import (
+    MateGraph,
+    MateSpec,
+    MateTypeMeta,
+    evaluate_operator,
+    parse_mate_ref,
+)
 from ..parsing.layout_loader import find_layout_file, load_layout_file
 from ..parsing.loaders import load_yaml
+from ..parsing.mate_loader import load_mates
 from ..parsing.yaml_source import SourceTrackedDict, get_field_location
 from .query import QuerySet
 
@@ -150,6 +159,10 @@ class Registry:
         self._root: Path | None = None
         # 项目名称（用于 FQID）
         self._project_name: str = ""
+        # Mating (ADR-008)
+        self._mate_types: dict[str, MateTypeMeta] = {}
+        self._mates: list[MateSpec] = []
+        self._mate_graph: MateGraph = MateGraph()
 
     # ------------------------------------------------------------------
     # Family / Model
@@ -236,6 +249,193 @@ class Registry:
             return self._instances[instance_id]
         if self._parent:
             return self._parent.find_instance(instance_id)
+        return None
+
+    # ------------------------------------------------------------------
+    # Mating (ADR-008)
+    # ------------------------------------------------------------------
+
+    @property
+    def mate_types(self) -> dict[str, MateTypeMeta]:
+        return dict(self._mate_types)
+
+    @property
+    def mate_graph(self) -> MateGraph:
+        return self._mate_graph
+
+    @property
+    def mates(self) -> list[MateSpec]:
+        return list(self._mates)
+
+    def add_mate_type(self, type_name: str, meta: MateTypeMeta) -> None:
+        self._mate_types[type_name] = meta
+
+    def load_mates(self, root: Path) -> None:
+        self._root = root
+        self._mates = load_mates(root)
+        self._mate_graph = MateGraph()
+        for mate in self._mates:
+            self._mate_graph.add(mate)
+
+    def validate_mates(self) -> list[Diagnostic]:
+        diagnostics: list[Diagnostic] = []
+        for mate in self._mates:
+            diags = self._validate_single_mate(mate)
+            diagnostics.extend(diags)
+        return diagnostics
+
+    def _validate_single_mate(self, mate: MateSpec) -> list[Diagnostic]:
+        diagnostics: list[Diagnostic] = []
+
+        # Resolve Mate type meta
+        type_meta = self._mate_types.get(mate.type)
+
+        # Check parent/child existence
+        parent_inst_id, parent_iface_id = parse_mate_ref(mate.parent)
+        child_inst_id, child_iface_id = parse_mate_ref(mate.child)
+
+        parent_inst = self.find_instance(parent_inst_id)
+        child_inst = self.find_instance(child_inst_id)
+
+        if parent_inst is None:
+            diagnostics.append(
+                Diagnostic(
+                    severity=Severity.ERROR,
+                    message=f"Mate parent instance '{parent_inst_id}' not found",
+                    location=Location(uri=""),
+                    code="MATE-001",
+                    source="piki.mating",
+                )
+            )
+        if child_inst is None:
+            diagnostics.append(
+                Diagnostic(
+                    severity=Severity.ERROR,
+                    message=f"Mate child instance '{child_inst_id}' not found",
+                    location=Location(uri=""),
+                    code="MATE-001",
+                    source="piki.mating",
+                )
+            )
+        if parent_inst is None or child_inst is None:
+            return diagnostics
+
+        # Check Family compatibility (if type_meta restricts families)
+        if type_meta:
+            if type_meta.applicable_parent_families:
+                if parent_inst.family not in type_meta.applicable_parent_families:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity=Severity.ERROR,
+                            message=(
+                                f"Mate type '{mate.type}' does not accept parent family "
+                                f"'{parent_inst.family}'. Allowed: {type_meta.applicable_parent_families}"
+                            ),
+                            location=Location(uri=""),
+                            code="MATE-002",
+                            source="piki.mating",
+                        )
+                    )
+            if type_meta.applicable_child_families:
+                if child_inst.family not in type_meta.applicable_child_families:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity=Severity.ERROR,
+                            message=(
+                                f"Mate type '{mate.type}' does not accept child family "
+                                f"'{child_inst.family}'. Allowed: {type_meta.applicable_child_families}"
+                            ),
+                            location=Location(uri=""),
+                            code="MATE-002",
+                            source="piki.mating",
+                        )
+                    )
+
+        # Select constraints: user-defined > type default
+        constrains = (
+            mate.constrains
+            if mate.constrains
+            else (type_meta.default_constrains if type_meta else [])
+        )
+        if not constrains:
+            return diagnostics
+
+        # Resolve interface specs if needed
+        parent_iface: InterfaceSpec | None = None
+        child_iface: InterfaceSpec | None = None
+        if parent_iface_id:
+            parent_iface = self._find_interface(parent_inst, parent_iface_id)
+        if child_iface_id:
+            child_iface = self._find_interface(child_inst, child_iface_id)
+
+        # Evaluate each constraint
+        for constraint in constrains:
+            child_val = self._resolve_constraint_value(child_inst, child_iface, constraint.field)
+            parent_val = self._resolve_constraint_value(
+                parent_inst, parent_iface, constraint.value_ref
+            )
+
+            # If value_ref can't be resolved from parent, try as literal
+            if parent_val is None and constraint.value_ref:
+                parent_val = self._coerce_value(constraint.value_ref)
+
+            if not evaluate_operator(child_val, constraint.operator, parent_val):
+                msg = constraint.message or (
+                    f"Mate constraint violated: {child_inst.id}.{constraint.field} "
+                    f"{constraint.operator.value} {constraint.value_ref} "
+                    f"(got {child_val} vs {parent_val})"
+                )
+                diagnostics.append(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=msg,
+                        location=Location(uri=""),
+                        code="MATE-003",
+                        source="piki.mating",
+                    )
+                )
+
+        return diagnostics
+
+    def _resolve_constraint_value(
+        self,
+        inst: ResolvedInstance,
+        iface: InterfaceSpec | None,
+        field: str,
+    ) -> object:
+        if iface and hasattr(iface, "specs"):
+            val = iface.specs.get(field)
+            if val is not None:
+                return val
+        try:
+            return inst.resolved.__getattr__(field)
+        except AttributeError:
+            pass
+        try:
+            return getattr(inst.resolved, field, None)
+        except Exception:
+            pass
+        return None
+
+    @staticmethod
+    def _coerce_value(raw: str) -> object:
+        try:
+            return float(raw)
+        except ValueError:
+            pass
+        if raw.lower() in ("true", "false"):
+            return raw.lower() == "true"
+        return raw
+
+    @staticmethod
+    def _find_interface(
+        inst: ResolvedInstance,
+        iface_id: str,
+    ) -> InterfaceSpec | None:
+        ifaces = get_interfaces_from_resolved(inst)
+        for iface in ifaces:
+            if iface.id == iface_id:
+                return iface
         return None
 
     def find_model(self, model_id: str) -> Model | None:

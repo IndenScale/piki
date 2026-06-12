@@ -1,0 +1,13 @@
+type: rack-mount-19inch
+parent: RACK-A01
+child: SRV-02
+at:
+  u_start: 14
+  u_span: 2
+constrains:
+  - field: depth_mm
+    operator: "<="
+    value_ref: depth_mm
+  - field: width_mm
+    operator: "<="
+    value_ref: width_mm

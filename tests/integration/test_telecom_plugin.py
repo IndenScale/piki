@@ -368,7 +368,7 @@ class TestCheckerIntegration:
 
         report = checker.run(telecom_ctx)
         assert report.passed is True
-        assert report.pass_count == 7
+        assert report.pass_count == 10
         assert report.error_count == 0
 
     def test_checker_reports_failure(self, telecom_ctx: Context, tmp_path: Path) -> None:
@@ -387,7 +387,7 @@ class TestCheckerIntegration:
         report = checker.run(telecom_ctx)
         assert report.passed is False
         assert report.error_count == 1
-        assert report.pass_count == 6
+        assert report.pass_count == 9
         rack_result = next((r for r in report.results if r.rule_id == "TELECOM-RACK-001"), None)
         assert rack_result is not None
         assert "U10-U11 冲突" in rack_result.message
