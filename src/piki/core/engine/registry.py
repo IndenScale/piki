@@ -375,9 +375,9 @@ class Registry:
                 parent_inst, parent_iface, constraint.value_ref
             )
 
-            # If value_ref can't be resolved from parent, try as literal
-            if parent_val is None and constraint.value_ref:
-                parent_val = self._coerce_value(constraint.value_ref)
+            # Skip if either value is None (field not present in Family schema)
+            if child_val is None or parent_val is None:
+                continue
 
             if not evaluate_operator(child_val, constraint.operator, parent_val):
                 msg = constraint.message or (

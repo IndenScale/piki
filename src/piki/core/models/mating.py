@@ -322,8 +322,19 @@ class MateGraph:
 
         每条路径是从该 Instance 出发，沿 Mate 的 child→parent 方向
         追溯直到没有更多 parent 为止的完整配合链。
+
+        同时检查裸 Instance ID 和该 Instance 的所有 interface ref
+        (如 instance_id = "FIBER-01" 会匹配 "FIBER-01/end-a")。
         """
-        mates = self._by_child.get(instance_id, [])
+        # 收集所有匹配的 child ref
+        mates: list[MateSpec] = []
+        mates.extend(self._by_child.get(instance_id, []))
+        # 也检查以 instance_id/ 开头的 interface ref
+        prefix = instance_id + "/"
+        for child_ref, mlist in self._by_child.items():
+            if child_ref.startswith(prefix):
+                mates.extend(mlist)
+
         if not mates:
             return []
 

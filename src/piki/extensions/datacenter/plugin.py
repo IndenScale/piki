@@ -198,6 +198,27 @@ class DatacenterPlugin(Plugin):
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("dc-bom-csv", "数据中心 BOM CSV 导出", generate_dc_bom_csv)
 
+    def register_mate_types(self, registry: Registry) -> None:
+        """注册 datacenter 领域的 Mate 类型 (ADR-008)."""
+        from piki.core.models.mating import MateTypeMeta
+
+        registry.add_mate_type(
+            "grid-mount",
+            MateTypeMeta(
+                type="grid-mount",
+                description="方舱内设备装配",
+                applicable_parent_families={"ContainerFamily"},
+                applicable_child_families={"EquipmentFamily", "PowerUnitFamily"},
+            ),
+        )
+        registry.add_mate_type(
+            "power-cable",
+            MateTypeMeta(
+                type="power-cable",
+                description="配电单元到设备供电电缆",
+            ),
+        )
+
 
 # ---------------------------------------------------------------------------
 # 规则实现

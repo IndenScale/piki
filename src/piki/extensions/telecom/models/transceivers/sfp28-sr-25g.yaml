@@ -1,0 +1,24 @@
+model: sfp28-sr-25g
+family: TransceiverFamily
+
+form_factor: SFP28
+reach: SR
+wavelength_nm: 850
+speed_gbps: 25.0
+
+interfaces:
+  - id: host
+    interface_type: SFP28
+    direction: input
+    description: "插入交换机笼子"
+    specs:
+      speed_gbps: 25
+      form_factor: SFP28
+  - id: line
+    interface_type: LC
+    direction: bidirectional
+    description: "接光纤跳线"
+    specs:
+      connector: LC
+      fiber_type: OM4
+      polish: UPC

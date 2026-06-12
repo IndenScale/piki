@@ -1,0 +1,24 @@
+model: sfp-plus-sr-10g
+family: TransceiverFamily
+
+form_factor: SFP+
+reach: SR
+wavelength_nm: 850
+speed_gbps: 10.0
+
+interfaces:
+  - id: host
+    interface_type: SFP+
+    direction: input
+    description: "插入交换机笼子"
+    specs:
+      speed_gbps: 10
+      form_factor: SFP+
+  - id: line
+    interface_type: LC
+    direction: bidirectional
+    description: "接光纤跳线"
+    specs:
+      connector: LC
+      fiber_type: OM4
+      polish: UPC

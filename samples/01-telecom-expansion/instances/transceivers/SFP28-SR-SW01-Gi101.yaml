@@ -1,0 +1,5 @@
+id: SFP28-SR-SW01-Gi101
+family: TransceiverFamily
+model: sfp28-sr-25g
+name: "SFP28 SR 25G - SW-01 Gi1/0/1"
+status: installed

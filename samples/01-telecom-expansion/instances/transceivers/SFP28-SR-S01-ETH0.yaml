@@ -1,0 +1,5 @@
+id: SFP28-SR-S01-ETH0
+family: TransceiverFamily
+model: sfp28-sr-25g
+name: "SFP28 SR 25G - SRV-01 eth0"
+status: installed

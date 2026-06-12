@@ -1,0 +1,6 @@
+id: FIBER-S01-S02
+family: FiberPatchCordFamily
+model: om4-lc-lc-3m
+name: "SRV-01 eth0 ↔ SRV-02 eth0 管理互联"
+length_m: 2.0
+status: installed
