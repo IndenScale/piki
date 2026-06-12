@@ -1,0 +1,6 @@
+id: SRV-01-eth1
+family: PortFamily
+device_id: SRV-01
+port_name: eth1
+port_type: SFP+
+status: installed

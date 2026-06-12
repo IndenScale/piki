@@ -19,6 +19,11 @@ class InterfaceSpec(BaseModel):
 
     id: str = Field(..., description="Instance 内唯一标识：eth0, power-a, hole-3")
     interface_type: str = Field(..., description="接口类型：SFP28, IEC-C14, M16-bolt-hole")
+    active_type: str | None = Field(
+        default=None,
+        description="多形态接口（如 Combo 口）当前实际激活的类型。"
+                    "未指定时退化为 interface_type。",
+    )
     direction: str = Field(
         default="bidirectional",
         description="input | output | bidirectional",
@@ -93,3 +98,12 @@ def get_interfaces_from_resolved(inst: Any) -> list[InterfaceSpec]:
                     pass
         return result
     return []
+
+
+def effective_interface_type(iface: InterfaceSpec) -> str:
+    """返回接口用于兼容性/线缆检查的有效类型。
+
+    对于 Combo/多形态接口，如果声明了 active_type，则使用 active_type；
+    否则退化为 interface_type。
+    """
+    return iface.active_type if iface.active_type else iface.interface_type

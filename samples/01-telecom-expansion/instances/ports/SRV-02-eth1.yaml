@@ -1,0 +1,6 @@
+id: SRV-02-eth1
+family: PortFamily
+device_id: SRV-02
+port_name: eth1
+port_type: QSFP28
+status: installed

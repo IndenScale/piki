@@ -111,7 +111,8 @@ def test_json_format(demo_project: Path) -> None:
     data = json.loads(result.stdout)
     assert data["passed"] is True
     assert data["error_count"] == 0
-    assert len(data["results"]) == 14
+    # 8 个 L2 内置规则 + 1 个 FQID 检查 + 11 个 telecom 规则
+    assert len(data["results"]) == 20
 
 
 def test_init_refuses_overwrite(tmp_path: Path) -> None:

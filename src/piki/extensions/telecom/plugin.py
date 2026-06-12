@@ -11,9 +11,14 @@ from piki.core.engine.generator_registry import GeneratorResult
 from piki.core.engine.registry import Registry
 from piki.core.models.diagnostic import Severity
 from piki.core.models.geometry import GeometryAssets
-from piki.core.models.interface import InterfaceSpec
+from piki.core.models.interface import InterfaceSpec, resolve_interface_ref
 from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
+from piki.extensions.telecom.types import (
+    INTERFACE_CABLE_MAP,
+    are_compatible,
+    is_valid_interface_type,
+)
 
 
 class RackFamily(BaseModel):
@@ -124,6 +129,33 @@ class FiberPatchCordFamily(BaseModel):
     tags: Tags = Field(default_factory=Tags)
 
 
+class PortFamily(BaseModel):
+    """设备端口：逻辑上一等公民，可被 Connection 直接引用。"""
+
+    id: str = Field(...)
+    device_id: str = Field(..., description="所属设备 Instance ID")
+    port_name: str = Field(..., description="设备内端口标识，如 eth0、Gi1/0/1")
+    port_type: str = Field(..., description="接口类型：SFP28、SFP+、RJ45、LC、MPO 等")
+    direction: str = Field(default="bidirectional")
+    status: str = Field(default="planned")
+    tags: Tags = Field(default_factory=Tags)
+
+
+class PortConnectionFamily(BaseModel):
+    """端口到端口的连接（telecom 粒度）。
+
+    与 datacenter 的 ConnectionFamily（方舱↔方舱）区分。
+    """
+
+    id: str = Field(...)
+    from_port: str = Field(..., description="源端口引用：DEVICE_ID/PORT_ID")
+    to_port: str = Field(..., description="目标端口引用：DEVICE_ID/PORT_ID")
+    cable_type: str = Field(default="")
+    length_m: float = Field(default=0, ge=0)
+    status: str = Field(default="planned")
+    tags: Tags = Field(default_factory=Tags)
+
+
 class TelecomPlugin(Plugin):
     name = "telecom"
     version = "0.1.0"
@@ -138,6 +170,8 @@ class TelecomPlugin(Plugin):
         registry.add_family("ServerFamily", ServerFamily)
         registry.add_family("TransceiverFamily", TransceiverFamily)
         registry.add_family("FiberPatchCordFamily", FiberPatchCordFamily)
+        registry.add_family("PortFamily", PortFamily)
+        registry.add_family("PortConnectionFamily", PortConnectionFamily)
 
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule(
@@ -189,6 +223,41 @@ class TelecomPlugin(Plugin):
             priority=10,
             severity=Severity.WARNING,
         )
+        checker.add_rule(
+            "TELECOM-PORT-001",
+            "端口占用冲突检查",
+            check_port_occupancy,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-PORT-002",
+            "端口所属设备存在性检查",
+            check_port_device_exists,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-CONN-001",
+            "连接端点存在性检查",
+            check_connection_endpoints,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-CONN-002",
+            "连接端口类型兼容性检查",
+            check_connection_port_compat,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-CONN-003",
+            "连接线缆类型匹配检查",
+            check_connection_cable_match,
+            priority=5,
+            severity=Severity.ERROR,
+        )
 
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("bom-csv", "BOM CSV 导出", generate_bom_csv)
@@ -196,6 +265,7 @@ class TelecomPlugin(Plugin):
         checker.add_generator("rack-face-panel-svg", "机柜面板图 SVG", generate_rack_face_panel_svg)
         checker.add_generator("power-budget", "功率预算汇总", generate_power_budget)
         checker.add_generator("cable-list", "线缆清单", generate_cable_list)
+        checker.add_generator("port-map", "端口分配表", generate_port_map)
 
     def register_mate_types(self, registry: Registry) -> None:
         """注册 telecom 领域的 Mate 类型 (ADR-006)."""
@@ -1096,3 +1166,176 @@ def generate_cable_list(ctx, config) -> GeneratorResult:
     csv_content = output.getvalue()
     _, file_path = _resolve_output_path(config, "cable-list.csv")
     return _write_and_return("cable-list", "线缆清单", csv_content, file_path, "text/csv")
+
+
+def _resolve_port_ref(ref: str, ports: dict[str, Any]) -> Any | None:
+    """解析 DEVICE_ID/PORT_NAME 引用，返回匹配的 PortFamily 实例。
+
+    匹配逻辑：先按 Port Instance ID 查找，再按 device_id + port_name 组合查找。
+    """
+    # 1. 直接按 Instance ID 查找（允许用户直接写 Port Instance ID）
+    if ref in ports:
+        return ports[ref]
+
+    # 2. 按 DEVICE_ID/PORT_NAME 解析查找
+    if "/" not in ref:
+        return None
+    try:
+        device_id, port_name = resolve_interface_ref(ref)
+    except ValueError:
+        return None
+
+    for port in ports.values():
+        if port.device_id == device_id and port.resolved.port_name == port_name:
+            return port
+    return None
+
+
+def check_port_occupancy(ctx):
+    """检查同一设备内端口标识唯一。"""
+    seen: dict[tuple[str, str], str] = {}
+    for port in ctx.query("ports"):
+        ctx.set_current_file(str(port.source))
+        key = (port.device_id, port.resolved.port_name)
+        if key in seen:
+            assert False, (
+                f"设备 {port.device_id} 的端口 '{port.resolved.port_name}' 被重复定义: "
+                f"{seen[key]} 与 {port.id}"
+            )
+        seen[key] = port.id
+    ctx.clear_current_file()
+
+
+def check_port_device_exists(ctx):
+    """检查每个端口引用的设备都存在。"""
+    devices = {d.id: d for d in ctx.query("devices")}
+    for port in ctx.query("ports"):
+        ctx.set_current_file(str(port.source))
+        assert port.device_id in devices, (
+            f"端口 {port.id} 引用的设备 {port.device_id} 不存在"
+        )
+    ctx.clear_current_file()
+
+
+def check_connection_endpoints(ctx):
+    """检查连接的 from_port / to_port 引用都存在且格式正确。"""
+    ports = {p.id: p for p in ctx.query("ports")}
+    for conn in ctx.query("port_connections"):
+        ctx.set_current_file(str(conn.source))
+        for endpoint_name in ("from_port", "to_port"):
+            ref = getattr(conn.resolved, endpoint_name, "")
+            if not ref:
+                assert False, f"连接 {conn.id} 的 {endpoint_name} 未定义"
+            port = _resolve_port_ref(ref, ports)
+            assert port is not None, (
+                f"连接 {conn.id} 的 {endpoint_name} 引用端口 {ref} 不存在"
+            )
+    ctx.clear_current_file()
+
+
+def check_connection_port_compat(ctx):
+    """检查连接两端端口类型兼容。"""
+    ports = {p.id: p for p in ctx.query("ports")}
+    for conn in ctx.query("port_connections"):
+        ctx.set_current_file(str(conn.source))
+        from_ref = conn.resolved.from_port
+        to_ref = conn.resolved.to_port
+
+        from_port = _resolve_port_ref(from_ref, ports)
+        to_port = _resolve_port_ref(to_ref, ports)
+        if from_port is None or to_port is None:
+            continue  # CONN-001 会报不存在
+
+        from_type = from_port.resolved.port_type
+        to_type = to_port.resolved.port_type
+
+        if from_type == to_type:
+            continue
+
+        if is_valid_interface_type(from_type) and is_valid_interface_type(to_type):
+            if are_compatible(from_type, to_type) or are_compatible(to_type, from_type):
+                continue
+            assert False, (
+                f"连接 {conn.id} 两端端口类型不兼容: "
+                f"{from_ref} ({from_type}) vs {to_ref} ({to_type})"
+            )
+    ctx.clear_current_file()
+
+
+def check_connection_cable_match(ctx):
+    """检查连接线缆类型与端口类型匹配。"""
+    ports = {p.id: p for p in ctx.query("ports")}
+    for conn in ctx.query("port_connections"):
+        cable_type = getattr(conn.resolved, "cable_type", "")
+        if not cable_type:
+            continue
+
+        ctx.set_current_file(str(conn.source))
+        for endpoint_name in ("from_port", "to_port"):
+            ref = getattr(conn.resolved, endpoint_name, "")
+            port = _resolve_port_ref(ref, ports)
+            if port is None:
+                continue  # CONN-001 会报不存在
+
+            port_type = port.resolved.port_type
+            if not is_valid_interface_type(port_type):
+                continue
+
+            valid_cables = INTERFACE_CABLE_MAP.get(port_type, frozenset())
+            if valid_cables and cable_type not in valid_cables:
+                assert False, (
+                    f"连接 {conn.id} 的线缆类型不匹配: "
+                    f"{ref} (port_type={port_type}) 不支持 cable_type={cable_type}。"
+                    f"支持的线缆: {', '.join(sorted(valid_cables))}"
+                )
+    ctx.clear_current_file()
+
+
+def generate_port_map(ctx, config) -> GeneratorResult:
+    """生成端口分配表：每设备的端口占用与对端连接情况。"""
+    import csv
+    import io
+
+    ports = ctx.query("ports").list()
+    connections = ctx.query("port_connections").list()
+
+    # 建立端口 ID -> 连接信息映射
+    port_conn: dict[str, dict[str, Any]] = {}
+    for conn in connections:
+        for endpoint_name in ("from_port", "to_port"):
+            ref = getattr(conn.resolved, endpoint_name, "")
+            port = _resolve_port_ref(ref, {p.id: p for p in ports})
+            if port is None:
+                continue
+            other_endpoint_name = "to_port" if endpoint_name == "from_port" else "from_port"
+            other_ref = getattr(conn.resolved, other_endpoint_name, "")
+            port_conn[port.id] = {
+                "connected_to": other_ref,
+                "cable_type": getattr(conn.resolved, "cable_type", ""),
+                "length_m": getattr(conn.resolved, "length_m", 0),
+            }
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        ["Port Instance ID", "Device ID", "Port Name", "Port Type", "Status", "Connected To", "Cable Type", "Length (m)"]
+    )
+
+    for port in sorted(ports, key=lambda p: (p.device_id, p.resolved.port_name)):
+        conn_info = port_conn.get(port.id, {})
+        writer.writerow(
+            [
+                port.id,
+                port.device_id,
+                port.resolved.port_name,
+                port.resolved.port_type,
+                port.resolved.status,
+                conn_info.get("connected_to", ""),
+                conn_info.get("cable_type", ""),
+                conn_info.get("length_m", 0),
+            ]
+        )
+
+    csv_content = output.getvalue()
+    _, file_path = _resolve_output_path(config, "port-map.csv")
+    return _write_and_return("port-map", "端口分配表", csv_content, file_path, "text/csv")

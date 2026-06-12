@@ -1,0 +1,6 @@
+id: SRV-01-power-a
+family: PortFamily
+device_id: SRV-01
+port_name: power-a
+port_type: IEC-C14
+status: installed

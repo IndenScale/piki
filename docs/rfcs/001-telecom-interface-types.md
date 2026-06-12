@@ -1,9 +1,13 @@
 # RFC-001: Telecom 接口类型体系
 
-> 状态：提案中
+> 状态：已实现（v0.1.0）
 > 日期：2026-06-12
 > 作者：piki 核心团队
 > 依赖：ADR-005 (Connection 与 Interface 模型)
+>
+> 实现范围：`InterfaceType` 枚举、兼容性矩阵、`INTERFACE_CABLE_MAP`、
+> `InterfaceSpec` 未知类型 Warning、`INTERFACE-COMPAT-001` 矩阵判定。
+> `INTERFACE-CABLE-001` 已接入 `Checker.run()` 作为 L2 内置规则。
 
 ## 摘要
 

@@ -11,7 +11,7 @@ power_threshold = 0.4
 rack_usage_threshold = 0.8
 
 [generators]
-enabled = ["bom-csv", "rack-face-panel-svg", "power-budget", "cable-list"]
+enabled = ["bom-csv", "rack-face-panel-svg", "power-budget", "cable-list", "port-map"]
 
 [generators.dist]
 root = "dist"
@@ -21,3 +21,4 @@ bom-csv = "采购清单"
 rack-face-panel-svg = "施工图"
 power-budget = "设计评审"
 cable-list = "采购清单"
+port-map = "设计评审"

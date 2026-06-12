@@ -1,0 +1,6 @@
+id: SRV-02-eth0
+family: PortFamily
+device_id: SRV-02
+port_name: eth0
+port_type: SFP28
+status: installed

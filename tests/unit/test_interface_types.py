@@ -44,6 +44,9 @@ class TestInterfaceTypeEnum:
         assert InterfaceType.DIN_7_16 == "7/16 DIN"
         assert InterfaceType.DIN_4_3_10 == "4.3-10"
 
+    def test_combo_type_present(self) -> None:
+        assert InterfaceType.COMBO_SFP_RJ45 == "COMBO-SFP-RJ45"
+
 
 class TestCompatibilityMatrix:
     """兼容性矩阵测试。"""
@@ -120,6 +123,29 @@ class TestCompatibilityMatrix:
         assert are_compatible(InterfaceType.DAC_SFP, InterfaceType.DAC_SFP) is True
         assert are_compatible(InterfaceType.DAC_SFP, InterfaceType.SFP28) is False
 
+    # ── 光电两用口 ──
+
+    def test_combo_accepts_sfp(self) -> None:
+        """COMBO 口可插 SFP 模块。"""
+        assert are_compatible(InterfaceType.COMBO_SFP_RJ45, InterfaceType.SFP) is True
+
+    def test_combo_accepts_sfp_plus(self) -> None:
+        assert are_compatible(InterfaceType.COMBO_SFP_RJ45, InterfaceType.SFP_PLUS) is True
+
+    def test_combo_accepts_sfp28(self) -> None:
+        assert are_compatible(InterfaceType.COMBO_SFP_RJ45, InterfaceType.SFP28) is True
+
+    def test_combo_accepts_rj45(self) -> None:
+        assert are_compatible(InterfaceType.COMBO_SFP_RJ45, InterfaceType.RJ45) is True
+
+    def test_combo_rejects_qsfp28(self) -> None:
+        """COMBO 口不支持 QSFP28（物理尺寸不同）。"""
+        assert are_compatible(InterfaceType.COMBO_SFP_RJ45, InterfaceType.QSFP28) is False
+
+    def test_sfp_does_not_accept_combo(self) -> None:
+        """普通 SFP 口不能作为 COMBO 口的对端（单向兼容性）。"""
+        assert are_compatible(InterfaceType.SFP, InterfaceType.COMBO_SFP_RJ45) is False
+
 
 class TestIsValidInterfaceType:
     """类型校验函数测试。"""
@@ -192,6 +218,28 @@ class TestInterfaceCableMap:
         cables = INTERFACE_CABLE_MAP.get("UNKNOWN-TYPE", frozenset())
         assert cables == frozenset()
 
+    def test_combo_supports_fiber_and_copper(self) -> None:
+        """COMBO 口未指定 active_type 时允许光/电两类线缆。"""
+        cables = INTERFACE_CABLE_MAP.get(InterfaceType.COMBO_SFP_RJ45, frozenset())
+        assert "OM4-LC-LC" in cables
+        assert "Cat6A-RJ45" in cables
+
+
+class TestEffectiveInterfaceType:
+    """effective_interface_type 辅助函数测试。"""
+
+    def test_no_active_type_fallback(self) -> None:
+        from piki.core.models.interface import InterfaceSpec, effective_interface_type
+
+        spec = InterfaceSpec(id="eth0", interface_type="SFP28")
+        assert effective_interface_type(spec) == "SFP28"
+
+    def test_active_type_takes_precedence(self) -> None:
+        from piki.core.models.interface import InterfaceSpec, effective_interface_type
+
+        spec = InterfaceSpec(id="eth0", interface_type="COMBO-SFP-RJ45", active_type="RJ45")
+        assert effective_interface_type(spec) == "RJ45"
+
 
 class TestInterfaceSpecValidator:
     """InterfaceSpec field_validator 测试 (RFC-001)."""
@@ -215,3 +263,15 @@ class TestInterfaceSpecValidator:
             assert len(w) == 1
             assert "Unknown interface_type" in str(w[0].message)
             assert "SFP-28" in str(w[0].message)
+
+    def test_active_type_optional(self) -> None:
+        from piki.core.models.interface import InterfaceSpec
+
+        spec = InterfaceSpec(id="eth0", interface_type="COMBO-SFP-RJ45", active_type="SFP28")
+        assert spec.active_type == "SFP28"
+
+    def test_active_type_defaults_to_none(self) -> None:
+        from piki.core.models.interface import InterfaceSpec
+
+        spec = InterfaceSpec(id="eth0", interface_type="SFP28")
+        assert spec.active_type is None

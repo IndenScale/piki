@@ -34,6 +34,9 @@ class InterfaceType(StrEnum):
     DAC_SFP = "DAC-SFP"  # SFP 直连铜缆 (Twinax)
     DAC_QSFP = "DAC-QSFP"  # QSFP 直连铜缆
 
+    # ── 光电两用口（Combo Port）──
+    COMBO_SFP_RJ45 = "COMBO-SFP-RJ45"  # 同一端口可插 SFP 系列模块或 RJ45，互斥
+
     # ── 电源端口 ──
     IEC_C13 = "IEC-C13"  # 设备端母座（10A）
     IEC_C14 = "IEC-C14"  # PDU 端公头（10A）
@@ -117,6 +120,16 @@ COMPATIBILITY: dict[str, frozenset[str]] = {
     InterfaceType.SFP_RJ45: frozenset({InterfaceType.SFP_RJ45}),
     InterfaceType.DAC_SFP: frozenset({InterfaceType.DAC_SFP}),
     InterfaceType.DAC_QSFP: frozenset({InterfaceType.DAC_QSFP}),
+
+    # ── 光电两用口：支持 SFP 家族与 RJ45 互斥 ──
+    InterfaceType.COMBO_SFP_RJ45: frozenset(
+        {
+            InterfaceType.SFP,
+            InterfaceType.SFP_PLUS,
+            InterfaceType.SFP28,
+            InterfaceType.RJ45,
+        }
+    ),
     # ── 射频 ──
     InterfaceType.N_TYPE: frozenset({InterfaceType.N_TYPE}),
     InterfaceType.SMA: frozenset({InterfaceType.SMA}),
@@ -189,6 +202,29 @@ INTERFACE_CABLE_MAP: dict[str, frozenset[str]] = {
             "Cat7-RJ45",
         }
     ),
+
+    # ── 光电两用口：未指定 active_type 时允许光/电两类线缆 ──
+    # 实际检查时会优先使用 active_type；本表作为 fallback 保留设计灵活性。
+    InterfaceType.COMBO_SFP_RJ45: frozenset(
+        {
+            # SFP 家族光/DAC 线缆
+            "OM1-LC-LC",
+            "OM2-LC-LC",
+            "OM3-LC-LC",
+            "OM4-LC-LC",
+            "OM5-LC-LC",
+            "SM-LC-LC",
+            "DAC-SFP",
+            "DAC-SFP+",
+            "DAC-SFP28",
+            # RJ45 铜缆
+            "Cat5e-RJ45",
+            "Cat6-RJ45",
+            "Cat6A-RJ45",
+            "Cat7-RJ45",
+        }
+    ),
+
     InterfaceType.IEC_C14: frozenset({"IEC-C13-C14-10A", "IEC-C13-C14-16A"}),
     InterfaceType.IEC_C20: frozenset({"IEC-C19-C20-16A"}),
     InterfaceType.N_TYPE: frozenset({"LMR400-N-N", '1/2"-N-N'}),

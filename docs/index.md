@@ -44,6 +44,7 @@
 - **[ADR-007: CAD 资产引用](adr/007-cad-asset-reference.md)** — 引用而非嵌入、白牌型号、资产完整性
 - **[ADR-008: 空间可视化策略](adr/008-spatial-visualization-strategy.md)** — OpenUSD 选型、碰撞检测、glTF 过渡
 - **[ADR-009: Piki Studio](adr/009-piki-studio.md)** — 浏览器端 IDE、自研 USDA 解析器
+- **[ADR-010: 多上下文工程设计](adr/010-brownfield-reference-instance.md)** — 用 Context 统一建模外部、保密、标段、粗糙设计与自然环境实体（勘察中）
 
 ---
 
