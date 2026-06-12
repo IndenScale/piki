@@ -101,7 +101,7 @@ piki generate bom-csv           # 导出 BOM 清单
 
 ---
 
-## 声明式建模：文本为什么优于图纸
+## Text-Native Declarative Modeling：文本为什么优于图纸
 
 | 能力 | piki（声明式 YAML） | 图形 CAD / BIM |
 |------|-------------------|---------------|
