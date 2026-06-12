@@ -177,6 +177,71 @@ status: installed
 
 → 详见：[05-layout-format.md](05-layout-format.md)
 
+## Interface：实例的可连接点
+
+Instance 通过 `interfaces` 字段声明对外暴露的可连接点。每个 Interface 是该 Instance 上的一个物理/逻辑端口。
+
+```yaml
+# instances/servers/SRV-01.yaml
+id: SRV-01
+family: ServerFamily
+model: generic-server
+status: installed
+
+interfaces:
+  - id: eth0
+    interface_type: SFP28
+    direction: bidirectional
+    description: "管理口"
+  - id: eth1
+    interface_type: SFP28
+    direction: bidirectional
+    description: "业务口-1"
+  - id: power-a
+    interface_type: IEC-C14
+    direction: input
+    description: "A路电源"
+```
+
+### Interface 字段
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | `str` | ✅ | Instance 内唯一标识：`eth0`、`power-a`、`hole-3` |
+| `interface_type` | `str` | ✅ | 接口类型：`SFP28`、`IEC-C14`、`M16-bolt-hole`、`RJ45` 等 |
+| `direction` | `str` | ❌ | `input` / `output` / `bidirectional`，默认 `bidirectional` |
+| `description` | `str` | ❌ | 人类可读描述 |
+| `specs` | `dict` | ❌ | 接口自身的规格键值对（自由扩展，由领域插件定义约束） |
+
+带 specs 的示例：
+
+```yaml
+interfaces:
+  - id: eth0
+    interface_type: SFP28
+    direction: bidirectional
+    specs:
+      speed_gbps: 25
+      connector: LC
+      media: SMF
+```
+
+### Interface 引用语法
+
+在 Connection 实例中使用 `instance_id/interface_id` 格式引用 Interface：
+
+```yaml
+# instances/connections/CONN-01.yaml
+id: CONN-01
+family: ConnectionFamily
+from_interface: SRV-01/eth0
+to_interface: SW-01/Gi1-0-1
+cable_type: SMF
+```
+
+> Interface 不是独立的 Instance，而是内嵌在 Instance 的 `interfaces` 列表中，随 Instance 一起解析和管理。
+
+
 ## 解析后的完整对象
 
 piki 运行时合并 Model 默认值 + Instance 覆盖值 + Layout 部署值：

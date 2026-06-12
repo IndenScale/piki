@@ -133,6 +133,12 @@ class Checker:
                 Severity.ERROR,
                 self.check_interface_compatibility,
             ),
+            (
+                "INTERFACE-CABLE-001",
+                "线缆-接口类型匹配检查",
+                Severity.ERROR,
+                self.check_cable_interface_match,
+            ),
         ]:
             try:
                 check_fn(ctx)
@@ -354,12 +360,22 @@ class Checker:
         ctx.clear_current_file()
 
     def check_interface_compatibility(self, ctx: Context) -> None:
-        """L2 接口类型兼容性检查 (ADR-007).
+        """L2 接口类型兼容性检查 (ADR-007, RFC-001).
 
-        对于所有 Connection Instance（以 _interface 字段标识），
-        检查 from_interface 和 to_interface 的 interface_type 是否一致。
+        对于所有 Connection Instance，使用兼容性矩阵检查
+        from_interface 和 to_interface 的 interface_type 是否兼容。
         """
         from ..models.interface import get_interfaces_from_resolved, resolve_interface_ref
+
+        try:
+            from piki.extensions.telecom.types import are_compatible, is_valid_interface_type
+        except ImportError:
+            # telecom 插件未安装时降级为严格相等
+            def are_compatible(a, b):
+                return a == b
+
+            def is_valid_interface_type(v):
+                return True
 
         for inst in ctx.instances():
             from_ref = inst._resolved.get("from_interface")
@@ -405,12 +421,108 @@ class Checker:
             if from_iface is None or to_iface is None:
                 continue  # FK-001 已报错
 
-            if from_iface.interface_type != to_iface.interface_type:
+            # 同类型 → 兼容（快速路径）
+            if from_iface.interface_type == to_iface.interface_type:
+                continue
+
+            # 两个都是已知类型 → 查兼容性矩阵
+            from_known = is_valid_interface_type(from_iface.interface_type)
+            to_known = is_valid_interface_type(to_iface.interface_type)
+
+            if from_known and to_known:
+                if are_compatible(
+                    from_iface.interface_type, to_iface.interface_type
+                ) or are_compatible(to_iface.interface_type, from_iface.interface_type):
+                    continue
+                # 已知类型但矩阵说不兼容 → Error
                 assert False, (
                     f"接口类型不兼容: "
                     f"{from_ref} (type={from_iface.interface_type}) vs "
                     f"{to_ref} (type={to_iface.interface_type})"
                 )
+
+            # 至少一个未知类型 → 降级为 Warning，不做有罪推定
+            if not from_known:
+                ctx.set_suggestion(
+                    f"Interface '{from_iface_id}' 使用了未收录的类型: {from_iface.interface_type}"
+                )
+            if not to_known:
+                ctx.set_suggestion(
+                    f"Interface '{to_iface_id}' 使用了未收录的类型: {to_iface.interface_type}"
+                )
+
+        ctx.clear_current_file()
+
+    def check_cable_interface_match(self, ctx: Context) -> None:
+        """L2 线缆-接口类型匹配检查 (RFC-001).
+
+        对于所有 Connection Instance，检查 cable_type 是否与两端接口类型匹配。
+        光纤接口不应接铜缆，铜缆接口不应接光纤跳线。
+        """
+        from ..models.interface import get_interfaces_from_resolved, resolve_interface_ref
+
+        try:
+            from piki.extensions.telecom.types import INTERFACE_CABLE_MAP, is_valid_interface_type
+        except ImportError:
+            return  # telecom 插件未安装时跳过
+
+        for inst in ctx.instances():
+            from_ref = inst._resolved.get("from_interface")
+            to_ref = inst._resolved.get("to_interface")
+            cable_type = inst._resolved.get("cable_type")
+
+            if not from_ref or not to_ref or not cable_type:
+                continue
+            if not isinstance(from_ref, str) or not isinstance(to_ref, str):
+                continue
+            if "/" not in from_ref or "/" not in to_ref:
+                continue
+            if not isinstance(cable_type, str):
+                continue
+
+            ctx.set_current_file(str(inst.source))
+
+            # 解析 from
+            try:
+                from_inst_id, from_iface_id = resolve_interface_ref(from_ref)
+            except ValueError:
+                continue  # FK-001 / COMPAT-001 会报
+
+            from_target = ctx.find_instance(from_inst_id)
+            if from_target is None:
+                continue
+
+            # 解析 to
+            try:
+                to_inst_id, to_iface_id = resolve_interface_ref(to_ref)
+            except ValueError:
+                continue
+
+            to_target = ctx.find_instance(to_inst_id)
+            if to_target is None:
+                continue
+
+            from_interfaces = get_interfaces_from_resolved(from_target)
+            to_interfaces = get_interfaces_from_resolved(to_target)
+
+            from_iface = next((i for i in from_interfaces if i.id == from_iface_id), None)
+            to_iface = next((i for i in to_interfaces if i.id == to_iface_id), None)
+
+            if from_iface is None or to_iface is None:
+                continue
+
+            # 检查两端接口的 cable_type 匹配
+            for iface, ref_name in [(from_iface, from_ref), (to_iface, to_ref)]:
+                if not is_valid_interface_type(iface.interface_type):
+                    continue
+                valid_cables = INTERFACE_CABLE_MAP.get(iface.interface_type, frozenset())
+                if valid_cables and cable_type not in valid_cables:
+                    assert False, (
+                        f"线缆类型不匹配: "
+                        f"{ref_name} (type={iface.interface_type}) "
+                        f"不支持 cable_type={cable_type}。"
+                        f"支持的线缆: {', '.join(sorted(valid_cables))}"
+                    )
 
         ctx.clear_current_file()
 

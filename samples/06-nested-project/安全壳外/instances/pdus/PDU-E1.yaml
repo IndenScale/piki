@@ -1,6 +1,0 @@
-id: PDU-E1
-family: PduFamily
-name: PDU-办公区主路
-rack_id: RACK-E01
-capacity_w: 3000
-phase: L1

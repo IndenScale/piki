@@ -1,8 +1,0 @@
-- instance: CABLE-TRAY-01
-  position_z_mm: 500
-  position_y_mm: 2500
-  position_x_mm: 2000
-- instance: FIRE-DOOR-01
-  position_z_mm: 1200
-  position_y_mm: 0
-  position_x_mm: 5000

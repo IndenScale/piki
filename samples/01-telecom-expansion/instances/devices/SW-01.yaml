@@ -1,0 +1,22 @@
+id: SW-01
+name: 接入交换机-01
+family: ServerFamily
+model: access-switch
+status: installed
+interfaces:
+  - id: Gi1/0/1
+    interface_type: SFP28
+    direction: bidirectional
+    description: "上行端口-1（25G）"
+  - id: Gi1/0/2
+    interface_type: SFP28
+    direction: bidirectional
+    description: "上行端口-2（25G）"
+  - id: Gi1/0/3
+    interface_type: OSFP
+    direction: bidirectional
+    description: "堆叠端口（400G）"
+  - id: power-a
+    interface_type: IEC-C14
+    direction: input
+    description: "A路电源"

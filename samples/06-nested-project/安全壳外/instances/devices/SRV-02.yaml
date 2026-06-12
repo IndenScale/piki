@@ -1,7 +1,0 @@
-id: SRV-02
-name: 通用服务器-02
-model: generic-server
-tdp_w: 280
-tags:
-  discipline: compute
-  system: monitoring

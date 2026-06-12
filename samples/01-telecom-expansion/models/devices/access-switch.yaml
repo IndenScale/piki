@@ -1,0 +1,12 @@
+model: access-switch
+family: ServerFamily
+
+height_u: 1
+tdp_w: 150
+psu_count: 1
+psu_redundancy: false
+
+depth_mm: 460
+width_mm: 440
+height_mm: 44
+weight_kg: 7.2

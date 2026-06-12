@@ -33,7 +33,7 @@ class TestCheckerRun:
         report = checker.run(ctx)
         assert report.passed is True
         assert report.error_count == 0
-        assert report.pass_count == 5
+        assert report.pass_count == 6
 
     def test_single_fail(self) -> None:
         checker = Checker()
@@ -46,7 +46,7 @@ class TestCheckerRun:
         report = checker.run(ctx)
         assert report.passed is False
         assert report.error_count == 1
-        assert report.pass_count == 4
+        assert report.pass_count == 5
         fail_result = next((r for r in report.results if r.rule_id == "R-001"), None)
         assert fail_result is not None
         assert "出错了" in fail_result.message
@@ -76,7 +76,7 @@ class TestCheckerRun:
         checker.add_rule("R-002", "失败", lambda ctx: exec("assert False, 'err'"))
         report = checker.run(ctx)
         assert report.error_count == 1
-        assert report.pass_count == 5
+        assert report.pass_count == 6
 
     def test_exception_handling(self) -> None:
         """非 AssertionError 异常也应被捕获。"""

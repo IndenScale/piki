@@ -114,5 +114,5 @@ RuleResult → Diagnostic → format_human() / format_json() / format_junit() / 
 
 ## 参考
 
-- [编写检查规则](../concepts/03-writing-rules.md)
+- [编写检查规则](../concepts/02-writing-rules.md)
 - [Diagnostic API 参考](../reference/06-api.md#diagnostic)

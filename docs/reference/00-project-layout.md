@@ -180,7 +180,7 @@ def check_project_power(ctx: Context):
 ```
 
 - 规则 ID 建议格式：`{领域}-{主题}-{序号}`，如 `TELECOM-POWER-001`
-- 详见：[编写检查规则 →](../concepts/03-writing-rules.md)
+- 详见：[编写检查规则 →](../concepts/02-writing-rules.md)
 
 ---
 

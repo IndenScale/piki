@@ -1,41 +1,42 @@
 # piki Samples
 
-本目录包含精选的示例项目，用于学习和参考。每个示例都是独立的 piki 项目，可直接运行 `piki check`。
+精选示例项目，每个都是独立的 piki 项目，可直接运行 `piki check`。
 
 ## 目录
 
-| 示例 | 插件 | 复杂度 | 说明 |
-|------|------|--------|------|
-| [01-hello-piki](01-hello-piki/) | telecom | ⭐ 入门 | 最小工作示例：Instance/Layout 分离 + Schema 校验 |
-| [02-telecom-rack](02-telecom-rack/) | telecom | ⭐⭐ 基础 | 电信机架：PDU 功率检查 + U 位冲突检查 |
-| [03-data-center](03-data-center/) | telecom | ⭐⭐⭐ 进阶 | 多机柜数据中心：自定义规则 + Tag 过滤 + 报告生成 |
-| [04-modular-dc](04-modular-dc/) | datacenter | ⭐⭐⭐⭐ 高级 | 模块化数据中心：集装箱方舱 + 液冷 + 储能 |
-| [05-csg-demo](05-csg-demo/) | datacenter | ⭐⭐ 基础 | CSG 几何演示：防火门、走线架 |
-| [06-nested-project](06-nested-project/) | telecom | ⭐⭐⭐ 进阶 | 嵌套项目：厂区 → 安全壳内/外（ADR-009） |
+| 示例 | 插件 | 故事 |
+|------|------|------|
+| [01-telecom-expansion](01-telecom-expansion/) | telecom | **设备扩容** — 新增服务器前，自动检查功率、U 位、接口兼容性 |
+| [02-modular-datacenter](02-modular-datacenter/) | datacenter | **数据中心建设** — 通信+电力+暖通+建筑跨领域耦合 |
 
 ## 快速体验
 
 ```bash
-# 进入任意示例目录
-cd samples/02-telecom-rack
-
-# 运行检查
+# 通信工程师最日常的场景
+cd samples/01-telecom-expansion
 piki check
+# 预期：2 个错误（接口不兼容 + 线缆不匹配，是故意保留的教学用例）
 
-# 生成报告
-piki report --format markdown
+# 跨领域耦合场景
+cd samples/02-modular-datacenter
+piki check
+# 预期：全部通过
 ```
 
-## ADR 覆盖
+## 两个示例的关系
 
-| ADR | 核心概念 | 示例 |
-|-----|---------|------|
-| ADR-002 | 一实例一文件 | 所有示例 |
-| ADR-004 | 多级质量检查 | 所有示例 |
-| ADR-008 | Instance/Layout 分离 | 01, 02, 03, 04, 05, 06 |
-| ADR-009 | 嵌套项目 + Tag + FQID | 03（Tag）, 06（嵌套/FQID） |
+```
+01-telecom-expansion              02-modular-datacenter
+─────────────────────             ────────────────────────
+粒度：设备级（U 位）               粒度：方舱级（集装箱）
+领域：通信（服务器+交换机+光纤）     领域：通信+电力+暖通+建筑
+核心概念：Interface 类型体系        核心概念：多 Family 类型 + 跨领域连接
+演示：兼容性矩阵、线缆校验           演示：PUE、液冷匹配、配电冗余
+```
 
-## 与 templates/ 的区别
+## 相关文档
 
-- **`src/piki/templates/`** — `piki init` 命令使用的骨架文件，精简到只包含必要结构
-- **`samples/`** — 完整可运行的示例项目，包含 README 说明、场景描述和预期输出，用于学习
+- [核心概念](../docs/concepts/01-core-concepts.md) — Family → Model → Instance → Interface
+- [编写检查规则](../docs/concepts/02-writing-rules.md) — `@rule` + QuerySet
+- [RFC-001: Telecom 接口类型体系](../docs/rfcs/001-telecom-interface-types.md) — 接口枚举与兼容性矩阵
+- [ADR-007: Connection 与 Interface](../docs/adr/007-connection-as-instance.md) — 连接建模

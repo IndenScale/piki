@@ -1,13 +1,14 @@
-"""Interface 数据模型 (ADR-007).
+"""Interface 数据模型 (ADR-007, RFC-001).
 
 Interface 是 Instance 对外暴露的可连接点，内嵌在 Instance 的 interfaces 列表中。
 """
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class InterfaceSpec(BaseModel):
@@ -26,6 +27,29 @@ class InterfaceSpec(BaseModel):
 
     # 接口自身的规格参数（自由扩展，由领域插件定义约束）
     specs: dict[str, Any] = Field(default_factory=dict, description="规格键值对")
+
+    @field_validator("interface_type")
+    @classmethod
+    def validate_known_type(cls, v: str) -> str:
+        """校验接口类型是否为已知值（RFC-001）。
+
+        不是 Error——允许项目使用枚举外的自定义类型。
+        对未知类型发出 UserWarning。
+        """
+        try:
+            from piki.extensions.telecom.types import is_valid_interface_type, known_interface_types
+
+            if not is_valid_interface_type(v):
+                known = ", ".join(known_interface_types())
+                warnings.warn(
+                    f"Unknown interface_type: '{v}'. Known telecom types: {known}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+        except ImportError:
+            # telecom 插件未安装时不做校验
+            pass
+        return v
 
 
 def resolve_interface_ref(ref: str) -> tuple[str, str]:

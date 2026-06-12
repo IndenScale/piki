@@ -1,7 +1,0 @@
-id: UPS-MAIN
-name: 主 UPS
-family: PowerUnitFamily
-unit_type: ups
-container_id: DC-MAIN
-capacity_kw: 1000
-redundancy_n: 2

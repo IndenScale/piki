@@ -1,0 +1,11 @@
+[project]
+name = "02-modular-datacenter"
+version = "1.0.0"
+description = "模块化数据中心示例：智算液冷方舱 + 通算风冷方舱 + 锂电 + 配电"
+
+[plugins]
+enabled = ["datacenter"]
+
+[plugins.datacenter]
+power_threshold = 0.85
+min_redundancy_n = 2

@@ -1,8 +1,0 @@
-id: SRV-A02-01
-name: 计算节点-A02-01
-model: generic-server
-status: installed
-tags:
-  discipline: compute
-  security_zone: standard
-  system: web-tier

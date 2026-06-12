@@ -118,6 +118,6 @@ def check_floor_load(ctx: Context):
 
 ## 参考
 
-- [核心概念 § Plugin](../concepts/02-core-concepts.md#6-plugin行业插件)
+- [核心概念 § Plugin](../concepts/01-core-concepts.md#7-plugin行业插件)
 - [Plugin API 参考](../reference/06-api.md#plugin)
 - [telecom 插件源码](../../src/piki/extensions/telecom/plugin.py)

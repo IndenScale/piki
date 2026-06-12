@@ -11,21 +11,20 @@
 ### 🧐 评估 piki
 
 1. **[为什么需要 piki](concepts/00-why-piki.md)** — 从真实事故出发，理解问题与解决方案
-2. **[AI Readiness](concepts/05-ai-readiness.md)** — piki vs 手绘图纸 vs Excel vs BIM 对比矩阵
+2. **[AI Readiness](concepts/03-advanced.md#ai-readiness)** — Text-Native + 开源 = AI 可插拔
 3. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
 
 ### 🔧 使用 piki
 
-1. **[10 分钟上手](concepts/01-quickstart.md)** — 最小工作示例：新增服务器 → 发现 PDU 过载 → 修正
-2. **[核心概念](concepts/02-core-concepts.md)** — Family → Model → Instance 三层模型 + Layout 分离
-3. **[编写检查规则](concepts/03-writing-rules.md)** — 从实际问题出发，学习写规则
-4. **[高级用法](concepts/04-advanced.md)** — CI/CD 集成、多插件协作、Generator 配置
-5. **[示例项目](../samples/)** — 6 个可直接运行的示例：从入门到嵌套项目
+1. **[核心概念与快速上手](concepts/01-core-concepts.md)** — Family → Model → Instance → Interface + Layout + Rule
+2. **[编写检查规则](concepts/02-writing-rules.md)** — 从实际问题出发，学习写规则
+3. **[高级用法 & AI Readiness](concepts/03-advanced.md)** — CI/CD、Generator、AI 为何需要 Text-Native
+4. **[示例项目](../samples/)** — 2 个精选示例：设备扩容 + 数据中心建设
 
 ### 🧩 扩展 piki
 
-1. **[核心概念 § Plugin](concepts/02-core-concepts.md)** — 插件架构
-2. **[编写检查规则](concepts/03-writing-rules.md)** — `@rule` / `@generator` 装饰器 + QuerySet API
+1. **[插件架构](concepts/01-core-concepts.md#7-plugin)** — Plugin 概念与内置插件
+2. **[编写检查规则](concepts/02-writing-rules.md)** — `@rule` / `@generator` 装饰器 + QuerySet API
 3. **[ADR-002: 插件架构](adr/002-plugin-architecture.md)** — 为什么用插件而非硬编码
 4. **[telecom 插件源码](../src/piki/extensions/telecom/plugin.py)** — 完整参考实现
 5. **[datacenter 插件源码](../src/piki/extensions/datacenter/plugin.py)** — 多 Family 类型参考实现
@@ -42,6 +41,15 @@
 - **[ADR-004: 空间可视化策略](adr/004-spatial-visualization-strategy.md)** — OpenUSD 选型、碰撞检测、glTF 过渡
 - **[ADR-005: Piki Studio](adr/005-piki-studio.md)** — 浏览器端 IDE、自研 USDA 解析器
 - **[ADR-006: CAD 资产引用](adr/006-cad-asset-reference.md)** — 引用而非嵌入、白牌型号、资产完整性
+- **[ADR-007: Connection 与 Interface](adr/007-connection-as-instance.md)** — Interface 模型、Connection 实例、引用语法
+
+---
+
+## 功能需求提案 (RFC)
+
+具体技术特性的设计方案与讨论：
+
+- **[RFC-001: Telecom 接口类型体系](rfcs/001-telecom-interface-types.md)** — 接口类型枚举、兼容性矩阵、线缆映射
 
 ---
 

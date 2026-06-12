@@ -1,6 +1,0 @@
-- instance: SRV-01
-  position_u: 10
-  pdu_id: PDU-DEMO
-  rack_id: RACK-DEMO
-- instance: PDU-DEMO
-  rack_id: RACK-DEMO

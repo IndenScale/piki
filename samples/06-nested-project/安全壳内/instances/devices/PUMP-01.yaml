@@ -1,8 +1,0 @@
-id: PUMP-01
-name: 安全壳冷却泵-01
-model: pump
-tdp_w: 180
-tags:
-  discipline: hvac
-  security_zone: containment
-  system: cooling

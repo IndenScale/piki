@@ -1,6 +1,0 @@
-id: DC-MAIN
-name: 主数据中心方舱
-model: dc-standard-40ft
-family: ContainerFamily
-power_capacity_kw: 1000
-cooling_capacity_kw: 1100

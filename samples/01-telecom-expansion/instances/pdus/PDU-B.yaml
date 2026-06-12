@@ -1,0 +1,13 @@
+id: PDU-B
+family: PduFamily
+name: PDU-B（备路）
+capacity_w: 2000
+interfaces:
+  - id: outlet-1
+    interface_type: IEC-C14
+    direction: output
+    description: "C13 输出口 1"
+  - id: outlet-2
+    interface_type: IEC-C14
+    direction: output
+    description: "C13 输出口 2"
