@@ -31,14 +31,14 @@ class TestOverrideWhitelist:
         registry = Registry()
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\ntdp_w: 300\n"
             "depth_mm: 700\nwidth_mm: 438\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -67,13 +67,13 @@ class TestOverrideWhitelist:
         registry = Registry()
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\ntdp_w: 300\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -117,13 +117,13 @@ class TestReferenceIntegrity:
         registry = Registry()
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\ntdp_w: 300\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -170,13 +170,13 @@ class TestTags:
         registry = Registry()
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -200,13 +200,13 @@ class TestTags:
         registry = Registry()
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -234,13 +234,13 @@ class TestTags:
         registry.add_family("ServerFamily", ServerFamily)
         registry.set_allowed_tags(["discipline", "security_zone"])
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -261,13 +261,13 @@ class TestTags:
         registry.add_family("ServerFamily", ServerFamily)
         registry.set_allowed_tags(["discipline"])
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -322,7 +322,7 @@ class TestFQID:
             encoding="utf-8",
         )
         parent.add_family("ServerFamily", ServerFamily)
-        parent.load_library(plib.parent)
+        parent.load_models(plib.parent)
         parent_devs = tmp_path / "pdevs"
         parent_devs.mkdir()
         (parent_devs / "P-01.yaml").write_text(
@@ -338,7 +338,7 @@ class TestFQID:
             encoding="utf-8",
         )
         child.add_family("ServerFamily", ServerFamily)
-        child.load_library(plib.parent)
+        child.load_models(plib.parent)
         child.load_collection(child_devs)
 
         fqid_map = child.all_instances_with_fqid()

@@ -44,7 +44,7 @@ class TestDatacenter3DCollision:
             "length_mm: 1000\nwidth_mm: 500\nheight_mm: 500\n",
             encoding="utf-8",
         )
-        registry.load_library(dc1_lib)
+        registry.load_models(dc1_lib)
 
         containers = tmp_path / "containers"
         containers.mkdir()
@@ -103,7 +103,7 @@ class TestDatacenter3DCollision:
             "length_mm: 1000\nwidth_mm: 500\nheight_mm: 500\n",
             encoding="utf-8",
         )
-        registry.load_library(dc2_lib)
+        registry.load_models(dc2_lib)
         containers = tmp_path / "containers"
         containers.mkdir()
         (containers / "C1.yaml").write_text(
@@ -157,7 +157,7 @@ class TestDatacenter3DCollision:
             "length_mm: 10000\nwidth_mm: 5000\nheight_mm: 5000\n",
             encoding="utf-8",
         )
-        registry.load_library(dc3_lib)
+        registry.load_models(dc3_lib)
         containers = tmp_path / "containers"
         containers.mkdir()
         (containers / "C1.yaml").write_text(
@@ -221,7 +221,7 @@ class TestTelecom3DCollision:
             "model: std-server\nfamily: ServerFamily\ndepth_mm: 700\nwidth_mm: 440\n",
             encoding="utf-8",
         )
-        registry.load_library(tel1_lib)
+        registry.load_models(tel1_lib)
         devices = tmp_path / "devices"
         devices.mkdir()
         # 两个设备在不同位置
@@ -271,7 +271,7 @@ class TestTelecom3DCollision:
             "model: std-server\nfamily: ServerFamily\ndepth_mm: 700\nwidth_mm: 440\nheight_mm: 88\n",
             encoding="utf-8",
         )
-        registry.load_library(tel2_lib)
+        registry.load_models(tel2_lib)
         devices = tmp_path / "devices"
         devices.mkdir()
         # 两个设备在同一位置 —— 重叠

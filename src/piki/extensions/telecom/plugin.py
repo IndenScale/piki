@@ -77,8 +77,8 @@ class TelecomPlugin(Plugin):
     version = "0.1.0"
 
     @property
-    def library_dir(self) -> Path:
-        return Path(__file__).parent / "library"
+    def model_dir(self) -> Path:
+        return Path(__file__).parent / "models"
 
     def register_families(self, registry: Registry) -> None:
         registry.add_family("RackFamily", RackFamily)

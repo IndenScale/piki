@@ -4,6 +4,9 @@
   pdu_id: PDU-C1
 
 - instance: PUMP-01
+  rack_id: RACK-C02
+  position_u: 5
+  pdu_id: PDU-C2
   grid_id: B-3
   position_x_mm: 1500
   position_y_mm: 3000

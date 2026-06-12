@@ -51,7 +51,7 @@ piki 的核心价值是声明式建模和规则检查——Family/Model/Instance
 "白牌标准型号"是指行业通用、不与特定厂商绑定的设备数值模板。
 
 ```yaml
-# library/devices/generic-1u-server.yaml
+# models/devices/generic-1u-server.yaml
 model: generic-1u-server
 family: ServerFamily
 

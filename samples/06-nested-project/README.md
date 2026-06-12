@@ -17,7 +17,7 @@
 ```
 厂区/                              ← 根项目
 ├── piki.toml                      ← 全厂配置 + Tag 声明
-├── library/                       ← 全厂共享型号
+├── models/                       ← 全厂共享型号
 │   └── devices/
 │       ├── generic-server.yaml
 │       └── pump.yaml

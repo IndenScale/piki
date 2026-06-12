@@ -324,11 +324,11 @@ class Registry:
     # 加载
     # ------------------------------------------------------------------
 
-    def load_library(self, library_dir: Path) -> None:
-        """扫描 library/ 下的型号库 YAML。"""
-        if not library_dir.exists():
+    def load_models(self, models_dir: Path) -> None:
+        """扫描 models/ 下的型号库 YAML。"""
+        if not models_dir.exists():
             return
-        for path in library_dir.rglob("*.yaml"):
+        for path in models_dir.rglob("*.yaml"):
             data = load_yaml(path)
             model_id = data.get("model")
             family = data.get("family")

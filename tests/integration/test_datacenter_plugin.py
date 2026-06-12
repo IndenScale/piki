@@ -30,7 +30,7 @@ def dc_ctx(tmp_path: Path) -> Context:
     registry.add_family("ConnectionFamily", ConnectionFamily)
 
     # 型号库
-    lib = tmp_path / "library" / "equipment"
+    lib = tmp_path / "models" / "equipment"
     lib.mkdir(parents=True)
     (lib / "gpu-server.yaml").write_text(
         "model: gpu-server\nfamily: EquipmentFamily\n"
@@ -45,10 +45,10 @@ def dc_ctx(tmp_path: Path) -> Context:
         "length_mm: 750\nwidth_mm: 440\nheight_mm: 44\n",
         encoding="utf-8",
     )
-    registry.load_library(lib.parent)
+    registry.load_models(lib.parent)
 
     # 方舱型号库（物理尺寸在 Model 中，ADR-008）
-    container_lib = tmp_path / "library" / "containers"
+    container_lib = tmp_path / "models" / "containers"
     container_lib.mkdir(parents=True)
     (container_lib / "liquid-40ft.yaml").write_text(
         "model: liquid-40ft\nfamily: ContainerFamily\n"
@@ -58,7 +58,7 @@ def dc_ctx(tmp_path: Path) -> Context:
         "cooling_capacity_kw: 550\n",
         encoding="utf-8",
     )
-    registry.load_library(container_lib.parent)
+    registry.load_models(container_lib.parent)
 
     # 方舱
     containers = tmp_path / "containers"
@@ -118,7 +118,7 @@ class TestEquipmentContainerFitRule:
             "length_mm: 1000\nwidth_mm: 1000\nheight_mm: 1000\n",
             encoding="utf-8",
         )
-        registry.load_library(clib)
+        registry.load_models(clib)
         containers = tmp_path / "containers2"
         containers.mkdir()
         (containers / "C1.yaml").write_text(
@@ -156,7 +156,7 @@ class TestEquipmentContainerFitRule:
             "length_mm: 1000\nwidth_mm: 1000\nheight_mm: 1000\n",
             encoding="utf-8",
         )
-        registry.load_library(clib)
+        registry.load_models(clib)
         containers = base / "containers"
         containers.mkdir()
         (containers / "C1.yaml").write_text(
@@ -173,7 +173,7 @@ class TestEquipmentContainerFitRule:
             "equipment_type: compute\nlength_mm: 1500\nwidth_mm: 500\nheight_mm: 500\n",
             encoding="utf-8",
         )
-        registry.load_library(elib)
+        registry.load_models(elib)
         equipment = base / "equipment"
         equipment.mkdir()
         (equipment / "E1.yaml").write_text(
@@ -217,7 +217,7 @@ class TestConnectionCapacityRule:
             "length_mm: 12192\nwidth_mm: 2438\nheight_mm: 2896\n",
             encoding="utf-8",
         )
-        registry.load_library(cc_lib)
+        registry.load_models(cc_lib)
         containers = tmp_path / "conn_containers"
         containers.mkdir()
         (containers / "C1.yaml").write_text(
@@ -272,7 +272,7 @@ class TestConnectionCapacityRule:
             "length_mm: 12192\nwidth_mm: 2438\nheight_mm: 2896\n",
             encoding="utf-8",
         )
-        registry.load_library(ic_lib)
+        registry.load_models(ic_lib)
         containers = base / "containers"
         containers.mkdir()
         (containers / "C1.yaml").write_text(

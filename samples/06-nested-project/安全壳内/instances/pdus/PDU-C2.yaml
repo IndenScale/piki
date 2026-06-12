@@ -1,0 +1,6 @@
+id: PDU-C2
+family: PduFamily
+name: PDU-安全壳内备路
+rack_id: RACK-C02
+capacity_w: 5000
+phase: L1

@@ -1,0 +1,6 @@
+id: PDU-C1
+family: PduFamily
+name: PDU-安全壳内主路
+rack_id: RACK-C01
+capacity_w: 5000
+phase: L1

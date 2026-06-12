@@ -48,14 +48,14 @@ class TestProjectLoad:
             "[plugins.telecom]\npower_threshold = 0.4\n",
             encoding="utf-8",
         )
-        racks = tmp_path / "racks"
-        racks.mkdir()
+        racks = tmp_path / "instances" / "racks"
+        racks.mkdir(parents=True)
         (racks / "RACK-A01.yaml").write_text(
             "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\n",
             encoding="utf-8",
         )
-        pdus = tmp_path / "pdus"
-        pdus.mkdir()
+        pdus = tmp_path / "instances" / "pdus"
+        pdus.mkdir(parents=True)
         (pdus / "PDU-A.yaml").write_text(
             "id: PDU-A\nfamily: PduFamily\nrack_id: RACK-A01\ncapacity_w: 2000\n",
             encoding="utf-8",
@@ -82,8 +82,8 @@ class TestProjectLoad:
             '[project]\nname = "demo"\n\n[plugins]\nenabled = ["telecom"]\n',
             encoding="utf-8",
         )
-        racks = tmp_path / "racks"
-        racks.mkdir()
+        racks = tmp_path / "instances" / "racks"
+        racks.mkdir(parents=True)
         (racks / "RACK-A01.yaml").write_text(
             "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\n",
             encoding="utf-8",
@@ -113,20 +113,20 @@ class TestProjectRunCheck:
             "[plugins.telecom]\npower_threshold = 0.8\n",
             encoding="utf-8",
         )
-        racks = tmp_path / "racks"
-        racks.mkdir()
+        racks = tmp_path / "instances" / "racks"
+        racks.mkdir(parents=True)
         (racks / "RACK-A01.yaml").write_text(
             "id: RACK-A01\nfamily: RackFamily\ntotal_u: 42\n",
             encoding="utf-8",
         )
-        pdus = tmp_path / "pdus"
-        pdus.mkdir()
+        pdus = tmp_path / "instances" / "pdus"
+        pdus.mkdir(parents=True)
         (pdus / "PDU-A.yaml").write_text(
             "id: PDU-A\nfamily: PduFamily\nrack_id: RACK-A01\ncapacity_w: 2000\n",
             encoding="utf-8",
         )
-        devices = tmp_path / "devices"
-        devices.mkdir()
+        devices = tmp_path / "instances" / "devices"
+        devices.mkdir(parents=True)
         (devices / "SRV-01.yaml").write_text(
             "id: SRV-01\nmodel: generic-server\nrack_id: RACK-A01\nposition_u: 10\npdu_id: PDU-A\n",
             encoding="utf-8",
@@ -143,8 +143,8 @@ class TestProjectRunCheck:
             '[project]\nname = "demo"\n\n[plugins]\nenabled = ["telecom"]\n',
             encoding="utf-8",
         )
-        racks = tmp_path / "racks"
-        racks.mkdir()
+        racks = tmp_path / "instances" / "racks"
+        racks.mkdir(parents=True)
         # total_u 超出范围，会导致 Schema 校验失败
         (racks / "RACK-A01.yaml").write_text(
             "id: RACK-A01\nfamily: RackFamily\ntotal_u: 100\n",

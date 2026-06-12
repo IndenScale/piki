@@ -20,13 +20,13 @@ class TestLoadAndResolve:
         registry.add_family("ServerFamily", ServerFamily)
 
         # 型号库
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         # 机柜
         racks = tmp_path / "racks"
@@ -67,13 +67,13 @@ class TestLoadAndResolve:
         registry = Registry()
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\ntdp_w: 300\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         devices = tmp_path / "devices"
         devices.mkdir()
@@ -98,13 +98,13 @@ class TestQuery:
         r.add_family("PduFamily", PduFamily)
 
         # 型号库
-        lib = tmp_path / "library" / "devices"
+        lib = tmp_path / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\ntdp_w: 300\n",
             encoding="utf-8",
         )
-        r.load_library(lib.parent)
+        r.load_models(lib.parent)
 
         # PDU
         pdus = tmp_path / "pdus"
@@ -202,10 +202,10 @@ class TestEdgeCases:
         assert inst is not None
         assert inst.family == "_invalid"
 
-    def test_load_library_missing_dir(self, tmp_path: Path) -> None:
-        """library 目录不存在时不应报错。"""
+    def test_load_models_missing_dir(self, tmp_path: Path) -> None:
+        """models 目录不存在时不应报错。"""
         registry = Registry()
-        registry.load_library(tmp_path / "nonexistent")
+        registry.load_models(tmp_path / "nonexistent")
         # 不抛异常即通过
 
     def test_load_collection_skips_no_id(self, tmp_path: Path) -> None:
@@ -235,11 +235,11 @@ class TestEdgeCases:
     def test_model_without_model_or_family(self, tmp_path: Path) -> None:
         """型号库 YAML 缺少 model/family 字段应被跳过。"""
         registry = Registry()
-        lib = tmp_path / "library"
+        lib = tmp_path / "models"
         lib.mkdir()
         (lib / "bad.yaml").write_text(
             "name: something\n",
             encoding="utf-8",
         )
-        registry.load_library(lib)
+        registry.load_models(lib)
         # 不抛异常即通过

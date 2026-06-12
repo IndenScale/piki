@@ -86,7 +86,7 @@ class Project:
                 continue
             # 跳过特殊目录
             if entry.name in (
-                "library",
+                "models",
                 "instances",
                 "layouts",
                 "rules",
@@ -138,43 +138,43 @@ class Project:
     def _load_models(self) -> None:
         """加载项目本地型号库和插件型号库。"""
         # 项目本地型号库
-        self.registry.load_library(self.root / "library")
+        self.registry.load_models(self.root / "models")
         # 插件自带型号库
         for plugin in self._plugins:
-            plugin_lib = getattr(plugin, "library_dir", None)
+            plugin_lib = getattr(plugin, "model_dir", None)
             if plugin_lib:
-                self.registry.load_library(Path(plugin_lib))
+                self.registry.load_models(Path(plugin_lib))
 
     def _load_instances(self) -> None:
-        """扫描实例数据目录。
+        """扫描 instances/ 目录，子目录作为独立集合加载。
 
-        优先加载 instances/ 目录（新格式，ADR-008），
-        兼容旧格式中按类型分目录的方式。
+        结构：
+          instances/
+            devices/           → collection "devices"
+            racks/             → collection "racks"
+            pdus/              → collection "pdus"
+            containers/        → collection "containers"
+            equipment/         → collection "equipment"
+            power/             → collection "power"
+            connections/       → collection "connections"
+          instances/srv.yaml   → collection "devices" (裸文件)
         """
-        # 新格式：instances/ 目录
         instances_dir = self.root / "instances"
-        if instances_dir.exists() and any(instances_dir.rglob("*.yaml")):
-            self.registry.load_collection(instances_dir, collection_name="devices")
+        if not instances_dir.exists():
+            return
 
-        # 兼容旧格式：扫描所有包含 YAML 的非特殊目录
-        for path in sorted(self.root.iterdir()):
-            if not path.is_dir():
-                continue
-            if path.name in (
-                "library",
-                "instances",
-                "layouts",
-                "rules",
-                ".git",
-                "__pycache__",
-                ".piki",
-            ):
-                continue
-            # 跳过子项目（有 piki.toml 的目录）
-            if (path / "piki.toml").exists():
-                continue
-            if any(path.rglob("*.yaml")):
-                self.registry.load_collection(path)
+        has_subdirs = False
+        for entry in sorted(instances_dir.iterdir()):
+            if entry.is_dir() and not entry.name.startswith("."):
+                if any(entry.rglob("*.yaml")):
+                    self.registry.load_collection(entry, collection_name=entry.name)
+                    has_subdirs = True
+
+        if not has_subdirs:
+            raise FileNotFoundError(
+                f"instances/ 目录下没有子目录。请按类型创建子目录，"
+                f"例如 instances/devices/、instances/racks/、instances/pdus/"
+            )
 
     def _load_layout(self) -> None:
         """加载项目 Layout 文件。"""

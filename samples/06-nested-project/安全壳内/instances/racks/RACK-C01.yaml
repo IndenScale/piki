@@ -1,0 +1,6 @@
+id: RACK-C01
+family: RackFamily
+name: 安全壳内机柜-C01
+location: 安全壳内部-A列
+total_u: 42
+power_capacity_w: 5000

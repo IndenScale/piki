@@ -29,13 +29,13 @@ def telecom_ctx(tmp_path: Path) -> Context:
     registry.add_family("ServerFamily", ServerFamily)
 
     # 型号库
-    lib = tmp_path / "library" / "devices"
+    lib = tmp_path / "models" / "devices"
     lib.mkdir(parents=True)
     (lib / "generic-server.yaml").write_text(
         "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\n",
         encoding="utf-8",
     )
-    registry.load_library(lib.parent)
+    registry.load_models(lib.parent)
 
     # 机柜
     racks = tmp_path / "racks"
@@ -167,13 +167,13 @@ class TestPduPhaseBalanceRule:
         registry.add_family("PduFamily", PduFamily)
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = base / "library" / "devices"
+        lib = base / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         racks = base / "racks"
         racks.mkdir()
@@ -229,13 +229,13 @@ class TestPduPhaseBalanceRule:
         registry.add_family("PduFamily", PduFamily)
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = base / "library" / "devices"
+        lib = base / "models" / "devices"
         lib.mkdir(parents=True)
         (lib / "generic-server.yaml").write_text(
             "model: generic-server\nfamily: ServerFamily\nheight_u: 2\ntdp_w: 300\n",
             encoding="utf-8",
         )
-        registry.load_library(lib.parent)
+        registry.load_models(lib.parent)
 
         racks = base / "racks"
         racks.mkdir()
@@ -286,14 +286,14 @@ class TestDevicePhysicalFitRule:
 
     def test_passes_when_fits(self, telecom_ctx: Context, tmp_path: Path) -> None:
         # 物理尺寸应在 Model 中设置，不可被 Instance 覆盖（ADR-008）
-        # 创建 rack model library
-        rack_lib = tmp_path / "library" / "racks"
-        rack_lib.mkdir(parents=True)
-        (rack_lib / "standard-rack.yaml").write_text(
+        # 创建 rack model dir
+        rack_models_dir = tmp_path / "models" / "racks"
+        rack_models_dir.mkdir(parents=True)
+        (rack_models_dir / "standard-rack.yaml").write_text(
             "model: standard-rack\nfamily: RackFamily\ndepth_mm: 1000\nwidth_mm: 600\n",
             encoding="utf-8",
         )
-        telecom_ctx._registry.load_library(rack_lib.parent)
+        telecom_ctx._registry.load_models(rack_models_dir.parent)
 
         racks = tmp_path / "racks"
         (racks / "RACK-A01.yaml").write_text(
@@ -314,7 +314,7 @@ class TestDevicePhysicalFitRule:
         registry.add_family("PduFamily", PduFamily)
         registry.add_family("ServerFamily", ServerFamily)
 
-        lib = base / "library"
+        lib = base / "models"
         lib.mkdir(parents=True)
         (lib / "devices" / "generic-server.yaml").parent.mkdir(parents=True, exist_ok=True)
         (lib / "devices" / "generic-server.yaml").write_text(
@@ -326,7 +326,7 @@ class TestDevicePhysicalFitRule:
             "model: short-rack\nfamily: RackFamily\ndepth_mm: 500\nwidth_mm: 600\n",
             encoding="utf-8",
         )
-        registry.load_library(lib)
+        registry.load_models(lib)
 
         racks = base / "racks"
         racks.mkdir()

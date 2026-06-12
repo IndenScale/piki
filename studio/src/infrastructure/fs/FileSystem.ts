@@ -60,8 +60,8 @@ export class BrowserFileSystem implements IFileSystem {
   ): Promise<void> {
     for await (const [name, entryHandle] of dirHandle.entries()) {
       if (entryHandle.kind === 'directory') {
-        // Skip hidden directories and library
-        if (name.startsWith('.') || name === 'library') continue;
+        // Skip hidden directories and models
+        if (name.startsWith('.') || name === 'models') continue;
         await this._scan(
           entryHandle as FileSystemDirectoryHandle,
           `${prefix}${name}/`,

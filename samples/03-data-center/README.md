@@ -16,7 +16,7 @@
 ```
 03-data-center/
 ├── piki.toml                    # 项目配置 + Tag 声明
-├── library/
+├── models/
 │   └── devices/
 │       ├── generic-server.yaml
 │       └── high-density-server.yaml
@@ -31,55 +31,18 @@
 │   ├── PDU-A02-L2.yaml
 │   ├── PDU-B01-L1.yaml
 │   └── PDU-B01-L2.yaml
-├── instances/                   # 设备身份（ADR-008）
+├── instances/                   # 设备身份
 │   ├── SRV-A01-01.yaml
 │   ├── SRV-A01-02.yaml
 │   ├── SRV-A01-03.yaml
 │   ├── SRV-A02-01.yaml
 │   └── SRV-B01-01.yaml
 ├── layouts/
-│   └── layout.yaml              # 部署决策（ADR-008）
-└── rules/                       # 自定义规则
-    ├── redundancy.py            # 冗余检查
-    ├── cross_rack.py            # 跨机柜分布
-    └── naming.py                # 命名规范
-```
-
-### ADR-009 Tag 机制
-
-Instance 文件使用 Tag 标记设备和专业属性：
-
-```yaml
-# instances/SRV-A01-01.yaml
-id: SRV-A01-01
-name: 计算节点-A01-01
-model: generic-server
-status: installed
-tags:
-  discipline: compute           # 专业：计算
-  security_zone: standard       # 安全分区
-  system: web-tier              # 所属系统
-```
-
-Tag 在 `piki.toml` 中声明允许的键：
-
-```toml
-[tags]
-allowed = ["discipline", "security_zone", "system", "contract_package", "phase"]
-```
-
-规则通过 Tag 过滤目标设备：
-
-```python
-# rules/redundancy.py
-@rule("DC-REDUNDANCY-001", "双路 PDU 冗余检查")
-def check_dual_pdu(ctx: Context):
-    compute_servers = ctx.query(
-        "instances", tags__discipline="compute"
-    )
-    for srv in compute_servers:
-        entry = ctx.layout_entry(srv.id)
-        ...
+│   └── layout.yaml              # 部署决策
+└── rules/                       # 项目自定义规则
+    ├── cross_rack.py            # 跨机柜分布检查（Tag 过滤）
+    ├── naming.py                # 命名规范检查（Layout 查询）
+    └── redundancy.py            # 多 PDU 冗余检查
 ```
 
 ## 运行
@@ -89,14 +52,58 @@ cd samples/03-data-center
 piki check
 ```
 
+预期输出（可能存在相不平衡和 3D 碰撞警告）：
+
+```
+============================================================
+总计: 0 错误, 10 通过
+============================================================
+```
+
+## Tag 机制示例
+
+本项目在 `piki.toml` 中声明了允许的 Tag 键：
+
+```toml
+[tags]
+allowed = ["discipline", "security_zone", "system"]
+```
+
+实例文件中使用 Tags：
+
+```yaml
+# instances/SRV-A01-01.yaml
+id: SRV-A01-01
+name: 计算节点-A01-01
+model: generic-server
+status: installed
+tags:
+  discipline: compute
+  security_zone: standard
+  system: web-tier
+```
+
+自定义规则可按 Tag 过滤查询：
+
+```python
+# rules/cross_rack.py
+# 查询所有 system=web-tier 的设备
+web_servers = ctx.query("devices", tags__system="web-tier")
+```
+
+## 生成报告
+
+```bash
+piki report --format markdown
+piki report --format json
+```
+
 ## 你学到了什么
 
 | 能力 | 说明 |
 |------|------|
-| Instance/Layout 分离 | 设备在 `instances/`，部署在 `layouts/` |
-| Tag 机制 | `tags.discipline`、`tags.security_zone` 等正交维度标签 |
-| Tag 过滤查询 | `ctx.query("instances", tags__discipline="compute")` |
-| 自定义规则 | `rules/` 目录下 Python 规则，`@rule` 装饰器注册 |
-| 冗余检查 | 验证每个设备至少接入 N 路 PDU |
-| 跨机柜分布 | 确保同功能组设备不在同一机柜 |
-| 报告生成 | `piki report` 输出多格式报告 |
+| Tag 机制 | 正交维度标签（专业/安全分区/系统），支持按 Tag 过滤 |
+| 自定义规则 | Python 函数表达业务规则，`@rule` 装饰器注册 |
+| 命名规范 | 利用正则和 Layout 查询验证命名约定 |
+| 报告生成 | markdown / json / junit / human 四种格式 |
+| 多 PDU 冗余 | 跨机柜双路配电检查 |
