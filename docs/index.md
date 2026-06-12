@@ -19,7 +19,9 @@
 1. **[核心概念与快速上手](concepts/01-core-concepts.md)** — Family → Model → Instance → Interface + Layout + Rule
 2. **[编写检查规则](concepts/02-writing-rules.md)** — 从实际问题出发，学习写规则
 3. **[高级用法 & AI Readiness](concepts/03-advanced.md)** — CI/CD、Generator、AI 为何需要 Text-Native
-4. **[示例项目](../samples/)** — 2 个精选示例：设备扩容 + 数据中心建设
+4. **[Text-Native & Agent-Oriented](concepts/04-text-native-and-agent-oriented.md)** — piki 的人机协同设计哲学
+5. **[piki 的生态位](concepts/05-ecosystem-positioning.md)** — 敌、友与中间力量
+6. **[示例项目](../samples/)** — 2 个精选示例：设备扩容 + 数据中心建设
 
 ### 🧩 扩展 piki
 

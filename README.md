@@ -87,6 +87,8 @@ piki generate bom-csv           # 导出 BOM 清单
 - **[核心概念与快速上手](docs/concepts/01-core-concepts.md)** — 最小工作示例
 - **[编写检查规则](docs/concepts/02-writing-rules.md)** — @rule 装饰器 + QuerySet API
 - **[高级用法](docs/concepts/03-advanced.md)** — CI/CD、Generator、嵌套项目
+- **[Text-Native & Agent-Oriented](docs/concepts/04-text-native-and-agent-oriented.md)** — piki 的人机协同设计哲学
+- **[piki 的生态位](docs/concepts/05-ecosystem-positioning.md)** — 敌、友与中间力量
 - **[示例项目](samples/)** — 6 个可直接运行的示例：从入门到嵌套项目
 
 ### 🧩 我要扩展 piki
