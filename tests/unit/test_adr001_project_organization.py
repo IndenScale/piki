@@ -1,4 +1,4 @@
-"""ADR-008 / ADR-009 新功能的单元测试。"""
+"""ADR-001 项目组织模型的单元测试。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from piki.extensions.telecom.plugin import ServerFamily
 
 
 class TestOverrideWhitelist:
-    """ADR-008 §1.2: 覆盖白名单。"""
+    """ADR-001: 覆盖白名单。"""
 
     def test_get_non_overridable_fields(self) -> None:
         fields = get_non_overridable_fields(ServerFamily)
@@ -93,7 +93,7 @@ class TestOverrideWhitelist:
 
 
 class TestReferenceIntegrity:
-    """ADR-008: L2 引用完整性检查。"""
+    """ADR-001: L2 引用完整性检查。"""
 
     def test_missing_instance_in_layout_reported(self, tmp_path: Path) -> None:
         registry = Registry()
@@ -147,7 +147,7 @@ class TestReferenceIntegrity:
 
 
 class TestTags:
-    """ADR-009: Tag Schema 支持。"""
+    """ADR-001: Tag Schema 支持。"""
 
     def test_tags_model_known_keys(self) -> None:
         tags = Tags(discipline="hvac", security_zone="containment")
@@ -286,7 +286,7 @@ class TestTags:
 
 
 class TestFQID:
-    """ADR-009: 全限定 Instance ID。"""
+    """ADR-001: 全限定 Instance ID。"""
 
     def test_fqid_simple_project(self) -> None:
         reg = Registry()
@@ -347,7 +347,7 @@ class TestFQID:
 
 
 class TestPathResolver:
-    """ADR-009: 跨仓库 Instance 引用。"""
+    """ADR-001: 跨仓库 Instance 引用。"""
 
     def test_resolve_simple_id_delegates(self) -> None:
         resolver = Registry()._make_path_resolver(Path("/tmp"))
@@ -379,7 +379,7 @@ class TestPathResolver:
 
 
 class TestExternalProjectRegistration:
-    """ADR-009 §5.3: piki.toml [external] 配置。"""
+    """ADR-001: piki.toml [external] 配置。"""
 
     def test_register_external(self) -> None:
         reg = Registry()

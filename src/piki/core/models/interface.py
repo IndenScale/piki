@@ -1,4 +1,4 @@
-"""Interface 数据模型 (ADR-007, RFC-001).
+"""Interface 数据模型 (ADR-005, RFC-001).
 
 Interface 是 Instance 对外暴露的可连接点，内嵌在 Instance 的 interfaces 列表中。
 """

@@ -29,7 +29,7 @@ class RackFamily(BaseModel):
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
     position_z_mm: float = Field(default=0.0)
-    # 标签（ADR-009）
+    # 标签（ADR-001）
     tags: Tags = Field(default_factory=Tags)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
@@ -41,9 +41,9 @@ class PduFamily(BaseModel):
     rack_id: str = Field(default="")
     phase: str = Field(default="L1")  # 相线，如 L1, L2, L3
     capacity_w: float = Field(..., gt=0)  # 额定功率（W）
-    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
+    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-001）
     interfaces: list[InterfaceSpec] = Field(
-        default_factory=list, description="可连接接口 (ADR-007)"
+        default_factory=list, description="可连接接口 (ADR-005)"
     )
 
 
@@ -53,7 +53,7 @@ class ServerFamily(BaseModel):
     model: str = Field(default="")
     status: str = Field(default="planned")
     interfaces: list[InterfaceSpec] = Field(
-        default_factory=list, description="可连接接口 (ADR-007)"
+        default_factory=list, description="可连接接口 (ADR-005)"
     )
     rack_id: str = Field(default="")
     position_u: int = Field(default=1, ge=1, le=48)
@@ -62,7 +62,7 @@ class ServerFamily(BaseModel):
     tdp_w: float = Field(default=300, gt=0)
     psu_count: int = Field(default=1, ge=1)
     psu_redundancy: bool = Field(default=False)
-    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
+    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-001）
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
     depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
@@ -74,7 +74,7 @@ class ServerFamily(BaseModel):
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
     position_z_mm: float = Field(default=0.0)
-    # 标签（ADR-009）
+    # 标签（ADR-001）
     tags: Tags = Field(default_factory=Tags)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
@@ -198,7 +198,7 @@ class TelecomPlugin(Plugin):
         checker.add_generator("cable-list", "线缆清单", generate_cable_list)
 
     def register_mate_types(self, registry: Registry) -> None:
-        """注册 telecom 领域的 Mate 类型 (ADR-008)."""
+        """注册 telecom 领域的 Mate 类型 (ADR-006)."""
         from piki.core.models.mating import MateConstraint, MateConstraintOperator, MateTypeMeta
 
         # L1: 机柜装配

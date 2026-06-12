@@ -47,7 +47,7 @@ def dc_ctx(tmp_path: Path) -> Context:
     )
     registry.load_models(lib.parent)
 
-    # 方舱型号库（物理尺寸在 Model 中，ADR-008）
+    # 方舱型号库（物理尺寸在 Model 中，ADR-001）
     container_lib = tmp_path / "models" / "containers"
     container_lib.mkdir(parents=True)
     (container_lib / "liquid-40ft.yaml").write_text(
@@ -110,7 +110,7 @@ class TestEquipmentContainerFitRule:
         registry.add_family("ContainerFamily", ContainerFamily)
         registry.add_family("EquipmentFamily", EquipmentFamily)
 
-        # 物理尺寸在 Model 中（ADR-008）
+        # 物理尺寸在 Model 中（ADR-001）
         clib = tmp_path / "clib2"
         clib.mkdir()
         (clib / "small-container.yaml").write_text(
@@ -148,7 +148,7 @@ class TestEquipmentContainerFitRule:
         registry.add_family("ContainerFamily", ContainerFamily)
         registry.add_family("EquipmentFamily", EquipmentFamily)
 
-        # 物理尺寸在 Model 中（ADR-008）
+        # 物理尺寸在 Model 中（ADR-001）
         clib = base / "clib"
         clib.mkdir()
         (clib / "small-container.yaml").write_text(
@@ -209,7 +209,7 @@ class TestConnectionCapacityRule:
         registry.add_family("EquipmentFamily", EquipmentFamily)
         registry.add_family("ConnectionFamily", ConnectionFamily)
 
-        # 物理尺寸在 Model 中（ADR-008）
+        # 物理尺寸在 Model 中（ADR-001）
         cc_lib = tmp_path / "cc_lib"
         cc_lib.mkdir()
         (cc_lib / "liquid-40ft.yaml").write_text(
@@ -264,7 +264,7 @@ class TestConnectionCapacityRule:
         registry.add_family("EquipmentFamily", EquipmentFamily)
         registry.add_family("ConnectionFamily", ConnectionFamily)
 
-        # 物理尺寸在 Model 中（ADR-008）
+        # 物理尺寸在 Model 中（ADR-001）
         ic_lib = base / "ic_lib"
         ic_lib.mkdir()
         (ic_lib / "liquid-40ft.yaml").write_text(

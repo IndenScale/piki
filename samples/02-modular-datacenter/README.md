@@ -103,6 +103,6 @@ piki check
 
 ## 关联概念
 
-- [ADR-008: Mating Graph](../../docs/adr/008-mating-graph.md)
-- [ADR-009: 嵌套项目 + FQID（规划中）](../../ROADMAP.md)
+- [ADR-006: Mating Graph](../../docs/adr/006-mating-graph.md)
+- [ADR-001: 嵌套项目 + FQID](../../ROADMAP.md)
 - [高级用法：多插件协作](../../docs/concepts/03-advanced.md)

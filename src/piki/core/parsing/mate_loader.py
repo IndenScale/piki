@@ -1,4 +1,4 @@
-"""Mate 文件加载器 (ADR-008).
+"""Mate 文件加载器 (ADR-006).
 
 扫描 `mates/` 目录，按 type 子目录加载 Mate YAML 文件。
 一个文件 = 一个 MateSpec。

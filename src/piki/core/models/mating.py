@@ -1,4 +1,4 @@
-"""Mate 数据模型 —— 物理配合关系建模 (ADR-008).
+"""Mate 数据模型 —— 物理配合关系建模 (ADR-006).
 
 Mate 表达两个实体之间的物理配合关系，与 Instance、Layout、Connection 并列。
 三层配合粒度：

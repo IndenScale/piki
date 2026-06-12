@@ -181,7 +181,7 @@ warning_only = true            # true 则只警告不报错
 | `[project]` | 项目名称和版本 | `name = "my-datacenter"` |
 | `[plugins]` | 启用的插件列表 | `enabled = ["telecom"]` |
 | `[plugins.<name>]` | 插件特定参数 | `power_threshold = 0.4` |
-| `[tags]` | 允许的 Tag 键（ADR-009） | `allowed = ["discipline"]` |
+| `[tags]` | 允许的 Tag 键（ADR-001） | `allowed = ["discipline"]` |
 | `[generators]` | `piki generate` 默认运行的生成器 | `enabled = ["bom-csv"]` |
 | `[rules.<id>]` | 规则覆盖配置 | `warning_only = true` |
 

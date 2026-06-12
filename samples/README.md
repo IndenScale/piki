@@ -39,4 +39,4 @@ piki check
 - [核心概念](../docs/concepts/01-core-concepts.md) — Family → Model → Instance → Interface
 - [编写检查规则](../docs/concepts/02-writing-rules.md) — `@rule` + QuerySet
 - [RFC-001: Telecom 接口类型体系](../docs/rfcs/001-telecom-interface-types.md) — 接口枚举与兼容性矩阵
-- [ADR-007: Connection 与 Interface](../docs/adr/007-connection-as-instance.md) — 连接建模
+- [ADR-005: Connection 与 Interface](../docs/adr/005-connection-as-instance.md) — 连接建模

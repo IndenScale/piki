@@ -2,7 +2,7 @@
 
 > Layout 是 piki 的**部署决策层**——描述"这台设备部署在哪、怎么接"。
 >
-> 每个子项目只有一个 `layout.yaml` 文件。Instance 与 Layout 分离（ADR-008），使方案比选通过 Git 分支实现。
+> 每个子项目只有一个 `layout.yaml` 文件。Instance 与 Layout 分离（ADR-001），使方案比选通过 Git 分支实现。
 
 ## 基本结构
 

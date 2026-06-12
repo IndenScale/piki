@@ -1,9 +1,8 @@
-# ADR-006: CAD 资产引用与白牌标准型号
+# ADR-007: CAD 资产引用与白牌标准型号
 
-> 状态：已接受
+> 状态：已实现
 > 日期：2026-06-12
 > 作者：piki 核心团队
-> 替代：ADR-007（CAD 资产引用）
 
 ## 背景
 
@@ -104,4 +103,4 @@ assets:
 
 ## 参考
 
-- [空间可视化策略](../adr/004-spatial-visualization-strategy.md)
+- [空间可视化策略](../adr/008-spatial-visualization-strategy.md)

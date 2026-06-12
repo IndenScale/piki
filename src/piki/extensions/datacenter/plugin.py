@@ -51,7 +51,7 @@ class ContainerFamily(BaseModel):
     position_z_mm: float = Field(default=0.0)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
-    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-009）
+    tags: Tags = Field(default_factory=Tags)  # 标签（ADR-001）
 
 
 class PowerUnitFamily(BaseModel):
@@ -91,7 +91,7 @@ class EquipmentFamily(BaseModel):
     position_z_mm: float = Field(default=0.0)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
-    # 标签（ADR-009）
+    # 标签（ADR-001）
     tags: Tags = Field(default_factory=Tags)
     # 液冷设备特有
     liquid_cooled: bool = Field(default=False)
@@ -200,7 +200,7 @@ class DatacenterPlugin(Plugin):
         checker.add_generator("dc-bom-csv", "数据中心 BOM CSV 导出", generate_dc_bom_csv)
 
     def register_mate_types(self, registry: Registry) -> None:
-        """注册 datacenter 领域的 Mate 类型 (ADR-008)."""
+        """注册 datacenter 领域的 Mate 类型 (ADR-006)."""
         from piki.core.models.mating import MateTypeMeta
 
         registry.add_mate_type(

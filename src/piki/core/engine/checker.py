@@ -248,7 +248,7 @@ class Checker:
         return report
 
     def check_reference_integrity(self, ctx: Context) -> None:
-        """L2 引用完整性检查（ADR-004, ADR-008, ADR-009）。
+        """L2 引用完整性检查（ADR-001）。
 
         自动运行，检查 Layout → Instance 引用的一致性：
         1. Layout 中的 instance 引用是否存在
@@ -287,7 +287,7 @@ class Checker:
         ctx.clear_current_file()
 
     def check_tag_schema(self, ctx: Context) -> None:
-        """L2 Tag Schema 检查（ADR-009 §3.3）。
+        """L2 Tag Schema 检查（ADR-001）。
 
         当 piki.toml 中定义了 [tags] allowed 列表时，
         检查所有 Instance 的 tags 键是否在允许范围内。
@@ -323,7 +323,7 @@ class Checker:
         ctx.clear_current_file()
 
     def check_foreign_keys(self, ctx: Context) -> None:
-        """L2 通用外键引用完整性检查 (ADR-007).
+        """L2 通用外键引用完整性检查 (ADR-005).
 
         扫描所有 Instance 中的引用字段：
         1. 以 _id 结尾的字段 → 检查 Instance 是否存在
@@ -377,7 +377,7 @@ class Checker:
         ctx.clear_current_file()
 
     def check_interface_compatibility(self, ctx: Context) -> None:
-        """L2 接口类型兼容性检查 (ADR-007, RFC-001).
+        """L2 接口类型兼容性检查 (ADR-005, RFC-001).
 
         对于所有 Connection Instance，使用兼容性矩阵检查
         from_interface 和 to_interface 的 interface_type 是否兼容。
@@ -599,7 +599,7 @@ class Checker:
         ctx.clear_current_file()
 
     def check_fqid_duplicates(self, ctx: Context) -> None:
-        """L2 FQID 冲突检查（ADR-009 §6.2）。
+        """L2 FQID 冲突检查（ADR-001）。
 
         检查同一项目树下是否存在简单 ID 冲突的 Instance。
         如果某个 ID 出现在多个同级或祖先/后代项目中，报告冲突。

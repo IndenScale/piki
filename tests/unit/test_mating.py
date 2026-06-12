@@ -1,4 +1,4 @@
-"""单元测试：Mate 数据模型 (ADR-008)."""
+"""单元测试：Mate 数据模型 (ADR-006)."""
 
 from __future__ import annotations
 

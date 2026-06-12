@@ -1,9 +1,8 @@
-# ADR-004: 空间可视化策略——从文本到 3D
+# ADR-008: 空间可视化策略——从文本到 3D
 
 > 状态：已实现（基础完成）
 > 日期：2026-06-12
 > 作者：piki 核心团队
-> 替代：ADR-001（几何引擎与物理引擎）
 
 ## 背景
 
@@ -106,4 +105,4 @@ def check_3d_collision(ctx):
 ## 参考
 
 - [OpenUSD 官方文档](https://openusd.org/)
-- [Piki Studio](../adr/005-piki-studio.md)
+- [Piki Studio](../adr/009-piki-studio.md)

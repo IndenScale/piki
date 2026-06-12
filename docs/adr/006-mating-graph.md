@@ -1,9 +1,9 @@
-# ADR-008: 配合图（Mating Graph）——物理配合关系建模
+# ADR-006: 配合图（Mating Graph）——物理配合关系建模
 
-> 状态：提议中
+> 状态：已实现
 > 日期：2026-06-12
 > 作者：piki 核心团队
-> 依赖：ADR-007（Connection 作为 Instance）、ADR-001（Instance/Layout 分离）
+> 依赖：ADR-005（Connection 作为 Instance）、ADR-001（Instance/Layout 分离）
 
 ## 背景
 
@@ -358,7 +358,7 @@ def check_pue_estimate(ctx):
 
 ### 5.2 与 Connection 的分工
 
-| | Connection (ADR-007) | Mating |
+| | Connection (ADR-005) | Mating |
 |---|---|---|
 | 回答的问题 | "信号/能量从 A 口到 B 口" | "A 和 B 是怎么配合在一起的" |
 | 物理语义 | 链路（link） | 配合（mating） |
@@ -454,5 +454,5 @@ class RackMountMate(BaseModel):
 ## 参考
 
 - [ADR-001: 项目组织模型](001-project-organization.md) — Instance/Layout 分离先例
-- [ADR-007: 连接关系实例化与接口模型](007-connection-as-instance.md) — Connection 建模
+- [ADR-005: 连接关系实例化与接口模型](005-connection-as-instance.md) — Connection 建模
 - [ADR-002: 插件架构](002-plugin-architecture.md) — 插件注册 Mate type

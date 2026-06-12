@@ -31,7 +31,7 @@ class TestDatacenter3DCollision:
         registry.add_family("EquipmentFamily", EquipmentFamily)
         registry.add_family("PowerUnitFamily", PowerUnitFamily)
 
-        # 物理尺寸在 Model 中（ADR-008）
+        # 物理尺寸在 Model 中（ADR-001）
         dc1_lib = tmp_path / "dc1_lib"
         dc1_lib.mkdir()
         (dc1_lib / "big-container.yaml").write_text(
@@ -90,7 +90,7 @@ class TestDatacenter3DCollision:
         registry.add_family("EquipmentFamily", EquipmentFamily)
         registry.add_family("PowerUnitFamily", PowerUnitFamily)
 
-        # 物理尺寸在 Model 中（ADR-008）
+        # 物理尺寸在 Model 中（ADR-001）
         dc2_lib = tmp_path / "dc2_lib"
         dc2_lib.mkdir()
         (dc2_lib / "big-container.yaml").write_text(
@@ -149,7 +149,7 @@ class TestDatacenter3DCollision:
         registry.add_family("EquipmentFamily", EquipmentFamily)
         registry.add_family("PowerUnitFamily", PowerUnitFamily)
 
-        # 物理尺寸在 Model 中（ADR-008）
+        # 物理尺寸在 Model 中（ADR-001）
         dc3_lib = tmp_path / "dc3_lib"
         dc3_lib.mkdir()
         (dc3_lib / "big-container.yaml").write_text(
@@ -214,7 +214,7 @@ class TestTelecom3DCollision:
         )
         registry.load_collection(pdus)
 
-        # 设备型号库（物理尺寸在 Model 中，ADR-008）
+        # 设备型号库（物理尺寸在 Model 中，ADR-001）
         tel1_lib = tmp_path / "tel1_lib"
         tel1_lib.mkdir()
         (tel1_lib / "std-server.yaml").write_text(
@@ -264,7 +264,7 @@ class TestTelecom3DCollision:
         )
         registry.load_collection(pdus)
 
-        # 设备型号库（物理尺寸在 Model 中，ADR-008）
+        # 设备型号库（物理尺寸在 Model 中，ADR-001）
         tel2_lib = tmp_path / "tel2_lib"
         tel2_lib.mkdir()
         (tel2_lib / "std-server.yaml").write_text(

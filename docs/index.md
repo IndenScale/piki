@@ -33,15 +33,17 @@
 
 ## 架构决策记录 (ADR)
 
-记录 piki 的关键技术决策及其理由，按影响范围排列：
+记录 piki 的关键技术决策及其理由，按核心主线到辅助体验的顺序排列：
 
 - **[ADR-001: 项目组织模型](adr/001-project-organization.md)** — Instance/Layout 分离、嵌套项目、正交 Tag
 - **[ADR-002: 插件架构](adr/002-plugin-architecture.md)** — 为什么用 Python 插件而非配置或硬编码
 - **[ADR-003: 多级质量检查与统一诊断](adr/003-quality-checks-and-diagnostics.md)** — L0-L6 分层检查、LSP 兼容诊断格式
-- **[ADR-004: 空间可视化策略](adr/004-spatial-visualization-strategy.md)** — OpenUSD 选型、碰撞检测、glTF 过渡
-- **[ADR-005: Piki Studio](adr/005-piki-studio.md)** — 浏览器端 IDE、自研 USDA 解析器
-- **[ADR-006: CAD 资产引用](adr/006-cad-asset-reference.md)** — 引用而非嵌入、白牌型号、资产完整性
-- **[ADR-007: Connection 与 Interface](adr/007-connection-as-instance.md)** — Interface 模型、Connection 实例、引用语法
+- **[ADR-004: 生成器](adr/004-generator-as-deliverable-pipeline.md)** — 从文本真相源到工程交付物
+- **[ADR-005: Connection 与 Interface](adr/005-connection-as-instance.md)** — Interface 模型、Connection 实例、引用语法
+- **[ADR-006: Mating Graph](adr/006-mating-graph.md)** — 物理配合关系建模
+- **[ADR-007: CAD 资产引用](adr/007-cad-asset-reference.md)** — 引用而非嵌入、白牌型号、资产完整性
+- **[ADR-008: 空间可视化策略](adr/008-spatial-visualization-strategy.md)** — OpenUSD 选型、碰撞检测、glTF 过渡
+- **[ADR-009: Piki Studio](adr/009-piki-studio.md)** — 浏览器端 IDE、自研 USDA 解析器
 
 ---
 

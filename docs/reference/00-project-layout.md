@@ -248,7 +248,7 @@ cable-list = "采购清单"
 
 ## 嵌套项目
 
-piki 支持嵌套项目（ADR-009）。每个子项目有独立的目录结构：
+piki 支持嵌套项目（ADR-001）。每个子项目有独立的目录结构：
 
 ```text
 parent-project/

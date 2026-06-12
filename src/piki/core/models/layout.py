@@ -1,9 +1,9 @@
 """Layout 数据模型：Instance 部署决策的声明层。
 
-ADR-008 将 Instance（设备身份）与 Layout（部署位置）分离。
+ADR-001 将 Instance（设备身份）与 Layout（部署位置）分离。
 Layout 文件描述"这台设备部署在哪、怎么接"，不描述设备自身属性。
 
-ADR-007 将连接关系提升为独立 Instance，从 Layout 中移除。
+ADR-005 将连接关系提升为独立 Instance，从 Layout 中移除。
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ class LayoutEntry:
 class Layout:
     """一个项目/子项目的完整 Layout。
 
-    按照 ADR-008，每个子项目只有一个 Layout 文件。
+    按照 ADR-001，每个子项目只有一个 Layout 文件。
     """
 
     name: str

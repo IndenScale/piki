@@ -1,4 +1,4 @@
-"""Tag 数据模型（ADR-009 §3）。
+"""Tag 数据模型（ADR-001）。
 
 Tag 是正交于物理空间/专业的维度标签，键值对形式：
 - 键：如 discipline, security_zone, contract_package, system

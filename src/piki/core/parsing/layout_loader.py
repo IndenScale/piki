@@ -1,6 +1,6 @@
 """Layout 文件加载器。
 
-每个子项目只有一个 Layout 文件（ADR-008），位于 layouts/ 下。
+每个子项目只有一个 Layout 文件（ADR-001），位于 layouts/ 下。
 Layout 文件是一个 YAML 列表，每项描述一个 Instance 的部署信息。
 """
 

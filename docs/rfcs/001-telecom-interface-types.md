@@ -3,7 +3,7 @@
 > 状态：提案中
 > 日期：2026-06-12
 > 作者：piki 核心团队
-> 依赖：ADR-007 (Connection 与 Interface 模型)
+> 依赖：ADR-005 (Connection 与 Interface 模型)
 
 ## 摘要
 
@@ -359,7 +359,7 @@ def check_cable_interface_match(self, ctx: Context) -> None:
 **拒绝理由**：
 
 - 不同行业接口类型没有交集（建筑业的 M16 螺栓和通信的 SFP28 光口）
-- ADR-007 已决策「连接基类不定义，领域自描述」
+- ADR-005 已决策「连接基类不定义，领域自描述」
 - 框架层定义通用类型会导致枚举膨胀和依赖污染
 
 ### 方案 C：不做任何约束，只改善文档
@@ -375,7 +375,7 @@ def check_cable_interface_match(self, ctx: Context) -> None:
 
 - **PRD (telecom)** 阶段 2 的前置依赖 — PortFamily / ConnectionFamily 的接口类型建模
 - **ROADMAP** 「项目级 Family 定义」的补充 — telecom 插件内建接口领域知识
-- **ADR-007** §7 「搜索路径与接口枚举」的落地 — ADR 明确说「留给后续 ADR 或领域插件」
+- **ADR-005** §7 「搜索路径与接口枚举」的落地 — ADR 明确说「留给后续 ADR 或领域插件」
 
 ---
 
@@ -403,7 +403,7 @@ def check_cable_interface_match(self, ctx: Context) -> None:
 
 ## 参考
 
-- [ADR-007: Connection 与 Interface 模型](../adr/007-connection-as-instance.md)
+- [ADR-005: Connection 与 Interface 模型](../adr/005-connection-as-instance.md)
 - [Telecom PRD](../../samples/01-telecom-expansion/PRD.md)
 - [IEC 60603-7: RJ45 连接器标准](https://en.wikipedia.org/wiki/IEC_60603-7)
 - [SFF-8431: SFP+ 规范](https://members.snia.org/document/dl/25876)

@@ -76,6 +76,6 @@ piki check
 
 ## 关联概念
 
-- [ADR-008: Mating Graph](../../docs/adr/008-mating-graph.md)
-- [ADR-007: Connection 与 Interface](../../docs/adr/007-connection-as-instance.md)
+- [ADR-006: Mating Graph](../../docs/adr/006-mating-graph.md)
+- [ADR-005: Connection 与 Interface](../../docs/adr/005-connection-as-instance.md)
 - [编写检查规则](../../docs/concepts/02-writing-rules.md)

@@ -37,7 +37,7 @@ def _add_device(
 ) -> None:
     """创建一个 Instance 文件并追加到 Layout。
 
-    物理尺寸字段不可被 Instance 覆盖（ADR-008），应在 Model 中设置。
+    物理尺寸字段不可被 Instance 覆盖（ADR-001），应在 Model 中设置。
     """
     # Instance 文件
     inst = project_dir / "instances" / "devices" / f"{inst_id}.yaml"

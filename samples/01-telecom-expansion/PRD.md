@@ -64,7 +64,7 @@ Rack（机柜）  ← 42U 标准机柜，含配电容量、物理尺寸
 - 分支合并时只冲突 layout.yaml，Instance 文件无冲突
 - 切换分支后 `piki check` 自动对应当前分支的部署方案
 
-**当前状态：** ✅ 已实现（ADR-008 Instance/Layout 分离架构）
+**当前状态：** ✅ 已实现（ADR-001 Instance/Layout 分离架构）
 
 ---
 

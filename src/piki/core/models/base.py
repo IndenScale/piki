@@ -10,7 +10,7 @@ from typing import Any
 from pydantic import BaseModel
 
 # ---------------------------------------------------------------------------
-# Instance 覆盖白名单标记（ADR-008 §1.2）
+# Instance 覆盖白名单标记（ADR-001）
 # ---------------------------------------------------------------------------
 # 使用 Field(json_schema_extra={"piki_non_overridable": True}) 标记不可覆盖字段。
 # 物理尺寸字段应标记为不可覆盖，防止 Instance 覆盖导致几何碰撞失效。

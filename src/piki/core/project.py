@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class Project:
-    """piki 项目，支持嵌套（ADR-009）。"""
+    """piki 项目，支持嵌套（ADR-001）。"""
 
     def __init__(
         self,
@@ -225,7 +225,7 @@ class Project:
         if isinstance(allowed, list):
             self.registry.set_allowed_tags(allowed)
 
-        # 加载外部项目注册（ADR-009 §5.3）
+        # 加载外部项目注册（ADR-001）
         externals_config = self.config.get("external", {})
         if isinstance(externals_config, dict):
             for alias, path_str in externals_config.items():

@@ -196,7 +196,7 @@ _OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
 def _match(item: Any, filters: dict[str, Any]) -> bool:
     """判断 item 是否满足所有过滤条件。"""
     for key, expected in filters.items():
-        # 支持 tags__ 前缀过滤（ADR-009）: tags__discipline=hvac
+        # 支持 tags__ 前缀过滤（ADR-001）: tags__discipline=hvac
         # tags__ 后面跟的如果是已知操作符（如 tags__contains），
         # 则走正常操作符路径，否则作为标签键查找
         if key.startswith("tags__"):

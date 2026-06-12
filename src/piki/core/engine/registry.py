@@ -1,9 +1,9 @@
 """Registry：Family / Model / Instance 注册和解析。
 
 支持：
-- Instance 与 Layout 分离（ADR-008）
-- 嵌套项目和跨项目 Instance 引用（ADR-009）
-- Tag 机制（ADR-009）
+- Instance 与 Layout 分离（ADR-001）
+- 嵌套项目和跨项目 Instance 引用（ADR-001）
+- Tag 机制（ADR-001）
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ def _flatten(
 
 
 class PathResolver:
-    """解析 Instance 引用路径（ADR-009 §5）。
+    """解析 Instance 引用路径（ADR-001）。
 
     支持：
     - 当前项目内的 Instance ID
@@ -159,7 +159,7 @@ class Registry:
         self._root: Path | None = None
         # 项目名称（用于 FQID）
         self._project_name: str = ""
-        # Mating (ADR-008)
+        # Mating (ADR-006)
         self._mate_types: dict[str, MateTypeMeta] = {}
         self._mates: list[MateSpec] = []
         self._mate_graph: MateGraph = MateGraph()
@@ -206,7 +206,7 @@ class Registry:
         self._project_name = name
 
     def fqid(self, instance_id: str) -> str:
-        """返回 Instance 的全限定 ID（ADR-009 §6.2）。
+        """返回 Instance 的全限定 ID（ADR-001）。
 
         格式: parent_name/child_name/.../instance_id
         """
@@ -252,7 +252,7 @@ class Registry:
         return None
 
     # ------------------------------------------------------------------
-    # Mating (ADR-008)
+    # Mating (ADR-006)
     # ------------------------------------------------------------------
 
     @property
@@ -459,7 +459,7 @@ class Registry:
         return set(self._allowed_tags)
 
     def register_external(self, alias: str, path: Path) -> None:
-        """注册外部项目路径（ADR-009 §5.3）。"""
+        """注册外部项目路径（ADR-001）。"""
         if not hasattr(self, "_externals"):
             self._externals: dict[str, Path] = {}
         self._externals[alias] = Path(path)
@@ -486,7 +486,7 @@ class Registry:
     def load_layout(self, project_root: Path) -> Layout | None:
         """加载项目的 Layout 文件。
 
-        每个项目只有一个 Layout 文件（ADR-008）。
+        每个项目只有一个 Layout 文件（ADR-001）。
         """
         path = find_layout_file(project_root)
         if path is None:
@@ -585,7 +585,7 @@ class Registry:
     ) -> ResolvedInstance | None:
         """合并 Model 默认值 + Instance 覆盖值 + Layout 部署值，并用 Family 校验。
 
-        解析顺序（ADR-008 定义）：
+        解析顺序（ADR-001 定义）：
         1. 加载 Instance → 获取设备属性（model, 覆盖参数）
         2. 加载 Model  → 获取默认值
         3. 加载 Layout  → 获取部署决策
@@ -632,7 +632,7 @@ class Registry:
         overrides.pop("model", None)
         overrides.pop("family", None)
 
-        # 2a. 覆盖白名单：不可覆盖字段被忽略（带诊断，ADR-008 §1.2）
+        # 2a. 覆盖白名单：不可覆盖字段被忽略（带诊断，ADR-001）
         non_overridable = get_non_overridable_fields(family_cls)
         if non_overridable:
             from ..models.diagnostic import Location

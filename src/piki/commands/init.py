@@ -1,6 +1,6 @@
 """piki init — 初始化项目。
 
-创建项目结构（instances/ + layouts/ 符合 ADR-008）、
+创建项目结构（instances/ + layouts/ 符合 ADR-001）、
 写入配置文件、安装 Git hook、复制插件模板。
 """
 
@@ -93,7 +93,7 @@ def cmd_init(path: str | None, plugin: str) -> int:
     if template_dir.exists():
         _copytree(template_dir, target)
 
-    # 确保 ADR-008 标准目录存在（模板可能已有，不会覆盖）
+    # 确保 ADR-001 标准目录存在（模板可能已有，不会覆盖）
     (target / "instances").mkdir(exist_ok=True)
     (target / "layouts").mkdir(exist_ok=True)
 

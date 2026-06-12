@@ -285,7 +285,7 @@ class TestDevicePhysicalFitRule:
         check_device_physical_fit(telecom_ctx)  # 不应抛异常
 
     def test_passes_when_fits(self, telecom_ctx: Context, tmp_path: Path) -> None:
-        # 物理尺寸应在 Model 中设置，不可被 Instance 覆盖（ADR-008）
+        # 物理尺寸应在 Model 中设置，不可被 Instance 覆盖（ADR-001）
         # 创建 rack model dir
         rack_models_dir = tmp_path / "models" / "racks"
         rack_models_dir.mkdir(parents=True)
@@ -305,7 +305,7 @@ class TestDevicePhysicalFitRule:
         check_device_physical_fit(telecom_ctx)  # 不应抛异常
 
     def test_fails_when_too_deep(self, telecom_ctx: Context, tmp_path: Path) -> None:
-        # 设备深度超过机柜——物理尺寸在 Model 中（ADR-008）
+        # 设备深度超过机柜——物理尺寸在 Model 中（ADR-001）
         base = tmp_path / "toodeep"
         base.mkdir()
 
