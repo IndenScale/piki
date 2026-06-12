@@ -1,0 +1,9 @@
+id: LIQUID-AI-LIQUID-01
+name: AI-LIQUID-01 液冷供液管路
+family: ConnectionFamily
+connection_type: liquid
+from_container: POWER-01
+to_container: AI-LIQUID-01
+capacity: 150
+length_m: 20
+status: installed

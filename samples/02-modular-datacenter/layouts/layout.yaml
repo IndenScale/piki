@@ -1,3 +1,4 @@
+# 配电单元相位配置
 - instance: BAT-BANK-A
   phase: three-phase
 - instance: BAT-BANK-B
@@ -6,3 +7,39 @@
   phase: three-phase
 - instance: HVDC-MAIN
   phase: three-phase
+
+# AI-LIQUID-01 液冷方舱设备布局
+- instance: COOL-A01-01
+  position_x_mm: 200
+  position_y_mm: 1000
+  position_z_mm: 0
+- instance: GPU-A01-01
+  position_x_mm: 1000
+  position_y_mm: 44
+  position_z_mm: 0
+- instance: GPU-A01-02
+  position_x_mm: 1800
+  position_y_mm: 44
+  position_z_mm: 0
+- instance: GPU-A01-03
+  position_x_mm: 2600
+  position_y_mm: 44
+  position_z_mm: 0
+- instance: GPU-A01-04
+  position_x_mm: 3400
+  position_y_mm: 44
+  position_z_mm: 0
+
+# GEN-AIR-01 风冷方舱设备布局
+- instance: CPU-G01-01
+  position_x_mm: 500
+  position_y_mm: 22
+  position_z_mm: 0
+- instance: CPU-G01-02
+  position_x_mm: 1200
+  position_y_mm: 22
+  position_z_mm: 0
+- instance: STOR-G01-01
+  position_x_mm: 1900
+  position_y_mm: 22
+  position_z_mm: 0

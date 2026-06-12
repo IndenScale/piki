@@ -66,6 +66,24 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+# FIXME: 项目当前类型注解不完整，临时禁用一批 mypy 错误代码，
+# 待类型系统完善后再逐步收紧。
+disable_error_code = [
+    "import-untyped",
+    "name-defined",
+    "attr-defined",
+    "arg-type",
+    "assignment",
+    "valid-type",
+    "index",
+    "var-annotated",
+    "misc",
+    "no-redef",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

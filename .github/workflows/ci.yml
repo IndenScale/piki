@@ -31,23 +31,18 @@ jobs:
 
       - name: Run samples check
         run: |
-          # 01-hello-piki: 最小示例，应全部通过
-          cd samples/01-hello-piki
+          # 01-telecom-expansion: 电信设备扩容示例，应全部通过
+          cd samples/01-telecom-expansion
           piki check
           cd ../..
 
-          # 02-telecom-rack: 基础示例，应全部通过
-          cd samples/02-telecom-rack
+          # 02-modular-datacenter: 模块化数据中心示例，应全部通过
+          cd samples/02-modular-datacenter
           piki check
           cd ../..
 
-          # 03-data-center: 进阶示例，有 2 个警告（负载不均衡 + 碰撞），应返回 0
-          cd samples/03-data-center
-          piki check
-          cd ../..
-
-          # 04-modular-dc: 高级示例，datacenter 插件，有 1 个警告（碰撞），应返回 0
-          cd samples/04-modular-dc
+          # 03-mechanical-keyboard: 机械键盘设计示例，应全部通过
+          cd samples/03-mechanical-keyboard
           piki check
           cd ../..
 

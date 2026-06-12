@@ -130,7 +130,7 @@ def _parse_mate_yaml(
             to: PDU-A/out-3
             pairing_type: power-iec-c14-c13
     """
-    # type: 优先使用 YAML 中声明的，否则用目录名
+    # mate_type 优先使用 YAML 中声明的，否则用目录名
     mate_type = data.get("type", default_type)
 
     # 必填字段
