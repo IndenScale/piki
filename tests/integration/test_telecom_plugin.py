@@ -457,9 +457,7 @@ class TestInterfaceCableRule:
         report = checker.run(ctx)
         assert report.passed is False
         assert report.error_count == 1
-        cable_result = next(
-            (r for r in report.results if r.rule_id == "INTERFACE-CABLE-001"), None
-        )
+        cable_result = next((r for r in report.results if r.rule_id == "INTERFACE-CABLE-001"), None)
         assert cable_result is not None
         assert "线缆类型不匹配" in cable_result.message
         assert "Cat6A-RJ45" in cable_result.message

@@ -1211,9 +1211,7 @@ def check_port_device_exists(ctx):
     devices = {d.id: d for d in ctx.query("devices")}
     for port in ctx.query("ports"):
         ctx.set_current_file(str(port.source))
-        assert port.device_id in devices, (
-            f"端口 {port.id} 引用的设备 {port.device_id} 不存在"
-        )
+        assert port.device_id in devices, f"端口 {port.id} 引用的设备 {port.device_id} 不存在"
     ctx.clear_current_file()
 
 
@@ -1227,9 +1225,7 @@ def check_connection_endpoints(ctx):
             if not ref:
                 assert False, f"连接 {conn.id} 的 {endpoint_name} 未定义"
             port = _resolve_port_ref(ref, ports)
-            assert port is not None, (
-                f"连接 {conn.id} 的 {endpoint_name} 引用端口 {ref} 不存在"
-            )
+            assert port is not None, f"连接 {conn.id} 的 {endpoint_name} 引用端口 {ref} 不存在"
     ctx.clear_current_file()
 
 
@@ -1318,7 +1314,16 @@ def generate_port_map(ctx, config) -> GeneratorResult:
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(
-        ["Port Instance ID", "Device ID", "Port Name", "Port Type", "Status", "Connected To", "Cable Type", "Length (m)"]
+        [
+            "Port Instance ID",
+            "Device ID",
+            "Port Name",
+            "Port Type",
+            "Status",
+            "Connected To",
+            "Cable Type",
+            "Length (m)",
+        ]
     )
 
     for port in sorted(ports, key=lambda p: (p.device_id, p.resolved.port_name)):

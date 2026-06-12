@@ -120,7 +120,6 @@ COMPATIBILITY: dict[str, frozenset[str]] = {
     InterfaceType.SFP_RJ45: frozenset({InterfaceType.SFP_RJ45}),
     InterfaceType.DAC_SFP: frozenset({InterfaceType.DAC_SFP}),
     InterfaceType.DAC_QSFP: frozenset({InterfaceType.DAC_QSFP}),
-
     # ── 光电两用口：支持 SFP 家族与 RJ45 互斥 ──
     InterfaceType.COMBO_SFP_RJ45: frozenset(
         {
@@ -202,7 +201,6 @@ INTERFACE_CABLE_MAP: dict[str, frozenset[str]] = {
             "Cat7-RJ45",
         }
     ),
-
     # ── 光电两用口：未指定 active_type 时允许光/电两类线缆 ──
     # 实际检查时会优先使用 active_type；本表作为 fallback 保留设计灵活性。
     InterfaceType.COMBO_SFP_RJ45: frozenset(
@@ -224,7 +222,6 @@ INTERFACE_CABLE_MAP: dict[str, frozenset[str]] = {
             "Cat7-RJ45",
         }
     ),
-
     InterfaceType.IEC_C14: frozenset({"IEC-C13-C14-10A", "IEC-C13-C14-16A"}),
     InterfaceType.IEC_C20: frozenset({"IEC-C19-C20-16A"}),
     InterfaceType.N_TYPE: frozenset({"LMR400-N-N", '1/2"-N-N'}),

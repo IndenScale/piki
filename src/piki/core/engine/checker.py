@@ -471,13 +471,9 @@ class Checker:
 
             # 至少一个未知类型 → 降级为 Warning，不做有罪推定
             if not from_known:
-                ctx.set_suggestion(
-                    f"Interface '{from_iface_id}' 使用了未收录的类型: {from_eff}"
-                )
+                ctx.set_suggestion(f"Interface '{from_iface_id}' 使用了未收录的类型: {from_eff}")
             if not to_known:
-                ctx.set_suggestion(
-                    f"Interface '{to_iface_id}' 使用了未收录的类型: {to_eff}"
-                )
+                ctx.set_suggestion(f"Interface '{to_iface_id}' 使用了未收录的类型: {to_eff}")
 
         ctx.clear_current_file()
 

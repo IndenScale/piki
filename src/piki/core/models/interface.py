@@ -21,8 +21,7 @@ class InterfaceSpec(BaseModel):
     interface_type: str = Field(..., description="接口类型：SFP28, IEC-C14, M16-bolt-hole")
     active_type: str | None = Field(
         default=None,
-        description="多形态接口（如 Combo 口）当前实际激活的类型。"
-                    "未指定时退化为 interface_type。",
+        description="多形态接口（如 Combo 口）当前实际激活的类型。未指定时退化为 interface_type。",
     )
     direction: str = Field(
         default="bidirectional",
