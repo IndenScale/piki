@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **在提交工程设计前，自动检查规则，把问题找出来。**
+> **piki 是一个面向工程设计的文本原生声明式系统建模语言。**
 >
 > 用 YAML 声明工程对象，用 Python 规则检查设计合理性，用 Git 管理设计演进。
 
@@ -17,7 +17,7 @@ piki 是 [SDE (Software Defined Engineering)](../Software%20Defined%20Engineerin
 
 ## 一句话理解 piki
 
-把工程设计的检查规则写成代码，每次 `git commit` 前自动运行。就像 ESLint 检查代码，piki 检查设计。
+把工程设计的检查规则写成代码，每次 `git commit` 前自动运行。就像 Markdown 是文本内容的声明式格式，piki 是工程设计的声明式系统建模语言。
 
 ```python
 # rules/power.py
@@ -103,7 +103,7 @@ piki generate bom-csv           # 导出 BOM 清单
 
 ---
 
-## Text-Native Declarative Modeling：文本为什么优于图纸
+## Text-Native Declarative System Modeling：文本为什么优于图纸
 
 | 能力 | piki（声明式 YAML） | 图形 CAD / BIM |
 |------|-------------------|---------------|
