@@ -60,6 +60,14 @@
 
 ---
 
+## 社区倡议 (Initiatives)
+
+需要社区共同决策的战略性提案与跨项目倡议：
+
+- **[Initiative-001: SD-HWE-Bench](initiatives/001-sde-hwe-bench.md)** — 面向实体工程领域的开放式端到端能力评测基准
+
+---
+
 ## 参考文档
 
 - **[CLI 命令参考](reference/07-cli.md)** — 所有命令、参数、示例
