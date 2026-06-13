@@ -102,7 +102,7 @@ piki 不是：
 - **项目管理工具**：不管进度、成本、人力
 - **权限系统**：不管谁有权限改什么（交给 Git）
 
-piki 是一种 **Text-Native Declarative Modeling Framework**。你用 YAML 声明工程意图，piki 负责解析、校验、生成交付物。就像 Kubernetes 声明式管理容器，piki 声明式管理工程对象，像一个工程编译器一样将结构化的设计输入编译为可验证的交付物。
+piki 是一种 **文本原生声明式系统建模框架（DSMF，Text-Native Declarative System Modeling Framework）**。你用 YAML 声明工程意图，piki 负责解析、校验、生成交付物。就像 Kubernetes 声明式管理容器，piki 声明式管理工程对象，像一个工程编译器一样将结构化的设计输入编译为可验证的交付物。
 
 piki 只做一件事：**在设计数据提交前，自动检查规则，把问题找出来。**
 

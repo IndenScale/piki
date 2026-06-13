@@ -1,6 +1,6 @@
 # piki — AGENTS.md
 
-> **piki** 是一个面向工程设计的 Text-Native 声明式建模框架。
+> **piki** 是一个面向工程设计的 Text-Native 声明式系统建模框架（DSMF）。
 > 工程师用 YAML 声明设计意图，Python 规则自动校验合理性，Git 追踪每一次变更。
 
 ## 项目定位
