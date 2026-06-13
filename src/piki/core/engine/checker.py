@@ -162,6 +162,18 @@ class Checker:
                 Severity.ERROR,
                 self.check_mate_constraints,
             ),
+            (
+                "CATALOG-001",
+                "Catalog 引用完整性",
+                Severity.ERROR,
+                self.check_catalog_references,
+            ),
+            (
+                "CATALOG-002",
+                "Service Method 引用完整性",
+                Severity.ERROR,
+                self.check_catalog_service_methods,
+            ),
         ]:
             try:
                 check_fn(ctx)
@@ -608,6 +620,40 @@ class Checker:
             if d.code == "MATE-003":
                 ctx.set_current_file(str(d.location.uri) if d.location.uri else "")
                 assert False, d.message
+        ctx.clear_current_file()
+
+    def check_catalog_references(self, ctx: Context) -> None:
+        """L2: Instance 显式 catalog 引用必须存在（ADR-011）。"""
+        for inst in ctx.instances():
+            raw_catalog = inst._catalog
+            if not isinstance(raw_catalog, dict):
+                continue
+            catalog_id = raw_catalog.get("id") or raw_catalog.get("catalog_id")
+            if not catalog_id:
+                continue
+            # catalog 字段存在且指定了 id，但解析后没有生效 catalog → 引用缺失
+            if not inst._resolved.get("catalog"):
+                ctx.set_current_file(str(inst.source))
+                source = raw_catalog.get("source")
+                assert False, (
+                    f"Instance '{inst.id}' 显式指定的 Catalog "
+                    f"'{catalog_id}'（source={source or 'any'}）不存在。"
+                )
+        ctx.clear_current_file()
+
+    def check_catalog_service_methods(self, ctx: Context) -> None:
+        """L2: ComponentCatalogEntry 引用的 service_methods 必须存在（ADR-011）。"""
+        reg = ctx._registry
+        for entry in reg._catalogs.values():
+            if entry.family != "ComponentCatalogFamily":
+                continue
+            for method_id in entry.service_methods:
+                method = reg._find_catalog_by_id(method_id)
+                if method is None:
+                    ctx.set_current_file(str(entry.source_path) if entry.source_path else "")
+                    assert False, (
+                        f"Catalog '{entry.id}' 引用的 service method '{method_id}' 不存在。"
+                    )
         ctx.clear_current_file()
 
     def check_fqid_duplicates(self, ctx: Context) -> None:

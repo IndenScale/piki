@@ -1,0 +1,29 @@
+catalog_id: install-2u-server
+family: ServiceMethodCatalogFamily
+
+service_type: 2U 机架式服务器安装
+applicable_to_families:
+  - ServerFamily
+
+workspace:
+  min_clearance_mm: 600
+  access_width_mm: 600
+  lighting_lux: 300
+  esd_required: true
+
+safety:
+  fall_protection_required: false
+  fire_watch_required: false
+  ventilation_required: false
+  hot_work_permit_required: false
+  ppe:
+    - esd_wrist_strap
+    - safety_glasses
+
+temporary_works:
+  - type: screw_kit
+    count: 1
+
+labor:
+  - role: 网络工程师
+    count: 1

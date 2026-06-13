@@ -43,8 +43,9 @@ piki init --plugin construction
 
 1. 创建 `piki.toml` 项目配置文件
 2. 创建 `.gitignore`（忽略 `.piki_cache/` 和 `reports/`）
-3. 安装 Git pre-commit hook（如果目录是 git 仓库）
-4. 复制插件模板文件到项目目录
+3. 创建标准目录：`instances/`、`layouts/`、`catalogs/`（ADR-011）
+4. 安装 Git pre-commit hook（如果目录是 git 仓库）
+5. 复制插件模板文件到项目目录
 
 ---
 
@@ -167,6 +168,9 @@ piki generate
 # 运行指定生成器
 piki generate bom-csv
 
+# 输出带 manufacturer / MPN / lifecycle 的采购 BOM（ADR-011）
+piki generate procurement-bom
+
 # 指定输出路径
 piki generate bom-csv --output ./bom.csv
 
@@ -181,7 +185,7 @@ piki generate
 
 ```toml
 [generators]
-enabled = ["bom-csv", "panel-diagram"]
+enabled = ["bom-csv", "panel-diagram", "procurement-bom"]
 ```
 
 ---

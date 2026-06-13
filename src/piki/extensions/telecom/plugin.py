@@ -258,6 +258,13 @@ class TelecomPlugin(Plugin):
             priority=5,
             severity=Severity.ERROR,
         )
+        checker.add_rule(
+            "CATALOG-LIFECYCLE-001",
+            "禁止非既有工程使用 EOL 器件",
+            check_catalog_lifecycle,
+            priority=10,
+            severity=Severity.ERROR,
+        )
 
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("bom-csv", "BOM CSV 导出", generate_bom_csv)
@@ -266,6 +273,7 @@ class TelecomPlugin(Plugin):
         checker.add_generator("power-budget", "功率预算汇总", generate_power_budget)
         checker.add_generator("cable-list", "线缆清单", generate_cable_list)
         checker.add_generator("port-map", "端口分配表", generate_port_map)
+        checker.add_generator("procurement-bom", "采购 BOM", generate_procurement_bom)
 
     def register_mate_types(self, registry: Registry) -> None:
         """注册 telecom 领域的 Mate 类型 (ADR-006)."""
@@ -583,6 +591,26 @@ def _write_and_return(
     return GeneratorResult.ok(gen_id, gen_name, content, file_path, content_type)
 
 
+def check_catalog_lifecycle(ctx):
+    """禁止非既有工程使用 EOL 器件（ADR-011）。"""
+    for inst in ctx.instances():
+        catalog = inst._resolved.get("catalog")
+        if not isinstance(catalog, dict):
+            continue
+        if catalog.get("lifecycle") != "eol":
+            continue
+        context = inst._resolved.get("context")
+        if context == "existing":
+            continue
+        ctx.set_current_file(str(inst.source))
+        mpn = catalog.get("mpn") or catalog.get("catalog_id")
+        assert False, (
+            f"Instance '{inst.id}' 使用 EOL 器件 '{mpn}'，"
+            f"仅 context='existing' 的既有设备允许使用。"
+        )
+    ctx.clear_current_file()
+
+
 def generate_bom_csv(ctx, config) -> GeneratorResult:
     """生成 BOM CSV：设备清单汇总。"""
     import csv
@@ -608,6 +636,38 @@ def generate_bom_csv(ctx, config) -> GeneratorResult:
     csv_content = output.getvalue()
     _, file_path = _resolve_output_path(config, "bom.csv")
     return _write_and_return("bom-csv", "BOM CSV 导出", csv_content, file_path, "text/csv")
+
+
+def generate_procurement_bom(ctx, config) -> GeneratorResult:
+    """生成采购 BOM：含 manufacturer、MPN、lifecycle（ADR-011）。"""
+    import csv
+    import io
+
+    devices = ctx.instances().list()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Model", "Manufacturer", "MPN", "Lifecycle"])
+    for d in devices:
+        catalog = d._resolved.get("catalog") or {}
+        writer.writerow(
+            [
+                d.id,
+                d.model_id or "",
+                catalog.get("manufacturer", ""),
+                catalog.get("mpn", ""),
+                catalog.get("lifecycle", ""),
+            ]
+        )
+
+    csv_content = output.getvalue()
+    _, file_path = _resolve_output_path(config, "procurement-bom.csv")
+    return _write_and_return(
+        "procurement-bom",
+        "采购 BOM",
+        csv_content,
+        file_path,
+        "text/csv",
+    )
 
 
 def generate_rack_face_panel(ctx, config) -> GeneratorResult:

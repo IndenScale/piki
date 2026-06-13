@@ -17,6 +17,12 @@ my-project/
 │       ├── generic-server.yaml
 │       └── dell-r740.yaml
 │
+├── catalogs/                 # 项目本地型录库（可选，ADR-011）
+│   ├── components/
+│   │   └── finisar-sfp28.yaml
+│   └── service-methods/
+│       └── install-fiber-module.yaml
+│
 ├── instances/                # 所有实例（设备身份）
 │   ├── racks/
 │   │   └── RACK-A01.yaml
@@ -95,6 +101,48 @@ psu_redundancy: false
 - 若插件已提供所需型号，此目录可缺省
 - 来源优先级：**项目本地 `models/` > 插件自带型号库**
 - 详见：[03-model.md](03-model.md)
+
+---
+
+### `catalogs/` — 型录库（可选，ADR-011）
+
+项目本地型录库。每个 YAML 文件是一个 **CatalogEntry**，把 Model 映射到真实世界的制造商、料号、生命周期或服务工法。
+
+```yaml
+# catalogs/components/finisar-sfp28.yaml
+catalog_id: finisar-ftlx8571d3bcv
+family: ComponentCatalogFamily
+
+manufacturer: Finisar
+mpn: FTLX8571D3BCV
+lifecycle: active
+model_ref: sfp28-sr-25g
+
+datasheet:
+  url: https://example.com/ds.pdf
+  revision: "Rev C"
+```
+
+```yaml
+# catalogs/service-methods/install-fiber-module.yaml
+catalog_id: install-fiber-module
+family: ServiceMethodCatalogFamily
+
+service_type: 光模块安装与清洁
+applicable_to_families:
+  - TransceiverFamily
+
+workspace:
+  min_clearance_mm: 600
+  esd_required: true
+```
+
+- 必须包含 `catalog_id` 和 `family`
+- `family` 当前支持 `ComponentCatalogFamily` 和 `ServiceMethodCatalogFamily`
+- 来源优先级：**Project > Parent > Enterprise > Public**，与 ADR-001 嵌套继承一致
+- Instance 通过 `model` 隐式绑定，或通过 `catalog.id` / `catalog.source` 显式绑定
+- 子目录仅用于组织，不影响加载
+- 详见：[08-catalog.md](08-catalog.md)
 
 ---
 

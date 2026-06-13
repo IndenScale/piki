@@ -24,13 +24,14 @@ tdp_w: 250
 
 ## 可选字段
 
-| 字段     | 类型   | 说明                                                         |
-| -------- | ------ | ------------------------------------------------------------ |
-| `family` | `str`  | Family 名称。若省略，从 `model` 推导                         |
-| `model`  | `str`  | 引用的 Model ID。省略时无默认值                              |
-| `name`   | `str`  | 人类可读名称                                                 |
-| `status` | `str`  | 生命周期状态：`planned`、`installed`、`operating`、`retired` |
-| `tags`   | `dict` | 标签键值对，用于规则过滤和视图筛选                           |
+| 字段      | 类型   | 说明                                                         |
+| --------- | ------ | ------------------------------------------------------------ |
+| `family`  | `str`  | Family 名称。若省略，从 `model` 推导                         |
+| `model`   | `str`  | 引用的 Model ID。省略时无默认值                              |
+| `catalog` | `dict` | 显式指定 CatalogEntry：`id` + 可选 `source`（ADR-011）       |
+| `name`    | `str`  | 人类可读名称                                                 |
+| `status`  | `str`  | 生命周期状态：`planned`、`installed`、`operating`、`retired` |
+| `tags`    | `dict` | 标签键值对，用于规则过滤和视图筛选                           |
 
 ## 覆盖规则
 
@@ -241,9 +242,35 @@ cable_type: SMF
 
 > Interface 不是独立的 Instance，而是内嵌在 Instance 的 `interfaces` 列表中，随 Instance 一起解析和管理。
 
+## Catalog 绑定（ADR-011）
+
+Instance 默认通过 `model` 字段隐式绑定到指向该 Model 的 CatalogEntry。也可显式覆盖：
+
+```yaml
+# instances/links/core-link-01.yaml
+id: core-link-01
+family: CableAssemblyFamily
+model: sfp28-sr-25g
+catalog:
+  id: acme-approved-sfp28
+  source: enterprise
+```
+
+`catalog` 是保留字段，不参与 Family Schema 校验。解析后，生效的 CatalogEntry 数据会注入到 `resolved.catalog`，被引用的 ServiceMethodCatalogEntry 会合并为 `resolved.service_method`。
+
+规则可按 Catalog 字段过滤：
+
+```python
+# 查找使用 EOL 器件的实例
+eol_parts = ctx.query("instances", catalog__lifecycle="eol")
+
+# 查找需要动火作业的实例
+hot_work = ctx.query("instances", service_method__fire_watch_required=True)
+```
+
 ## 解析后的完整对象
 
-piki 运行时合并 Model 默认值 + Instance 覆盖值 + Layout 部署值：
+piki 运行时合并 Model 默认值 + Instance 覆盖值 + Layout 部署值 + Catalog 权威层：
 
 ```python
 resolved = {
@@ -258,6 +285,12 @@ resolved = {
     "rack_id": "RACK-A01",
     "position_u": 10,
     "pdu_id": "PDU-A",
+    # Catalog 权威层（ADR-011）
+    "catalog": {
+        "manufacturer": "Dell",
+        "mpn": "R740-XXX",
+        "lifecycle": "active",
+    },
 }
 ```
 
@@ -265,9 +298,10 @@ resolved = {
 
 ```python
 server = ctx.query("instances", id="SRV-01").first()
-print(server.resolved.tdp_w)      # 250（Instance 覆盖值）
-print(server.resolved.height_u)   # 2（Model 默认值）
-print(server.resolved.rack_id)    # RACK-A01（Layout 值）
+print(server.resolved.tdp_w)            # 250（Instance 覆盖值）
+print(server.resolved.height_u)         # 2（Model 默认值）
+print(server.resolved.rack_id)          # RACK-A01（Layout 值）
+print(server.resolved.catalog.mpn)      # R740-XXX（Catalog 权威值）
 ```
 
 ## 最佳实践

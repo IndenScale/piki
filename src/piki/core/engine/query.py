@@ -198,6 +198,15 @@ _OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
     "endswith": lambda a, b: str(a).endswith(str(b)) if a is not None else False,
 }
 
+# 允许通过 __ 表达嵌套字段路径的前缀（ADR-011 Catalog 查询）
+_NESTED_FIELD_PREFIXES = {"catalog", "service_method", "service_methods", "resolved"}
+
+
+def _is_nested_field_path(key: str) -> bool:
+    """判断 key 是否应作为嵌套字段路径处理（如 catalog__lifecycle）。"""
+    prefix = key.split("__", 1)[0]
+    return prefix in _NESTED_FIELD_PREFIXES
+
 
 def _match(item: Any, filters: dict[str, Any]) -> bool:
     """判断 item 是否满足所有过滤条件。"""
@@ -219,12 +228,22 @@ def _match(item: Any, filters: dict[str, Any]) -> bool:
                 continue
             # fall through to normal operator handling
 
-        # 解析 field__operator
+        # 解析 field__operator：只有最后一段是已知操作符时才视为操作符
         if "__" in key:
             parts = key.rsplit("__", 1)
-            field, op = parts[0], parts[1]
+            maybe_field, maybe_op = parts[0], parts[1]
+            if maybe_op in _OPERATORS:
+                field, op = maybe_field, maybe_op
+            elif _is_nested_field_path(key):
+                # catalog__lifecycle / service_method__fire_watch_required 等嵌套路径
+                field, op = key, "eq"
+            else:
+                raise ValueError(f"Unknown query operator: {maybe_op!r} in {key!r}")
         else:
             field, op = key, "eq"
+
+        # 字段部分的 __ 转为嵌套属性 .，支持 catalog__lifecycle / service_method__*
+        field = field.replace("__", ".")
 
         actual = _get_value(item, field)
         op_fn = _OPERATORS.get(op)

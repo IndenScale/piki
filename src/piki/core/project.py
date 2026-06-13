@@ -113,9 +113,10 @@ class Project:
     # ------------------------------------------------------------------
 
     def load(self) -> None:
-        """加载插件、型号库、实例数据、Layout。"""
+        """加载插件、型号库、Catalog、实例数据、Layout。"""
         self._load_plugins()
         self._load_models()
+        self._load_catalogs()  # Catalog 必须在 Instance 之前加载（ADR-011）
         self._load_layout()  # Layout 必须在 Instance 之前加载（_resolve 依赖它）
         self._load_instances()
         self._load_mates()
@@ -146,6 +147,27 @@ class Project:
             plugin_lib = getattr(plugin, "model_dir", None)
             if plugin_lib:
                 self.registry.load_models(Path(plugin_lib))
+
+    def _load_catalogs(self) -> None:
+        """加载项目本地 Catalog、企业 Catalog、插件公共 Catalog（ADR-011）。
+
+        来源优先级：Project > Parent > Enterprise > Public。
+        父项目 Catalog 通过 Registry.set_parent() 自动继承。
+        """
+        # 1. 项目本地 catalogs/（source=project）
+        self.registry.load_catalogs(self.root, source="project")
+
+        # 2. 企业 Catalog（source=enterprise）
+        catalogs_config = self.config.get("catalogs", {})
+        enterprise_path = catalogs_config.get("enterprise")
+        if isinstance(enterprise_path, str):
+            self.registry.load_catalogs(Path(enterprise_path), source="enterprise")
+
+        # 3. 插件公共 Catalog（source=public）
+        for plugin in self._plugins:
+            catalog_dir = getattr(plugin, "catalog_dir", None)
+            if catalog_dir:
+                self.registry.load_catalogs(Path(catalog_dir), source="public")
 
     def _load_instances(self) -> None:
         """扫描 instances/ 目录，子目录作为独立集合加载。

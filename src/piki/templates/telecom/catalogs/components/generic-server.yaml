@@ -1,0 +1,15 @@
+catalog_id: generic-server-catalog
+family: ComponentCatalogFamily
+
+manufacturer: Generic
+mpn: GENERIC-2U-SERVER
+lifecycle: active
+
+model_ref: generic-server
+
+datasheet:
+  url: https://example.com/generic-server.pdf
+  revision: "Rev A"
+
+service_methods:
+  - install-2u-server

@@ -15,6 +15,12 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 
 from ..models.base import Instance, Model, ResolvedInstance, get_non_overridable_fields
+from ..models.catalog import (
+    CatalogEntry,
+    ComponentCatalogFamily,
+    ServiceMethodCatalogFamily,
+    merge_service_methods,
+)
 from ..models.diagnostic import Diagnostic, Location, Range, Severity
 from ..models.interface import InterfaceSpec, get_interfaces_from_resolved
 from ..models.layout import Layout, LayoutEntry
@@ -30,6 +36,14 @@ from ..parsing.loaders import load_yaml
 from ..parsing.mate_loader import load_mates
 from ..parsing.yaml_source import SourceTrackedDict, get_field_location
 from .query import QuerySet
+
+# Catalog 来源优先级（数值越小优先级越高）
+_CATALOG_SOURCE_PRIORITY = {
+    "project": 0,
+    "parent": 1,
+    "enterprise": 2,
+    "public": 3,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -163,6 +177,9 @@ class Registry:
         self._mate_types: dict[str, MateTypeMeta] = {}
         self._mates: list[MateSpec] = []
         self._mate_graph: MateGraph = MateGraph()
+        # Catalog (ADR-011)
+        self._catalogs: dict[str, CatalogEntry] = {}
+        self._catalogs_by_model: dict[str, list[CatalogEntry]] = {}
 
     # ------------------------------------------------------------------
     # Family / Model
@@ -179,6 +196,183 @@ class Registry:
 
     def get_model(self, model_id: str) -> Model | None:
         return self._models.get(model_id)
+
+    # ------------------------------------------------------------------
+    # Catalog (ADR-011)
+    # ------------------------------------------------------------------
+
+    def add_catalog(self, entry: CatalogEntry) -> None:
+        """注册一个 CatalogEntry。"""
+        self._catalogs[entry.id] = entry
+        if entry.model_ref:
+            self._catalogs_by_model.setdefault(entry.model_ref, []).append(entry)
+
+    def load_catalogs(self, root: Path, source: str = "project") -> None:
+        """扫描 catalogs/ 目录，加载所有 CatalogEntry YAML。"""
+        catalogs_dir = root / "catalogs"
+        if not catalogs_dir.exists():
+            return
+
+        family_map = {
+            "ComponentCatalogFamily": ComponentCatalogFamily,
+            "ServiceMethodCatalogFamily": ServiceMethodCatalogFamily,
+        }
+
+        for path in sorted(catalogs_dir.rglob("*.yaml")):
+            data = load_yaml(path)
+            if not isinstance(data, dict):
+                logger.warning("Skipping non-mapping catalog file: %s", path)
+                continue
+
+            catalog_id = data.get("catalog_id")
+            family_name = data.get("family")
+            if not catalog_id or not family_name:
+                logger.warning("Skipping catalog without 'catalog_id' or 'family': %s", path)
+                continue
+
+            family_cls = family_map.get(family_name)
+            if family_cls is None:
+                logger.warning("Unknown catalog family %s in %s", family_name, path)
+                continue
+
+            try:
+                validated = family_cls.model_validate(data)
+            except Exception as exc:
+                self._diagnostics.append(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=f"Catalog '{catalog_id}' Schema 校验失败: {exc}",
+                        location=Location.from_path(path),
+                        code="SCHEMA-001",
+                        source="piki.catalog",
+                    )
+                )
+                continue
+
+            entry_data = validated.model_dump()
+            # catalog_id / family 是元数据，data 中保留但也可通过 entry.id 访问
+            entry = CatalogEntry(
+                id=catalog_id,
+                family=family_name,
+                source=source,
+                model_ref=entry_data.get("model_ref"),
+                data=entry_data,
+                source_path=path,
+            )
+            self.add_catalog(entry)
+
+    def _catalog_priority_key(self, entry: CatalogEntry, distance: int) -> tuple[int, int]:
+        """返回 CatalogEntry 的排序键：优先级越低、距离越近越优先。"""
+        priority = _CATALOG_SOURCE_PRIORITY.get(entry.source, 99)
+        return (priority, distance)
+
+    def _collect_catalogs_by_model(self, model_ref: str) -> list[tuple[CatalogEntry, int]]:
+        """收集当前及父 Registry 中指向 model_ref 的所有 CatalogEntry。
+
+        父 Registry 中的条目 source 统一视为 'parent'。
+        """
+        result: list[tuple[CatalogEntry, int]] = []
+        current: Registry | None = self
+        distance = 0
+        while current is not None:
+            for entry in current._catalogs_by_model.get(model_ref, []):
+                if distance == 0:
+                    result.append((entry, distance))
+                else:
+                    # 来自父 Registry 的条目，source 规范化为 parent
+                    normalized = CatalogEntry(
+                        id=entry.id,
+                        family=entry.family,
+                        source="parent",
+                        model_ref=entry.model_ref,
+                        data=entry.data,
+                        source_path=entry.source_path,
+                    )
+                    result.append((normalized, distance))
+            current = current._parent
+            distance += 1
+        return result
+
+    def find_catalog(
+        self,
+        model_ref: str | None = None,
+        catalog_id: str | None = None,
+        source: str | None = None,
+    ) -> CatalogEntry | None:
+        """按优先级查找生效的 CatalogEntry。
+
+        搜索顺序：
+        1. 若指定 catalog_id + source：精确匹配。
+        2. 若指定 catalog_id：在项目树中查找最近的匹配。
+        3. 若指定 model_ref：按 Project > Parent > Enterprise > Public 优先级返回。
+
+        Args:
+            model_ref: 目标 Model ID。
+            catalog_id: 显式指定的 CatalogEntry ID。
+            source: 显式指定的来源（project/parent/enterprise/public）。
+        """
+        # 精确 id + source 查找
+        if catalog_id and source:
+            return self._find_catalog_by_id_and_source(catalog_id, source)
+
+        # 仅 id 查找：最近优先
+        if catalog_id:
+            return self._find_catalog_by_id(catalog_id)
+
+        # 按 model_ref 优先级查找
+        if not model_ref:
+            return None
+
+        candidates = self._collect_catalogs_by_model(model_ref)
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda x: self._catalog_priority_key(x[0], x[1]))
+        return candidates[0][0]
+
+    def _find_catalog_by_id(self, catalog_id: str) -> CatalogEntry | None:
+        """在项目树中按 ID 查找最近的 CatalogEntry。"""
+        current: Registry | None = self
+        while current is not None:
+            entry = current._catalogs.get(catalog_id)
+            if entry is not None:
+                return entry
+            current = current._parent
+        return None
+
+    def _find_catalog_by_id_and_source(self, catalog_id: str, source: str) -> CatalogEntry | None:
+        """按 ID + source 精确查找。"""
+        if source == "parent":
+            # parent 源指父 Registry 中的任意条目
+            current = self._parent
+            while current is not None:
+                entry = current._catalogs.get(catalog_id)
+                if entry is not None:
+                    return CatalogEntry(
+                        id=entry.id,
+                        family=entry.family,
+                        source="parent",
+                        model_ref=entry.model_ref,
+                        data=entry.data,
+                        source_path=entry.source_path,
+                    )
+                current = current._parent
+            return None
+
+        # project / enterprise / public：只在当前 Registry 中匹配
+        entry = self._catalogs.get(catalog_id)
+        if entry is not None and entry.source == source:
+            return entry
+        return None
+
+    def get_service_methods(self, method_ids: list[str]) -> list[CatalogEntry]:
+        """按 ID 列表查找 ServiceMethodCatalogEntry。"""
+        result: list[CatalogEntry] = []
+        for mid in method_ids:
+            entry = self._find_catalog_by_id(mid)
+            if entry is not None and entry.family == "ServiceMethodCatalogFamily":
+                result.append(entry)
+        return result
 
     # ------------------------------------------------------------------
     # 嵌套项目
@@ -633,6 +827,11 @@ class Registry:
         overrides.pop("model", None)
         overrides.pop("family", None)
 
+        # 2b. catalog 是保留字段，不参与 Family Schema 校验（ADR-011）
+        catalog_override = overrides.pop("catalog", None)
+        if isinstance(catalog_override, dict):
+            catalog_override = dict(catalog_override)
+
         # 2a. 覆盖白名单：不可覆盖字段被忽略（带诊断，ADR-001）
         non_overridable = get_non_overridable_fields(family_cls)
         if non_overridable:
@@ -704,6 +903,18 @@ class Registry:
             layout_flat = layout_entry.to_flat()
             resolved_dict.update(layout_flat)
 
+        # 6. Catalog 权威层注入（ADR-011）
+        active_catalog = self._resolve_catalog(
+            instance,
+            model_id=model_id,
+            catalog_override=catalog_override,
+        )
+        if active_catalog is not None:
+            resolved_dict["catalog"] = active_catalog.data
+            methods = self.get_service_methods(active_catalog.service_methods)
+            if methods:
+                resolved_dict["service_method"] = merge_service_methods(methods)
+
         return ResolvedInstance(
             id=instance.id,
             family=family_name,
@@ -711,7 +922,36 @@ class Registry:
             _resolved=resolved_dict,
             source=instance.source,
             model_id=model_id,
+            _catalog=catalog_override,
         )
+
+    def _resolve_catalog(
+        self,
+        instance: Instance,
+        model_id: str | None,
+        catalog_override: dict[str, Any] | None,
+    ) -> CatalogEntry | None:
+        """解析 Instance 生效的 CatalogEntry（ADR-011）。
+
+        1. 若 Instance 显式写了 catalog.id（可选 catalog.source），精确匹配。
+        2. 否则按 model_ref 从 Project > Parent > Enterprise > Public 查找。
+        """
+        catalog_id: str | None = None
+        source: str | None = None
+        if isinstance(catalog_override, dict):
+            catalog_id = catalog_override.get("id") or catalog_override.get("catalog_id")
+            source = catalog_override.get("source")
+
+        if catalog_id:
+            entry = self.find_catalog(catalog_id=catalog_id, source=source)
+            # 不在这里产生诊断，由 Checker 内置 L2 检查统一报告 CATALOG-001，
+            # 避免 Project.run_check 中同时出现 Diagnostic 与 RuleResult 重复。
+            return entry
+
+        if model_id:
+            return self.find_catalog(model_ref=model_id)
+
+        return None
 
     # ------------------------------------------------------------------
     # 错误定位辅助

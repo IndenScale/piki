@@ -93,9 +93,11 @@ def cmd_init(path: str | None, plugin: str) -> int:
     if template_dir.exists():
         _copytree(template_dir, target)
 
-    # 确保 ADR-001 标准目录存在（模板可能已有，不会覆盖）
+    # 确保 ADR-001 / ADR-011 标准目录存在（模板可能已有，不会覆盖）
     (target / "instances").mkdir(exist_ok=True)
     (target / "layouts").mkdir(exist_ok=True)
+    (target / "catalogs" / "components").mkdir(parents=True, exist_ok=True)
+    (target / "catalogs" / "service-methods").mkdir(parents=True, exist_ok=True)
 
     print(f"Initialized piki project at {target} with plugin '{plugin}'")
     return 0

@@ -116,6 +116,25 @@ class TestOperators:
         with pytest.raises(ValueError, match="Unknown query operator"):
             QuerySet(items).filter(age__unknown=1)
 
+    def test_nested_field_path_via_double_underscore(self) -> None:
+        """ADR-011: catalog__lifecycle 等嵌套字段查询应被识别为字段路径。"""
+        from types import SimpleNamespace
+
+        items = [SimpleNamespace(catalog={"lifecycle": "eol"})]
+        qs = QuerySet(items).filter(catalog__lifecycle="eol")
+        assert qs.count() == 1
+
+    def test_nested_field_path_with_operator(self) -> None:
+        """ADR-011: catalog__enterprise__price_cny__gt 应能工作。"""
+        from types import SimpleNamespace
+
+        items = [
+            SimpleNamespace(catalog={"enterprise": {"price_cny": 1200}}),
+            SimpleNamespace(catalog={"enterprise": {"price_cny": 800}}),
+        ]
+        qs = QuerySet(items).filter(catalog__enterprise__price_cny__gt=1000)
+        assert qs.count() == 1
+
 
 class TestChaining:
     """测试链式操作。"""

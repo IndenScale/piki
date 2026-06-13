@@ -33,7 +33,8 @@ class TestCheckerRun:
         report = checker.run(ctx)
         assert report.passed is True
         assert report.error_count == 0
-        assert report.pass_count == 9
+        # 10 个内置 L2 检查（含 CATALOG-001/002）+ 1 个自定义规则
+        assert report.pass_count == 11
 
     def test_single_fail(self) -> None:
         checker = Checker()
@@ -46,7 +47,8 @@ class TestCheckerRun:
         report = checker.run(ctx)
         assert report.passed is False
         assert report.error_count == 1
-        assert report.pass_count == 8
+        # 10 个内置 L2 检查通过，1 个自定义规则失败
+        assert report.pass_count == 10
         fail_result = next((r for r in report.results if r.rule_id == "R-001"), None)
         assert fail_result is not None
         assert "出错了" in fail_result.message
@@ -76,7 +78,8 @@ class TestCheckerRun:
         checker.add_rule("R-002", "失败", lambda ctx: exec("assert False, 'err'"))
         report = checker.run(ctx)
         assert report.error_count == 1
-        assert report.pass_count == 9
+        # 10 个内置 L2 检查通过 + 1 个自定义规则通过，1 个自定义规则失败
+        assert report.pass_count == 11
 
     def test_exception_handling(self) -> None:
         """非 AssertionError 异常也应被捕获。"""

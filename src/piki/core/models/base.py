@@ -90,6 +90,7 @@ class ResolvedInstance:
     source: Path
     model_id: str | None = None  # 引用的型号 ID（ADR-001 扩展）
     _validation_error: str = ""  # Schema 校验失败时的错误详情
+    _catalog: dict[str, Any] | None = None  # 原始 catalog 覆盖（ADR-011）
 
     def __getattr__(self, name: str) -> Any:
         try:

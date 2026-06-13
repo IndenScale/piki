@@ -115,11 +115,11 @@ def _compose_to_tracked(node: yaml.Node, path: Path) -> Any:
         return tracked
 
     elif isinstance(node, yaml.ScalarNode):
-        # 使用 SafeConstructor 解析标量
+        # 使用 SafeConstructor 解析标量，保留 YAML 原生类型（int/float/bool/str）
         from yaml.constructor import SafeConstructor
 
         constructor = SafeConstructor()
-        return constructor.construct_scalar(node)  # type: ignore[no-any-return]
+        return constructor.construct_object(node)  # type: ignore[no-any-return]
 
     else:
         raise ValueError(f"Unknown YAML node type: {type(node)}")

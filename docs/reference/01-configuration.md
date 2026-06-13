@@ -33,7 +33,7 @@ warning_only = true            # true 则只警告不报错
 warning_only = false
 
 [generators]
-enabled = ["bom-csv", "panel-diagram"]
+enabled = ["bom-csv", "panel-diagram", "procurement-bom"]
 
 [generators.bom-csv]
 format = "csv"                 # csv | excel | json
@@ -42,6 +42,14 @@ columns = ["id", "model", "rack_id", "position_u", "tdp_w"]
 [generators.panel-diagram]
 format = "svg"                 # svg | pdf | png
 rack_ids = ["RACK-A01", "RACK-A02"]
+
+[generators.procurement-bom]
+format = "csv"                 # csv | excel | json
+columns = ["id", "model", "manufacturer", "mpn", "lifecycle"]
+
+[catalogs]
+# 企业级型录库路径（ADR-011）
+enterprise = "../acme-enterprise-catalog"
 
 [output]
 format = "human"               # human | json | junit | markdown
@@ -216,6 +224,30 @@ format = "pdf"
 page_size = "A4"
 labels_per_page = 24
 ```
+
+---
+
+### `[catalogs]` — Catalog 来源配置（ADR-011）
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `enterprise` | `str` | — | 企业级型录库目录路径。该目录下应有 `catalogs/` 子目录 |
+
+**示例：**
+
+```toml
+[catalogs]
+enterprise = "../acme-enterprise-catalog"
+```
+
+Catalog 来源优先级：
+
+1. **Project**：项目本地 `catalogs/`
+2. **Parent**：父项目 `catalogs/`（嵌套项目继承）
+3. **Enterprise**：`[catalogs] enterprise` 配置的目录
+4. **Public**：插件通过 `catalog_dir` 提供的型录
+
+详见：[08-catalog.md](08-catalog.md)
 
 ---
 

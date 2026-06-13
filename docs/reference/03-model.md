@@ -130,6 +130,36 @@ power:
 
 项目可以覆盖插件的默认型号，也可以新增项目特有的型号。
 
+## 与 Catalog 的关系（ADR-011）
+
+Model 是**技术默认值层**，不直接包含制造商、料号、生命周期等真实世界信息。这些信息由 **CatalogEntry** 提供，并通过 `model_ref` 指向 Model。
+
+```yaml
+# models/devices/sfp28-sr-25g.yaml
+model: sfp28-sr-25g
+family: TransceiverFamily
+form_factor: SFP28
+reach_m: 100
+wavelength_nm: 850
+```
+
+```yaml
+# catalogs/components/finisar-sfp28.yaml
+catalog_id: finisar-ftlx8571d3bcv
+family: ComponentCatalogFamily
+
+manufacturer: Finisar
+mpn: FTLX8571D3BCV
+lifecycle: active
+model_ref: sfp28-sr-25g          # 指向 Model
+```
+
+- **Catalog 引用 Model**，而不是 Model 引用 Catalog
+- 同一 Model 可对应多个 CatalogEntry（不同厂商、不同企业优选）
+- Instance 通过 `model` 字段隐式获得 Catalog，也可显式指定 `catalog.id` / `catalog.source`
+
+详见：[08-catalog.md](08-catalog.md)
+
 ## 最佳实践
 
 1. **一型号一文件**：每个 Model 一个 YAML 文件，文件名与 `model` 字段一致

@@ -30,22 +30,23 @@ piki/                           # monorepo 根目录
 └── piki.toml                   # piki 自身的项目配置（自己吃自己的狗粮）
 ```
 
-## 核心数据模型（四层栈）
+## 核心数据模型（五层栈）
 
-写任何代码前必须先理解这四层：
+写任何代码前必须先理解这五层：
 
 | 层            | 概念                    | 存放位置             | 定义什么                                          |
 | ------------- | ----------------------- | -------------------- | ------------------------------------------------- |
 | **Family**    | 类型约束（pydantic 类） | 插件代码             | "服务器必须有哪些字段？类型是什么？"              |
 | **Model**     | 型号默认值（YAML）      | `models/` 或插件自带 | "通用服务器：tdp_w=300, height_u=2"               |
+| **Catalog**   | 真实世界映射与权威来源（YAML） | `catalogs/` 或插件/企业提供 | "通用服务器对应哪个 MPN？生命周期是什么？安装工法需要什么前提？" |
 | **Instance**  | 实际部署的实体（YAML）  | `instances/`         | "SRV-01：model=generic-server, tdp_w=250（覆盖）" |
 | **Interface** | 可连接点（YAML，内嵌）  | Instance 文件内部    | "SRV-01/eth0：类型 SFP28，双向"                   |
 
-运行时解析：`Model.defaults + Instance.overrides + Layout.placement`。
+运行时解析：`Model.defaults + Instance.overrides + Layout.placement + Catalog.authority`。
 
-## 五个数据维度（ADR-001 → ADR-010）
+## 五个数据维度 + Catalog 引用层（ADR-001 → ADR-011）
 
-piki 将工程设计拆为五个正交维度建模：
+piki 将工程设计拆为五个正交维度建模，Catalog 作为跨维度的引用层：
 
 | 维度                      | 格式                                    | 位置                               | 职责                                                      |
 | ------------------------- | --------------------------------------- | ---------------------------------- | --------------------------------------------------------- |
@@ -54,6 +55,7 @@ piki 将工程设计拆为五个正交维度建模：
 | **Connection**（ADR-005） | YAML Instance 文件                      | `instances/connections/`           | "Interface A 和 Interface B 如何连接？"                   |
 | **Mating**（ADR-006）     | YAML 文件                               | `mates/`                           | "两个实体怎样物理配合？"                                  |
 | **Context**（ADR-010）    | `context` 字段 + `piki.toml` [contexts] | `instances/contexts/{context_id}/` | 归属声明：本次工程 / 既有 / 保密 / 标段 / 概念 / 自然环境 |
+| **Catalog**（ADR-011）    | YAML 文件                               | `catalogs/`                        | 跨维度引用层：Model 的真实世界映射与服务工法前提        |
 
 ### 关键分离：Instance 与 Layout
 
@@ -193,7 +195,7 @@ Mate 的 `constrains` 在引擎加载时自动验证。
 - **`family` 字段**：Model YAML 中必填；Instance 可直接指定 `family` 或通过 `model` 推导
 - **Instance ID = 文件名**（如 `SRV-01.yaml` → `id: SRV-01`）
 - **解析后的值**：通过 `d.resolved.field_name` 访问——这是 Model+Instance+Layout 合并后的完整值
-- **目录名即语义**：`instances/`、`models/`、`rules/`、`generators/`、`mates/`、`modules/` 都是固定约定
+- **目录名即语义**：`instances/`、`models/`、`catalogs/`、`rules/`、`generators/`、`mates/`、`modules/` 都是固定约定
 
 ### TypeScript（Studio）
 
@@ -205,6 +207,7 @@ Mate 的 `constrains` 在引擎加载时自动验证。
 
 - Instance 文件：必须有 `id`。可选 `family` 或 `model` 推导 Family。
 - Model 文件：必须有 `model` 和 `family`。
+- Catalog 文件：必须有 `catalog_id` 和 `family`（`ComponentCatalogFamily` 或 `ServiceMethodCatalogFamily`）。
 - 嵌套命名空间（`physical.`、`power.`、`assets.`）在解析时被扁平化合并。
 - Interface 引用语法：`instance_id/interface_id`。
 
@@ -233,6 +236,7 @@ Mate 的 `constrains` 在引擎加载时自动验证。
 | `docs/reference/06-api.md`           | 完整 API 参考                          |
 | `docs/reference/07-cli.md`           | CLI 命令                               |
 | `docs/reference/01-configuration.md` | piki.toml 配置                         |
+| `docs/reference/08-catalog.md`       | Catalog 格式与来源优先级               |
 | `docs/adr/`                          | 架构决策记录（修改架构前先读相关 ADR） |
 | `docs/rfcs/`                         | 功能需求提案                           |
 | `studio/ARCHITECTURE.md`             | Studio（TypeScript）架构               |
