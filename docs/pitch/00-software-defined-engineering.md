@@ -264,7 +264,7 @@ SDE 不是要让 Agent 取代工程师。它的目标是：
 - [核心概念与快速上手](../concepts/01-core-concepts.md)
 - [Text-Native & Agent-Oriented](../concepts/04-text-native-and-agent-oriented.md)
 - [piki 的生态位](../concepts/05-ecosystem-positioning.md)
-- [硬件工程需要自己的 SWE-Bench](./01-hardware-engineering-needs-its-own-swe-bench.md)
+- [SWE-Bench for HWE](./01-swe-bench-for-hwe.md)
 - [ADR-001: 项目组织模型](../adr/001-project-organization.md)
 - [ADR-002: 插件架构](../adr/002-plugin-architecture.md)
 - [ADR-003: 多级质量检查](../adr/003-quality-checks-and-diagnostics.md)

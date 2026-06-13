@@ -132,7 +132,7 @@ SD-HWE-Bench 与代表性工作的差异化可概括如下：
 
 > **SD-HWE-Bench 不是「设计并通过仿真」，而是「用声明式文本正确表达工程意图并通过规则校验」。**
 
-这与 SWE-Bench「修改代码并通过测试」的范式更接近。详细论证见 [《硬件工程需要自己的 SWE-Bench》](../pitch/01-hardware-engineering-needs-its-own-swe-bench.md)。
+这与 SWE-Bench「修改代码并通过测试」的范式更接近。详细论证见 [SWE-Bench for HWE](../pitch/01-swe-bench-for-hwe.md)。
 
 ---
 
@@ -275,7 +275,7 @@ SD-HWE-Bench 与代表性工作的差异化可概括如下：
 ## 相关阅读
 
 - [软件定义工程（SDE）](../pitch/00-software-defined-engineering.md)
-- [硬件工程需要自己的 SWE-Bench](../pitch/01-hardware-engineering-needs-its-own-swe-bench.md)
+- [SWE-Bench for HWE](../pitch/01-swe-bench-for-hwe.md)
 - [工程领域 AI Benchmark 形态与缺口调研](./001-sd-hwe-bench-benchmark-survey.md)
 - [piki 的生态位](../concepts/05-ecosystem-positioning.md)
 - [ADR-003: 多级质量检查与统一诊断](../adr/003-quality-checks-and-diagnostics.md)
