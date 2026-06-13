@@ -11,8 +11,9 @@
 ### 🧐 评估 piki
 
 1. **[为什么需要 piki](concepts/00-why-piki.md)** — 从真实事故出发，理解问题与解决方案
-2. **[AI Readiness](concepts/03-advanced.md#ai-readiness)** — Text-Native + 开源 = AI 可插拔
-3. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
+2. **[软件定义工程（SDE）](pitch/00-software-defined-engineering.md)** — 大模型落地工业的必由之路
+3. **[AI Readiness](concepts/03-advanced.md#ai-readiness)** — Text-Native + 开源 = AI 可插拔
+4. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
 
 ### 🔧 使用 piki
 
@@ -21,7 +22,8 @@
 3. **[高级用法 & AI Readiness](concepts/03-advanced.md)** — CI/CD、Generator、AI 为何需要 Text-Native
 4. **[Text-Native & Agent-Oriented](concepts/04-text-native-and-agent-oriented.md)** — piki 的人机协同设计哲学
 5. **[piki 的生态位](concepts/05-ecosystem-positioning.md)** — 敌、友与中间力量
-6. **[示例项目](../samples/)** — 2 个精选示例：设备扩容 + 数据中心建设
+6. **[软件定义工程（SDE）](pitch/00-software-defined-engineering.md)** — piki 推动的工业设计范式变革
+7. **[示例项目](../samples/)** — 2 个精选示例：设备扩容 + 数据中心建设
 
 ### 🧩 扩展 piki
 
@@ -70,7 +72,7 @@
 ## 工具
 
 - **[Piki Studio](../studio/)** — 浏览器端 3D 预览 IDE，打开项目即看布局
-- **[SDE (Software Defined Engineering)](../Software%20Defined%20Engineering/)** — piki 遵循的规范框架
+- **[SDE (Software Defined Engineering)](pitch/00-software-defined-engineering.md)** — piki 推动的软件定义工程理念
 
 ## 参与贡献
 
