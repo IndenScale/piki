@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>piki — 文本原生声明式系统建模框架</title>
+  <meta name="description" content="piki 是面向工程设计的文本原生声明式系统建模框架（DSMF）。用 YAML 声明工程对象，用 Python 规则检查设计合理性，用 Git 管理设计演进。" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            piki: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              300: '#5eead4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+              950: '#042f2e',
+            }
+          },
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .gradient-text {
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 50%, rgba(20, 184, 166, 0.15) 0%, transparent 70%);
+    }
+    .code-window {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+    }
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex h-16 items-center justify-between">
+        <a href="#" class="flex items-center gap-2 text-xl font-bold text-white">
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-piki-500 text-white font-mono text-sm">π</span>
+          piki
+        </a>
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+          <a href="#features" class="hover:text-piki-400 transition-colors">能力</a>
+          <a href="#how-it-works" class="hover:text-piki-400 transition-colors">工作原理</a>
+          <a href="#compare" class="hover:text-piki-400 transition-colors">对比</a>
+          <a href="#quickstart" class="hover:text-piki-400 transition-colors">快速开始</a>
+          <a href="https://github.com/indenscale/piki" target="_blank" class="hover:text-piki-400 transition-colors">GitHub</a>
+        </div>
+        <a href="#quickstart" class="rounded-lg bg-piki-600 px-4 py-2 text-sm font-semibold text-white hover:bg-piki-500 transition-colors">
+          开始使用
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden pt-32 pb-24 lg:pt-40 lg:pb-32">
+    <div class="absolute inset-0 hero-glow pointer-events-none"></div>
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="reveal">
+          <div class="inline-flex items-center rounded-full border border-piki-500/30 bg-piki-500/10 px-3 py-1 text-sm font-medium text-piki-300 mb-6">
+            <span class="flex h-2 w-2 rounded-full bg-piki-400 mr-2"></span>
+            Text-Native DSMF
+          </div>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+            把工程设计<br />
+            <span class="gradient-text">写成可检查的规则</span>
+          </h1>
+          <p class="mt-6 text-lg text-slate-400 leading-relaxed max-w-xl">
+            piki 是面向工程设计的文本原生声明式系统建模框架。用 YAML 声明工程对象，用 Python 规则检查设计合理性，用 Git 管理设计演进。
+          </p>
+          <div class="mt-8 flex flex-wrap gap-4">
+            <a href="#quickstart" class="rounded-xl bg-piki-600 px-6 py-3 text-base font-semibold text-white hover:bg-piki-500 transition-colors shadow-lg shadow-piki-900/30">
+              5 分钟快速上手
+            </a>
+            <a href="https://github.com/indenscale/piki" target="_blank" class="rounded-xl border border-slate-700 bg-slate-900/50 px-6 py-3 text-base font-semibold text-slate-200 hover:border-piki-500/50 hover:text-white transition-colors">
+              GitHub 仓库
+            </a>
+          </div>
+          <div class="mt-8 flex items-center gap-6 text-sm text-slate-500">
+            <span class="flex items-center gap-2">
+              <svg class="h-5 w-5 text-piki-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              MIT 开源
+            </span>
+            <span class="flex items-center gap-2">
+              <svg class="h-5 w-5 text-piki-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+              Python 3.11+
+            </span>
+          </div>
+        </div>
+
+        <div class="reveal delay-100">
+          <div class="code-window rounded-2xl overflow-hidden border border-slate-700 bg-slate-900">
+            <div class="flex items-center gap-2 border-b border-slate-800 bg-slate-950 px-4 py-3">
+              <div class="h-3 w-3 rounded-full bg-red-500"></div>
+              <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+              <div class="h-3 w-3 rounded-full bg-green-500"></div>
+              <span class="ml-2 text-xs text-slate-500 font-mono">rules/power.py</span>
+            </div>
+            <div class="p-4 overflow-x-auto">
+              <pre class="font-mono text-sm leading-relaxed"><code><span class="text-purple-400">@rule</span>(<span class="text-green-400">"TELECOM-POWER-001"</span>, <span class="text-green-400">"PDU 功率预算检查"</span>)
+<span class="text-blue-400">def</span> <span class="text-yellow-300">check_pdu_budget</span>(ctx):
+    <span class="text-blue-400">for</span> pdu <span class="text-blue-400">in</span> ctx.query(<span class="text-green-400">"pdus"</span>):
+        devices = ctx.query(<span class="text-green-400">"devices"</span>, pdu_id=pdu.id)
+        load = <span class="text-yellow-300">sum</span>(d.resolved.tdp_w <span class="text-blue-400">for</span> d <span class="text-blue-400">in</span> devices)
+        ratio = load / pdu.resolved.capacity_w
+        <span class="text-blue-400">assert</span> ratio <= <span class="text-orange-400">0.8</span>, \
+            <span class="text-green-400">f"{pdu.id} 负载率 {ratio:.1%}，超过 80% 阈值"</span></code></pre>
+            </div>
+          </div>
+          <p class="mt-4 text-center text-sm text-slate-500">你不需要记住检查功率预算。<span class="text-piki-400 font-medium">规则会记住。</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Logos / Social proof -->
+  <section class="border-y border-slate-800/60 bg-slate-950/50 py-12">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <p class="text-center text-sm font-medium text-slate-500 mb-8">piki 是 SDE（Software Defined Engineering）规范的参考实现</p>
+      <div class="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60">
+        <span class="flex items-center gap-2 text-slate-400 font-mono"><svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.37.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.17 0 0 1-.32 3.3 1.23a11.5 11.5 0 016 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.65.24 2.87.12 3.17.77.84 1.24 1.91 1.24 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.82.58C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg> Git Native</span>
+        <span class="flex items-center gap-2 text-slate-400 font-mono"><svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05 1.07.13zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09-.33.22zM3.24 5.74l-.69.53-.56.64-.34.71-.15.75.02.78.19.74.38.69.59.59.71.45.82.28.91.14 1 .02.97-.1.89-.24.79-.36.67-.48.54-.59.4-.69.25-.78.1-.84-.02-.9-.14-.84-.27-.76-.41-.67-.55-.56-.69-.44-.83-.31-.95-.18-1.06-.05-1.16.08-1.15.21-1.04.35-.93.5-.79.66-.64.83-.47 1-.3 1.17-.13 1.34.03 1.49.19 1.64.36 1.77.54zm15.49 2.45l-.66.08-.76.17-.74.29-.65.41-.52.53-.38.64-.23.73-.09.8.04.85.19.79.35.7.51.58.67.44.82.28.95.14 1.07.02 1.07-.1.99-.24.89-.38.77-.51.64-.64.49-.75.34-.85.19-.93.06-1 .05-1.04-.1-1-.22-.94-.35-.86-.49-.76-.62-.65-.75-.52-.86-.38-.95-.25-1.03-.12-1.09.01-1.14.15-1.17.3-1.19.46-1.19.63-1.17.8-1.13.99-1.08 1.18-1.01 1.38-.92 1.59-.82 1.81-.7 2.04-.56 2.28-.41 2.53-.24 2.79-.06 3.06.14 3.34.36z"/></svg> Python 3.11+</span>
+        <span class="flex items-center gap-2 text-slate-400 font-mono"><svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg> YAML First</span>
+        <span class="flex items-center gap-2 text-slate-400 font-mono"><svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Rule Engine</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pain points -->
+  <section id="pain-points" class="py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center reveal">
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">工程设计为什么需要 piki？</h2>
+        <p class="mt-4 text-lg text-slate-400">传统工具把设计意图锁在图形界面和专有格式里，协作、验证和自动化都变得异常困难。</p>
+      </div>
+      <div class="mt-16 grid gap-8 md:grid-cols-3">
+        <div class="feature-card reveal rounded-2xl border border-slate-800 bg-slate-900/50 p-8 transition-all hover:border-piki-500/30 hover:bg-slate-900">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 text-red-400 mb-6">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          </div>
+          <h3 class="text-xl font-semibold text-white">规则靠人脑记</h3>
+          <p class="mt-3 text-slate-400">功率预算、线缆长度、安全间距……资深工程师的经验无法被系统执行，新人更容易出错。</p>
+        </div>
+        <div class="feature-card reveal rounded-2xl border border-slate-800 bg-slate-900/50 p-8 transition-all hover:border-piki-500/30 hover:bg-slate-900">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 mb-6">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+          </div>
+          <h3 class="text-xl font-semibold text-white">图纸难以 diff</h3>
+          <p class="mt-3 text-slate-400">二进制 CAD/BIM 文件让 Git 无能为力，版本回退、代码评审、分支合并都无从谈起。</p>
+        </div>
+        <div class="feature-card reveal rounded-2xl border border-slate-800 bg-slate-900/50 p-8 transition-all hover:border-piki-500/30 hover:bg-slate-900">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-400 mb-6">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+          <h3 class="text-xl font-semibold text-white">自动化成本高</h3>
+          <p class="mt-3 text-slate-400">想要 CI 自动检查设计？先要解析专有格式、适配复杂 API，大部分团队望而却步。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how-it-works" class="py-24 bg-slate-900/30 border-y border-slate-800/60">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center reveal">
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">piki 如何工作</h2>
+        <p class="mt-4 text-lg text-slate-400">三条命令，把你的设计变成可版本控制、可自动检查、可多人协作的代码。</p>
+      </div>
+      <div class="mt-16 grid gap-8 lg:grid-cols-3">
+        <div class="reveal relative rounded-2xl border border-slate-800 bg-slate-950 p-8">
+          <div class="absolute -top-4 -left-4 flex h-10 w-10 items-center justify-center rounded-full bg-piki-600 text-white font-bold">1</div>
+          <h3 class="text-xl font-semibold text-white mb-3">声明</h3>
+          <p class="text-slate-400 mb-4">用 YAML 描述设备、机柜、PDU、线缆等工程对象。结构清晰，LLM 可直接读写。</p>
+          <div class="rounded-lg bg-slate-900 p-4 font-mono text-xs text-slate-300 overflow-x-auto">
+            <pre>device:
+  id: srv-01
+  family: server
+  rack: rack-A
+  u_position: 3</pre>
+          </div>
+        </div>
+        <div class="reveal relative rounded-2xl border border-slate-800 bg-slate-950 p-8">
+          <div class="absolute -top-4 -left-4 flex h-10 w-10 items-center justify-center rounded-full bg-piki-600 text-white font-bold">2</div>
+          <h3 class="text-xl font-semibold text-white mb-3">检查</h3>
+          <p class="text-slate-400 mb-4">用 Python 函数表达业务规则。piki 在每次 commit 前自动运行检查，并输出精确诊断。</p>
+          <div class="rounded-lg bg-slate-900 p-4 font-mono text-xs text-slate-300 overflow-x-auto">
+            <pre>@rule("POWER-001", "PDU 功率预算")
+def check_pdu_budget(ctx):
+    ...</pre>
+          </div>
+        </div>
+        <div class="reveal relative rounded-2xl border border-slate-800 bg-slate-950 p-8">
+          <div class="absolute -top-4 -left-4 flex h-10 w-10 items-center justify-center rounded-full bg-piki-600 text-white font-bold">3</div>
+          <h3 class="text-xl font-semibold text-white mb-3">生成</h3>
+          <p class="text-slate-400 mb-4">从同一份 YAML 生成 BOM、功率预算、线缆清单、机柜面板图，甚至 3D 预览。</p>
+          <div class="rounded-lg bg-slate-900 p-4 font-mono text-xs text-slate-300 overflow-x-auto">
+            <pre>piki generate bom-csv
+piki generate power-budget
+piki generate rack-face-panel</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center reveal">
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">能力矩阵</h2>
+        <p class="mt-4 text-lg text-slate-400">从 Schema 校验到 3D 碰撞检测，piki 覆盖了工程设计验证的全链路。</p>
+      </div>
+      <div class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">Schema 校验</h4>
+          <p class="mt-1 text-sm text-slate-400">字段类型、范围、必填项自动检查</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">外键完整性</h4>
+          <p class="mt-1 text-sm text-slate-400">引用对象必须存在，错误精确到行</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">规则引擎</h4>
+          <p class="mt-1 text-sm text-slate-400">@rule 装饰器注册任意业务规则</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">Instance/Layout 分离</h4>
+          <p class="mt-1 text-sm text-slate-400">身份与部署决策独立管理</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">Tag 过滤</h4>
+          <p class="mt-1 text-sm text-slate-400">按专业、安全分区、系统维度筛选</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">嵌套项目</h4>
+          <p class="mt-1 text-sm text-slate-400">FQID 全限定引用，跨项目引用</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">报告生成</h4>
+          <p class="mt-1 text-sm text-slate-400">human / json / junit / markdown</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">BOM CSV 导出</h4>
+          <p class="mt-1 text-sm text-slate-400">设备清单一键导出</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">机柜面板图</h4>
+          <p class="mt-1 text-sm text-slate-400">U 位占用可视化</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">功率预算汇总</h4>
+          <p class="mt-1 text-sm text-slate-400">PDU / 机柜 / 各相功率明细</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">线缆清单</h4>
+          <p class="mt-1 text-sm text-slate-400">光纤跳线 + 光模块清单</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">AABB 碰撞检测</h4>
+          <p class="mt-1 text-sm text-slate-400">同一机柜内 3D 空间冲突检测</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">Piki Studio</h4>
+          <p class="mt-1 text-sm text-slate-400">浏览器端 3D 预览 IDE</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.131A8 8 0 008 3.239c-5.34 2.266-9.174 7.472-9.174 13.761" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">Git 集成</h4>
+          <p class="mt-1 text-sm text-slate-400">pre-commit hook + CI/CD 原生</p>
+        </div>
+        <div class="feature-card reveal rounded-xl border border-slate-800 bg-slate-900/50 p-6 transition-all hover:border-piki-500/30">
+          <div class="text-piki-400 mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+          </div>
+          <h4 class="font-semibold text-white">LSP 诊断格式</h4>
+          <p class="mt-1 text-sm text-slate-400">IDE 可直接消费检查结果</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Compare -->
+  <section id="compare" class="py-24 bg-slate-900/30 border-y border-slate-800/60">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center reveal">
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">文本为什么优于图纸</h2>
+        <p class="mt-4 text-lg text-slate-400">预览是只读的。修改设计？改 YAML，重新生成。</p>
+      </div>
+      <div class="mt-16 overflow-hidden rounded-2xl border border-slate-800 reveal">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-950 text-slate-300">
+            <tr>
+              <th class="px-6 py-4 font-semibold">能力</th>
+              <th class="px-6 py-4 font-semibold text-piki-400">piki（声明式 YAML）</th>
+              <th class="px-6 py-4 font-semibold text-slate-400">图形 CAD / BIM</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 bg-slate-900/30">
+            <tr><td class="px-6 py-4 text-slate-300">设计意图</td><td class="px-6 py-4 text-slate-200">声明"要什么"，系统推导"怎么做"</td><td class="px-6 py-4 text-slate-500">手动操作每个点、线、面</td></tr>
+            <tr><td class="px-6 py-4 text-slate-300">版本控制</td><td class="px-6 py-4 text-slate-200 font-medium"><span class="text-piki-400">git diff</span> 精确到字段</td><td class="px-6 py-4 text-slate-500">二进制文件，diff 无意义</td></tr>
+            <tr><td class="px-6 py-4 text-slate-300">代码评审</td><td class="px-6 py-4 text-slate-200">像审代码一样审设计</td><td class="px-6 py-4 text-slate-500">截图标注，效率低</td></tr>
+            <tr><td class="px-6 py-4 text-slate-300">自动化检查</td><td class="px-6 py-4 text-slate-200">Python 规则直接读取</td><td class="px-6 py-4 text-slate-500">需解析专有格式</td></tr>
+            <tr><td class="px-6 py-4 text-slate-300">批量修改</td><td class="px-6 py-4 text-slate-200">sed / Python 脚本</td><td class="px-6 py-4 text-slate-500">手动逐个点选</td></tr>
+            <tr><td class="px-6 py-4 text-slate-300">CI/CD 集成</td><td class="px-6 py-4 text-slate-200">原生支持</td><td class="px-6 py-4 text-slate-500">需额外导出步骤</td></tr>
+            <tr><td class="px-6 py-4 text-slate-300">多人协作</td><td class="px-6 py-4 text-slate-200">Git 分支合并</td><td class="px-6 py-4 text-slate-500">文件锁定或冲突</td></tr>
+            <tr><td class="px-6 py-4 text-slate-300">AI 参与</td><td class="px-6 py-4 text-slate-200">YAML 是 LLM 原生格式</td><td class="px-6 py-4 text-slate-500">需 OCR / 视觉模型猜测</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quickstart -->
+  <section id="quickstart" class="py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center reveal">
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">快速开始</h2>
+        <p class="mt-4 text-lg text-slate-400">三条命令，跑通你的第一个 piki 项目。</p>
+      </div>
+      <div class="mt-16 max-w-3xl mx-auto reveal">
+        <div class="code-window rounded-2xl overflow-hidden border border-slate-700 bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-800 bg-slate-950 px-4 py-3">
+            <div class="h-3 w-3 rounded-full bg-red-500"></div>
+            <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+            <div class="h-3 w-3 rounded-full bg-green-500"></div>
+            <span class="ml-2 text-xs text-slate-500 font-mono">terminal</span>
+          </div>
+          <div class="p-6 overflow-x-auto">
+            <pre class="font-mono text-sm leading-loose"><code><span class="text-slate-500"># 安装 piki（Python 3.11+）</span>
+<span class="text-piki-400">pip install piki</span>
+
+<span class="text-slate-500"># 初始化项目，选择行业插件</span>
+<span class="text-piki-400">piki init --plugin telecom</span>
+
+<span class="text-slate-500"># 运行设计检查</span>
+<span class="text-piki-400">piki check</span>
+
+<span class="text-slate-500"># 生成 Markdown 报告</span>
+<span class="text-piki-400">piki report --format markdown</span>
+
+<span class="text-slate-500"># 导出 BOM 清单</span>
+<span class="text-piki-400">piki generate bom-csv</span></code></pre>
+          </div>
+        </div>
+        <div class="mt-8 text-center">
+          <a href="https://github.com/indenscale/piki/tree/main/samples" target="_blank" class="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900/50 px-6 py-3 text-base font-semibold text-slate-200 hover:border-piki-500/50 hover:text-white transition-colors">
+            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.37.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.17 0 0 1-.32 3.3 1.23a11.5 11.5 0 016 0c2.28-1.55 3.29-1.23 3.29-1.23.66 1.65.24 2.87.12 3.17.77.84 1.24 1.91 1.24 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.82.58C20.56 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            查看 6 个示例项目
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24 bg-piki-950/30 border-t border-slate-800/60">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center reveal">
+      <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">让规则记住设计</h2>
+      <p class="mt-4 text-lg text-slate-400">加入 piki 社区，一起把工程设计从图纸时代推进到代码时代。</p>
+      <div class="mt-10 flex flex-wrap justify-center gap-4">
+        <a href="https://github.com/indenscale/piki" target="_blank" class="rounded-xl bg-piki-600 px-8 py-4 text-base font-semibold text-white hover:bg-piki-500 transition-colors shadow-lg shadow-piki-900/30">
+          Star on GitHub
+        </a>
+        <a href="https://github.com/indenscale/piki/blob/main/CONTRIBUTING.md" target="_blank" class="rounded-xl border border-slate-700 bg-slate-900/50 px-8 py-4 text-base font-semibold text-slate-200 hover:border-piki-500/50 hover:text-white transition-colors">
+          参与贡献
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/60 bg-slate-950 py-12">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="flex items-center gap-2 text-lg font-bold text-white">
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-piki-500 text-white font-mono text-sm">π</span>
+          piki
+        </div>
+        <div class="flex flex-wrap justify-center gap-8 text-sm text-slate-400">
+          <a href="https://github.com/indenscale/piki" target="_blank" class="hover:text-piki-400 transition-colors">GitHub</a>
+          <a href="https://github.com/indenscale/piki/tree/main/docs" target="_blank" class="hover:text-piki-400 transition-colors">文档</a>
+          <a href="https://github.com/indenscale/piki/issues" target="_blank" class="hover:text-piki-400 transition-colors">Issues</a>
+          <a href="https://github.com/indenscale/piki/blob/main/CHANGELOG.md" target="_blank" class="hover:text-piki-400 transition-colors">更新日志</a>
+        </div>
+        <p class="text-sm text-slate-500">© 2026 piki. Released under MIT License.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal animation
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

@@ -50,7 +50,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/indenscale/piki"
+Homepage = "https://indenscale.github.io/piki/"
 Documentation = "https://github.com/indenscale/piki/tree/main/docs"
 Repository = "https://github.com/indenscale/piki.git"
 Issues = "https://github.com/indenscale/piki/issues"

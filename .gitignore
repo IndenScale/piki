@@ -8,3 +8,4 @@ reports/
 studio/node_modules/
 studio/dist/
 samples/**/dist/
+.DS_Store

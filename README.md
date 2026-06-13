@@ -2,6 +2,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Landing Page](https://img.shields.io/badge/landing%20page-piki.teal-0d9488)](https://indenscale.github.io/piki/)
 
 > **piki 是一个面向工程设计的文本原生声明式系统建模框架（DSMF）。**
 >
