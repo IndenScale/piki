@@ -1,9 +1,9 @@
 # Initiative-001: SD-HWE-Bench —— 软件定义工程的能力竞技场
 
-> 状态：**倡议 / 讨论中**  
-> 日期：2026-06-13  
-> 作者：piki 核心团队与社区  
-> 相关文档：[软件定义工程（SDE）](../pitch/00-software-defined-engineering.md)、[ADR-003: 多级质量检查](../adr/003-quality-checks-and-diagnostics.md)、[piki 的生态位](../concepts/05-ecosystem-positioning.md)
+- **状态：** 倡议 / 讨论中
+- **日期：** 2026-06-13
+- **作者：** piki 核心团队与社区
+- **相关文档：** [软件定义工程（SDE）](../pitch/00-software-defined-engineering.md)、[ADR-003: 多级质量检查](../adr/003-quality-checks-and-diagnostics.md)、[piki 的生态位](../concepts/05-ecosystem-positioning.md)
 
 ---
 
@@ -114,20 +114,25 @@ SD-HWE-Bench 测的是**声明式工程设计能力**，核心任务是：
 
 ## 5. 与现有 benchmark 的差异化
 
-近期已有 EngDesign、VerilogEval、RTLLM、AMSbench 等工作。SD-HWE-Bench 的差异化切口是：
+近期已有大量工程 AI benchmark 涌现。它们在测量对象上可分为多个层级：知识问答（如 TeleQnA）、文档理解（如 AECV-Bench）、文档协调 Agent（如 AEC-Bench）、代码/网表生成（如 VerilogEval、ChipBench）、约束生成与优化（如 EngDesign、Frontier-Eng），以及最接近 SD-HWE 范式的结构化设计意图 + 规则校验（如 AMS-IO-Bench）。更完整的梳理见 [《工程领域 AI Benchmark 形态与缺口调研》](./001-sd-hwe-bench-benchmark-survey.md)。
+
+SD-HWE-Bench 与代表性工作的差异化可概括如下：
 
 | 现有工作 | 侧重点 | SD-HWE-Bench 的差异 |
 |---|---|---|
+| **AEC-Bench / AECV-Bench** | 图纸审阅、交叉引用、文档协调 | 我们不测「读图找错」，而测「生成可被制造安装的设计声明」 |
 | **EngDesign** | 跨领域工程设计 + 仿真验证 | 我们更聚焦「声明式建模 + 规则校验 + 工程交付」的完整工作流 |
-| **VerilogEval / RTLLM** | 数字电路 RTL 生成 | 我们不局限在芯片，而是覆盖更广泛的实体工程系统 |
+| **Frontier-Eng** | 固定预算下的生成式优化 | 我们不只优化已有 artifacts，而从需求生成完整设计声明 |
+| **VerilogEval / RTLLM / ChipBench** | 数字电路 RTL 生成 | 我们不局限在芯片，而是覆盖更广泛的实体工程系统 |
 | **AMSbench / PICBench** | 模拟/光子集成电路 | 我们不深入晶体管级，而是关注系统级工程意图表达 |
+| **AMS-IO-Bench** | AMS I/O ring 结构化设计 + DRC/LVS | 我们受其启发，但追求跨领域统一声明式语言与分层规则引擎 |
 | **EngiAI / EngiBench** | 多 Agent 工具调用 + 拓扑优化 | 我们更强调「文本真相源 + 规则驱动」的范式 |
 
 核心定位：
 
 > **SD-HWE-Bench 不是「设计并通过仿真」，而是「用声明式文本正确表达工程意图并通过规则校验」。**
 
-这与 SWE-Bench「修改代码并通过测试」的范式更接近。
+这与 SWE-Bench「修改代码并通过测试」的范式更接近。详细论证见 [《硬件工程需要自己的 SWE-Bench》](../pitch/01-hardware-engineering-needs-its-own-swe-bench.md)。
 
 ---
 
@@ -270,6 +275,8 @@ SD-HWE-Bench 测的是**声明式工程设计能力**，核心任务是：
 ## 相关阅读
 
 - [软件定义工程（SDE）](../pitch/00-software-defined-engineering.md)
+- [硬件工程需要自己的 SWE-Bench](../pitch/01-hardware-engineering-needs-its-own-swe-bench.md)
+- [工程领域 AI Benchmark 形态与缺口调研](./001-sd-hwe-bench-benchmark-survey.md)
 - [piki 的生态位](../concepts/05-ecosystem-positioning.md)
 - [ADR-003: 多级质量检查与统一诊断](../adr/003-quality-checks-and-diagnostics.md)
 - [ADR-001: 项目组织模型](../adr/001-project-organization.md)
