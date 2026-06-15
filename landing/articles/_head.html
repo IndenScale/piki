@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TITLE — piki</title>
+  <meta name="description" content="DESC" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            piki: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a', 950: '#042f2e' }
+          },
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .gradient-text {
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .prose { color: #e2e8f0; line-height: 1.85; }
+    .prose h1 { font-size: 2.25rem; font-weight: 800; color: #fff; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.02em; }
+    .prose h2 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin-top: 2.5rem; margin-bottom: 0.75rem; border-left: 4px solid #0d9488; padding-left: 1rem; }
+    .prose h3 { font-size: 1.2rem; font-weight: 600; color: #e2e8f0; margin-top: 2rem; margin-bottom: 0.5rem; }
+    .prose p { margin-bottom: 1.25rem; }
+    .prose blockquote { border-left: 3px solid #0d9488; padding: 0.75rem 1.25rem; margin: 1.5rem 0; background: rgba(13,148,136,0.06); border-radius: 0 0.5rem 0.5rem 0; color: #94a3b8; font-style: italic; }
+    .prose strong { color: #fff; }
+    .prose code { background: rgba(30,41,59,0.8); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; color: #5eead4; }
+    .prose pre { background: #0f172a; padding: 1.25rem; border-radius: 0.75rem; overflow-x: auto; margin: 1.25rem 0; border: 1px solid #1e293b; }
+    .prose pre code { background: none; padding: 0; color: #e2e8f0; font-size: 0.85rem; line-height: 1.7; }
+    .prose table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+    .prose th { background: #1e293b; color: #5eead4; padding: 0.75rem 1rem; text-align: left; font-weight: 600; border-bottom: 2px solid #0d9488; }
+    .prose td { padding: 0.6rem 1rem; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    .prose ul, .prose ol { margin-bottom: 1.25rem; padding-left: 1.5rem; color: #cbd5e1; }
+    .prose li { margin-bottom: 0.4rem; }
+    .prose hr { border: none; border-top: 1px solid #1e293b; margin: 2rem 0; }
+    .prose a { color: #2dd4bf; text-decoration: none; }
+    .prose a:hover { text-decoration: underline; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem; transition: color 0.2s; }
+    .back-link:hover { color: #2dd4bf; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-lg font-bold text-white">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-piki-500 text-white font-mono text-sm">π</span>
+        piki
+      </a>
+      <a href="/" class="text-sm text-slate-400 hover:text-piki-400 transition-colors">← 返回首页</a>
+    </div>
+  </nav>
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16">
+    <article class="prose">

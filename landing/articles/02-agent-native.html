@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Native 工业软件：为 Agent 时代重新设计底层 — piki</title>
+  <meta name="description" content="ANIS 的五项原则：声明式、CLI 优先、开放数据格式、Git/CICD、开源知识网络。" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            piki: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a', 950: '#042f2e' }
+          },
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .gradient-text {
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .prose { color: #e2e8f0; line-height: 1.85; }
+    .prose h1 { font-size: 2.25rem; font-weight: 800; color: #fff; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.02em; }
+    .prose h2 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin-top: 2.5rem; margin-bottom: 0.75rem; border-left: 4px solid #0d9488; padding-left: 1rem; }
+    .prose h3 { font-size: 1.2rem; font-weight: 600; color: #e2e8f0; margin-top: 2rem; margin-bottom: 0.5rem; }
+    .prose p { margin-bottom: 1.25rem; }
+    .prose blockquote { border-left: 3px solid #0d9488; padding: 0.75rem 1.25rem; margin: 1.5rem 0; background: rgba(13,148,136,0.06); border-radius: 0 0.5rem 0.5rem 0; color: #94a3b8; font-style: italic; }
+    .prose strong { color: #fff; }
+    .prose code { background: rgba(30,41,59,0.8); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; color: #5eead4; }
+    .prose pre { background: #0f172a; padding: 1.25rem; border-radius: 0.75rem; overflow-x: auto; margin: 1.25rem 0; border: 1px solid #1e293b; }
+    .prose pre code { background: none; padding: 0; color: #e2e8f0; font-size: 0.85rem; line-height: 1.7; }
+    .prose table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+    .prose th { background: #1e293b; color: #5eead4; padding: 0.75rem 1rem; text-align: left; font-weight: 600; border-bottom: 2px solid #0d9488; }
+    .prose td { padding: 0.6rem 1rem; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    .prose ul, .prose ol { margin-bottom: 1.25rem; padding-left: 1.5rem; color: #cbd5e1; }
+    .prose li { margin-bottom: 0.4rem; }
+    .prose hr { border: none; border-top: 1px solid #1e293b; margin: 2rem 0; }
+    .prose a { color: #2dd4bf; text-decoration: none; }
+    .prose a:hover { text-decoration: underline; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem; transition: color 0.2s; }
+    .back-link:hover { color: #2dd4bf; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-lg font-bold text-white">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-piki-500 text-white font-mono text-sm">π</span>
+        piki
+      </a>
+      <a href="/" class="text-sm text-slate-400 hover:text-piki-400 transition-colors">← 返回首页</a>
+    </div>
+  </nav>
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16">
+    <article class="prose">
+<h1>Agent Native 工业软件：为 Agent 时代重新设计底层</h1>
+
+<blockquote><p>传统工业软件给了人类最好的设计工具。但它们解决的是"人怎么画得更快"，不是"知识怎么被保存、被流通、被继承"。Agent Native Industry Software（ANIS）要回答一个新问题：如果设计的主体从"人"变成了"Agent + 人"，工业软件的底层应该如何重构？</p></blockquote>
+
+<hr>
+
+<h2>一、两种历史的分野</h2>
+
+<p>工业软件行业过去三十年主要解决的是<strong>工具问题</strong>：</p>
+
+<ul>
+<li>CAD 让几何建模更快</li>
+<li>CAE 让仿真更精确</li>
+<li>PLM 让数据管理更系统</li>
+<li>EDA 让芯片设计更自动化</li>
+</ul>
+
+<p>这些工具极大地提升了单点效率，但它们默认用户是"有经验的人类工程师"。工具本身不保存经验，也不流通经验。一个接插件在高原低温下失效的教训，不会自动变成下一个设计工具里的约束。</p>
+
+<p>开源软件行业则主要解决的是<strong>知识流通问题</strong>：</p>
+
+<ul>
+<li>一个 bug 被发现 → 有人提交 issue → 社区定位根因 → 有人写 patch → patch 被 review 后合并到上游 → 所有下游用户自动获得修复</li>
+</ul>
+
+<p>在开源软件里，<strong>一次失败可以立即成为全球公共品</strong>。但在工业软件里，一次失败往往只成为一个项目的内部教训。</p>
+
+<table>
+<tr>
+<th></th>
+<th>传统工业软件</th>
+<th>开源软件</th>
+</tr>
+<tr>
+<td>核心资产</td>
+<td>许可证 + 专有文件格式</td>
+<td>源代码 + 社区知识</td>
+</tr>
+<tr>
+<td>失败处理方式</td>
+<td>项目内归零、整改、归档</td>
+<td>issue → PR → 上游 → 生态</td>
+</tr>
+<tr>
+<td>知识保存</td>
+<td>文档、经验、标准</td>
+<td>可执行代码、测试、约束</td>
+</tr>
+<tr>
+<td>知识流通</td>
+<td>人际传递、会议、培训</td>
+<td>git diff、PR review、版本升级</td>
+</tr>
+<tr>
+<th>更新方式</th>
+<th>等厂商发版</th>
+<th>社区持续迭代</th>
+</tr>
+</table>
+
+<p>工业软件需要向开源软件学习的，不是"把软件开源"，而是<strong>把 know-how 变成可流通、可验证、可继承的数字资产</strong>。</p>
+
+<hr>
+
+<h2>二、知识再生产问题</h2>
+
+<p>一个老工程师退休时，他带走的不是代码，而是那些从未被写下来的判断。一次型号归零后，整改报告被锁进柜子，下一个型号从零开始重新学习。工具越来越强大，知识却越来越封闭。</p>
+
+<p>这就是<strong>知识再生产问题</strong>——不是效率问题，而是每次都要从零开始重新发现已知的教训。</p>
+
+<p>传统工业界并非不重视知识管理。归零、复盘、FMEA、设计准则、企业标准——这些机制都在试图保存 know-how。但闭环在几个关键环节断裂：</p>
+
+<p><strong>1. 从"整改"到"约束"的距离太远</strong></p>
+
+<p>归零报告通常描述的是："某型接插件在振动环境下松脱，建议改用带锁扣结构。"这是一种<strong>建议</strong>，不是<strong>可执行约束</strong>。下一个设计师读到这份报告时需要自行判断：我的设计是否属于"振动环境"？我的接插件是否有锁扣？</p>
+
+<p>如果这份知识被写成可被引擎自动检查的约束，下次设计时加载就会直接报错，而不是等试验后才发现。</p>
+
+<p><strong>2. 知识被锁定在人和文档里</strong></p>
+
+<p>文档和经验的最大问题是：<strong>它们不能被机器直接执行</strong>。一个老工程师知道"这个位置的电缆要留 20mm 余量"，但这种知识无法被 CAD 自动检查，无法被 Agent 读取，也无法跨项目自动继承。</p>
+
+<p><strong>3. 跨组织流通成本极高</strong></p>
+
+<p>即使企业内部有知识库，供应商、合作伙伴、学术界通常无法访问。知识的流通被组织边界、文件格式和人际关系层层阻断。</p>
+
+<p><strong>4. 传统商业软件的流通速度太慢</strong></p>
+
+<p>传统工业软件厂商的更新周期以年计。即使一个行业标准更新了，最新约束进入工具也需要等下一个大版本——中间可能跨越数个型号周期。</p>
+
+<hr>
+
+<h2>三、Agent Native 的五项原则</h2>
+
+<p>ANIS 不是"给旧工业软件加 API 包装层"。那是在"盲人指挥健全人"的模型上打补丁，有致命缺陷：语义层仍然是 GUI、验证代价昂贵、不可组合、不可版本化。</p>
+
+<p>ANIS 是从底层重新设计工业软件，使其原生可被 Agent 操作。五项原则：</p>
+
+<h3>1. 声明式（Declarative）</h3>
+
+<p>不再用点击和拖拽来"操作"设计，而是用声明式语言描述"什么东西存在、放在哪里、怎么连接"。Agent 不需要模拟鼠标，它只需要读写文本。</p>
+
+<h3>2. CLI 优先（CLI-First）</h3>
+
+<p>图形界面是给人类用的消费层。对 Agent 而言，所有操作——检查设计、运行规则、生成报告——必须通过命令行接口完成。GUI 只用于人类查看和审查，不用于 Agent 操作。</p>
+
+<h3>3. 开放数据格式（Open Data Format）</h3>
+
+<p>工程数据必须能被标准工具链直接消费：文本编辑器、grep、diff、git、CI 系统。专有二进制格式是 Agent 时代的负债——它们把数据锁在只有特定软件才能打开的"黑箱"里。纯文本（如 YAML）作为唯一真相源，所有衍生格式（BOM CSV、3D 场景、面板 SVG）都是生成产物，不承载设计意图。</p>
+
+<h3>4. Git Workflow 与 CI/CD 友好</h3>
+
+<p>设计方案比选 = Git 分支。设计审查 = Pull Request + diff review。质量控制 = CI pipeline 中的自动规则检查。知识继承 = 从历史 commit 中学习规则和模式。</p>
+
+<p>关键架构决策：设备的<strong>身份定义</strong>（Instance）和<strong>空间布局</strong>（Layout）必须存在独立文件中。这意味着修改布局不影响设备定义，方案比选不用复制文件，合并冲突可以通过标准 git 工具解决。</p>
+
+<h3>5. 开放源代码并形成知识流动网络</h3>
+
+<p>开源不只是许可证的选择，它定义了知识的流通方式。一次工程失效 → 定位根因 → 写成可执行约束 → 提交到上游 → 所有下游项目自动获得约束。一个失效，整个行业更强。</p>
+
+<p>四层知识流通模型：L1 可执行约束 → L2 领域规则包（跨企业共享基础约束）→ L3 开放学术/企业规则库 → L4 全球规则市场（像 npm 一样分发领域约束）。</p>
+
+<hr>
+
+<h2>四、ANIS 与现有工业软件的关系</h2>
+
+<p>ANIS 不取代 CAD、CAE 或 PLM。它在它们之上建立一层<strong>设计意图与 know-how 的流通基础设施</strong>：</p>
+
+<ul>
+<li><strong>CAD/BIM</strong> → 下游渲染器和可视化工具。ANIS 输出开放场景格式供它们消费，但设计意图的真相源永远是文本。</li>
+<li><strong>CAE/仿真</strong> → 互补盟友。ANIS 在仿真前就捕获低层错误（功率超限、接口不匹配、空间碰撞），让每一次仿真都更有价值。</li>
+</ul>
+
+<p>#### 物理非线性：规则引擎的边界</p>
+
+<p>一个合理的质疑是：物理世界是非线性的。一个机柜的散热不仅取决于 TDP 的线性相加，还涉及流体力学中的涡流、风道阻塞和局部热岛效应。将高维物理规律降维成秒级响应的结构化规则，必然会丢失非线性信息。</p>
+
+<p>这不是 ANIS 的缺陷，这是<strong>分层验证策略</strong>的必然设计。</p>
+
+<p>大多数工程设计不追求极限性能——经验公式加安全冗余足以覆盖。功率预算用 80% 阈值、U 位容量用线性累积、接口兼容性用矩阵匹配。这些规则不是物理仿真，但它们能在毫秒级捕获 90% 的常见错误，避免将昂贵的仿真时间浪费在"功率超了""接口插错了""空间装不下"这种低级问题上。</p>
+
+<p>当工程确实需要突破极限时——比如追求极致的功率密度或最小化安全冗余——ANIS 提供明确的逃逸路径：mute 保守约束规则，提升阈值，然后用 FEM 仿真或 HITP（硬件在环测试）兜底。规则引擎不是牢笼，它是一组<strong>可审计、可调整、可按场景覆盖</strong>的默认安全边界。</p>
+
+<p>规则引擎和仿真不是二选一，是分工：规则引擎让大多数设计在毫秒级安全通过，仿真为少数极限设计提供高精度验证。</p>
+
+<ul>
+<li><strong>PLM/ERP</strong> → 生命周期伙伴。ANIS 拥有设计阶段，通过标准接口同步 BOM 和资产信息到下游系统。</li>
+<li><strong>厂商/供应商</strong> → 天然盟友。他们的型号数据可以直接变成结构化声明，被 Agent 直接引用。</li>
+</ul>
+
+<p>ANIS 的核心边界：<strong>只拥有设计意图层和规则验证层，不碰渲染、不碰求解器、不碰流程管理。</strong></p>
+
+
+<hr>
+
+<h2>五、SysML v2 vs ANIS：不同的心智模型</h2>
+
+<p>SysML v2 是传统工业建模思想的顶峰——它问"如何在一个统一模型中精确描述系统"。ANIS 问的是另一个问题："如何用可版本化的文本声明设计意图，并让机器在加载瞬间就发现问题。"</p>
+
+<p>这不是功能清单的对比，而是认识论的差异：</p>
+
+<table>
+<tr>
+<th>维度</th>
+<th>SysML v2</th>
+<th>ANIS</th>
+</tr>
+<tr>
+<td>真相源</td>
+<td>模型（model file/repository）</td>
+<td>文本文件</td>
+</tr>
+<tr>
+<td>版本控制对象</td>
+<td>模型版本</td>
+<td>Git 中的文件行级历史</td>
+</tr>
+<tr>
+<td>空间与身份</td>
+<td>混合在 part/occurrence 中</td>
+<td>身份与布局文件级分离</td>
+</tr>
+<tr>
+<td>部件间关系</td>
+<td>connection/interface/bind</td>
+<td>连接（流动通道）与配合（耦合约束）双概念</td>
+</tr>
+<tr>
+<th>主要使用者</th>
+<th>系统工程师/MBSE 专家</th>
+<th>Agent + 工程师协同</th>
+</tr>
+</table>
+
+<p>关键差异在于：<strong>SysML v2 相信"模型可以一次性把握系统"；ANIS 相信设计知识是逐步成熟的</strong>——从现场失败中发现约束，沉淀为规则自动检查，最终提升为加载时自动校验的结构化声明。这是一个演化过程，不是一次建模动作。</p>
+
+<p>SysML v2 适合需要完整系统模型的场景（航空航天、防务）；ANIS 适合需要快速比选、Git 协作、Agent 自动化的实体工程（数据中心、电信、暖通、制造）。</p>
+
+<hr>
+
+<h2>六、现状：第一个参考实现</h2>
+
+<p>ANIS 理念已经有了第一个可运行的参考实现——<a href="https://github.com/indenscale/piki">piki</a>。它完整落地了五项原则：声明式 YAML 作为唯一真相源，三个正交子语言（部件定义、布局、配合）处理工程设计的全部维度，L0-L6 七层规则引擎提供秒级验证，CLI 五命令体系覆盖完整设计循环，Git 预提交钩子和 CI 模板开箱即用。</p>
+
+<p>当前版本 v0.1.0 Alpha，telecom 和 datacenter 两个行业插件可用。</p>
+
+<hr>
+
+<h2>七、结语</h2>
+
+<p>传统工业软件解决的是"如何让工程师画得更快"。ANIS 解决的是一个更根本的问题：<strong>在 Agent 时代，如何让工程设计知识像代码一样被保存、被流通、被继承。</strong></p>
+
+<p>Agent Native Industry Software 的每一个词都是对旧范式的否定：</p>
+
+<ul>
+<li><strong>Agent</strong> —— 操作者不只有人类</li>
+<li><strong>Native</strong> —— 不是事后加 API，而是从底层重构</li>
+<li><strong>Industry</strong> —— 不是通用工具，是面向工程的专业基础设施</li>
+<li><strong>Software</strong> —— 不是文件格式或云服务，是可运行、可执行的设计系统</li>
+</ul>
+
+<p>这就是 ANIS 的使命：不是做出"又一个更好的工业软件"，而是定义 Agent 时代工业基础设施的底层协议。</p>
+
+<hr>
+
+<h2>继续阅读</h2>
+
+<ul>
+<li><a href="01-why-sde.md">软件定义工程（SDE）：大模型落地工业的必由之路</a></li>
+<li><a href="03-aql.md">AQL：工程设计的查询语言</a></li>
+<li><a href="04-engineering-rlvr.md">Engineering RLVR：可验证奖励如何驱动工程 AI</a></li>
+</ul>
+    </article>
+  </main>
+  <footer class="border-t border-slate-800/60 py-8 mt-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center text-sm text-slate-500">
+      © 2026 piki. Released under MIT License.
+    </div>
+  </footer>
+</body>
+</html>
