@@ -377,8 +377,8 @@ class TestCheckerIntegration:
 
         report = checker.run(telecom_ctx)
         assert report.passed is True
-        # 10 个内置 L2 检查（含 CATALOG-001/002）+ 2 个 telecom 规则
-        assert report.pass_count == 12
+        # 2 个插件类型相关的内置检查 + 2 个 telecom 规则
+        assert report.pass_count == 4
         assert report.error_count == 0
 
     def test_checker_reports_failure(self, telecom_ctx: Context, tmp_path: Path) -> None:
@@ -397,7 +397,8 @@ class TestCheckerIntegration:
         report = checker.run(telecom_ctx)
         assert report.passed is False
         assert report.error_count == 1
-        assert report.pass_count == 11
+        # 2 个内置检查 + 1 个通过规则（PDU）
+        assert report.pass_count == 3
         rack_result = next((r for r in report.results if r.rule_id == "TELECOM-RACK-001"), None)
         assert rack_result is not None
         assert "U10-U11 冲突" in rack_result.message

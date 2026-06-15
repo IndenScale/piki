@@ -229,13 +229,13 @@ class TestEffectiveInterfaceType:
     """effective_interface_type 辅助函数测试。"""
 
     def test_no_active_type_fallback(self) -> None:
-        from piki.core.models.interface import InterfaceSpec, effective_interface_type
+        from adl.models.interface import InterfaceSpec, effective_interface_type
 
         spec = InterfaceSpec(id="eth0", interface_type="SFP28")
         assert effective_interface_type(spec) == "SFP28"
 
     def test_active_type_takes_precedence(self) -> None:
-        from piki.core.models.interface import InterfaceSpec, effective_interface_type
+        from adl.models.interface import InterfaceSpec, effective_interface_type
 
         spec = InterfaceSpec(id="eth0", interface_type="COMBO-SFP-RJ45", active_type="RJ45")
         assert effective_interface_type(spec) == "RJ45"
@@ -245,7 +245,7 @@ class TestInterfaceSpecValidator:
     """InterfaceSpec field_validator 测试 (RFC-001)."""
 
     def test_known_type_no_warning(self) -> None:
-        from piki.core.models.interface import InterfaceSpec
+        from adl.models.interface import InterfaceSpec
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -254,7 +254,7 @@ class TestInterfaceSpecValidator:
             assert len(w) == 0  # 已知类型无 Warning
 
     def test_unknown_type_emits_warning(self) -> None:
-        from piki.core.models.interface import InterfaceSpec
+        from adl.models.interface import InterfaceSpec
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -265,13 +265,13 @@ class TestInterfaceSpecValidator:
             assert "SFP-28" in str(w[0].message)
 
     def test_active_type_optional(self) -> None:
-        from piki.core.models.interface import InterfaceSpec
+        from adl.models.interface import InterfaceSpec
 
         spec = InterfaceSpec(id="eth0", interface_type="COMBO-SFP-RJ45", active_type="SFP28")
         assert spec.active_type == "SFP28"
 
     def test_active_type_defaults_to_none(self) -> None:
-        from piki.core.models.interface import InterfaceSpec
+        from adl.models.interface import InterfaceSpec
 
         spec = InterfaceSpec(id="eth0", interface_type="SFP28")
         assert spec.active_type is None

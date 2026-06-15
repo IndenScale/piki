@@ -4,15 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from adl.diagnostics import Severity
+from adl.models import GeometryAssets, InterfaceSpec, Tags, resolve_interface_ref
+from adl.types import TypeRegistry
 from pydantic import BaseModel, Field
 
 from piki.core.engine.checker import Checker
 from piki.core.engine.generator_registry import GeneratorResult
-from piki.core.engine.registry import Registry
-from piki.core.models.diagnostic import Severity
-from piki.core.models.geometry import GeometryAssets
-from piki.core.models.interface import InterfaceSpec, resolve_interface_ref
-from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 from piki.extensions.telecom.types import (
     INTERFACE_CABLE_MAP,
@@ -164,14 +162,105 @@ class TelecomPlugin(Plugin):
     def model_dir(self) -> Path:
         return Path(__file__).parent / "models"
 
-    def register_families(self, registry: Registry) -> None:
-        registry.add_family("RackFamily", RackFamily)
-        registry.add_family("PduFamily", PduFamily)
-        registry.add_family("ServerFamily", ServerFamily)
-        registry.add_family("TransceiverFamily", TransceiverFamily)
-        registry.add_family("FiberPatchCordFamily", FiberPatchCordFamily)
-        registry.add_family("PortFamily", PortFamily)
-        registry.add_family("PortConnectionFamily", PortConnectionFamily)
+    def register_types(self, type_registry: TypeRegistry) -> None:
+        type_registry.add_family("RackFamily", RackFamily)
+        type_registry.add_family("PduFamily", PduFamily)
+        type_registry.add_family("ServerFamily", ServerFamily)
+        type_registry.add_family("TransceiverFamily", TransceiverFamily)
+        type_registry.add_family("FiberPatchCordFamily", FiberPatchCordFamily)
+        type_registry.add_family("PortFamily", PortFamily)
+        type_registry.add_family("PortConnectionFamily", PortConnectionFamily)
+
+        # 注册 telecom 领域的 Mate 类型 (ADR-006).
+        from adl.models import MateConstraint, MateConstraintOperator, MateTypeMeta
+
+        # L1: 机柜装配
+        type_registry.add_mate_type(
+            "rack-mount-19inch",
+            MateTypeMeta(
+                type="rack-mount-19inch",
+                description="19英寸机柜导轨装配",
+                default_constrains=[
+                    MateConstraint(
+                        field="depth_mm",
+                        operator=MateConstraintOperator.LTE,
+                        value_ref="depth_mm",
+                        message="设备深度超过机柜深度",
+                    ),
+                    MateConstraint(
+                        field="width_mm",
+                        operator=MateConstraintOperator.LTE,
+                        value_ref="width_mm",
+                        message="设备宽度超过机柜安装宽度",
+                    ),
+                ],
+                applicable_parent_families={"RackFamily"},
+                applicable_child_families={"ServerFamily", "PduFamily"},
+            ),
+        )
+
+        # L1: 方舱内装配
+        type_registry.add_mate_type(
+            "grid-mount",
+            MateTypeMeta(
+                type="grid-mount",
+                description="方舱内设备装配",
+                applicable_parent_families={"ContainerFamily"},
+                applicable_child_families={"EquipmentFamily", "PowerUnitFamily"},
+            ),
+        )
+
+        # L2: 电源配合
+        type_registry.add_mate_type(
+            "power-iec-c14-c13",
+            MateTypeMeta(
+                type="power-iec-c14-c13",
+                description="IEC C14-C13 电源配对",
+            ),
+        )
+
+        # L2: 供电电缆
+        type_registry.add_mate_type(
+            "power-cable",
+            MateTypeMeta(
+                type="power-cable",
+                description="配电单元到设备供电电缆",
+            ),
+        )
+
+        # L2: 光模块插入交换机笼子
+        type_registry.add_mate_type(
+            "sfp28-cage",
+            MateTypeMeta(
+                type="sfp28-cage",
+                description="光模块插入交换机/服务器笼子",
+                default_constrains=[
+                    MateConstraint(
+                        field="speed_gbps",
+                        operator=MateConstraintOperator.LTE,
+                        value_ref="speed_gbps",
+                        message="光模块速率超过笼子支持速率",
+                    ),
+                ],
+            ),
+        )
+
+        # L2: 光纤跳线接头插入光模块/配线架
+        type_registry.add_mate_type(
+            "lc-connector",
+            MateTypeMeta(
+                type="lc-connector",
+                description="LC 光纤连接器配对",
+                default_constrains=[
+                    MateConstraint(
+                        field="fiber_type",
+                        operator=MateConstraintOperator.EQ,
+                        value_ref="fiber_type",
+                        message="光纤类型不匹配",
+                    ),
+                ],
+            ),
+        )
 
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule(
@@ -274,98 +363,6 @@ class TelecomPlugin(Plugin):
         checker.add_generator("cable-list", "线缆清单", generate_cable_list)
         checker.add_generator("port-map", "端口分配表", generate_port_map)
         checker.add_generator("procurement-bom", "采购 BOM", generate_procurement_bom)
-
-    def register_mate_types(self, registry: Registry) -> None:
-        """注册 telecom 领域的 Mate 类型 (ADR-006)."""
-        from piki.core.models.mating import MateConstraint, MateConstraintOperator, MateTypeMeta
-
-        # L1: 机柜装配
-        registry.add_mate_type(
-            "rack-mount-19inch",
-            MateTypeMeta(
-                type="rack-mount-19inch",
-                description="19英寸机柜导轨装配",
-                default_constrains=[
-                    MateConstraint(
-                        field="depth_mm",
-                        operator=MateConstraintOperator.LTE,
-                        value_ref="depth_mm",
-                        message="设备深度超过机柜深度",
-                    ),
-                    MateConstraint(
-                        field="width_mm",
-                        operator=MateConstraintOperator.LTE,
-                        value_ref="width_mm",
-                        message="设备宽度超过机柜安装宽度",
-                    ),
-                ],
-                applicable_parent_families={"RackFamily"},
-                applicable_child_families={"ServerFamily", "PduFamily"},
-            ),
-        )
-
-        # L1: 方舱内装配
-        registry.add_mate_type(
-            "grid-mount",
-            MateTypeMeta(
-                type="grid-mount",
-                description="方舱内设备装配",
-                applicable_parent_families={"ContainerFamily"},
-                applicable_child_families={"EquipmentFamily", "PowerUnitFamily"},
-            ),
-        )
-
-        # L2: 电源配合
-        registry.add_mate_type(
-            "power-iec-c14-c13",
-            MateTypeMeta(
-                type="power-iec-c14-c13",
-                description="IEC C14-C13 电源配对",
-            ),
-        )
-
-        # L2: 供电电缆
-        registry.add_mate_type(
-            "power-cable",
-            MateTypeMeta(
-                type="power-cable",
-                description="配电单元到设备供电电缆",
-            ),
-        )
-
-        # L2: 光模块插入交换机笼子
-        registry.add_mate_type(
-            "sfp28-cage",
-            MateTypeMeta(
-                type="sfp28-cage",
-                description="光模块插入交换机/服务器笼子",
-                default_constrains=[
-                    MateConstraint(
-                        field="speed_gbps",
-                        operator=MateConstraintOperator.LTE,
-                        value_ref="speed_gbps",
-                        message="光模块速率超过笼子支持速率",
-                    ),
-                ],
-            ),
-        )
-
-        # L2: 光纤跳线接头插入光模块/配线架
-        registry.add_mate_type(
-            "lc-connector",
-            MateTypeMeta(
-                type="lc-connector",
-                description="LC 光纤连接器配对",
-                default_constrains=[
-                    MateConstraint(
-                        field="fiber_type",
-                        operator=MateConstraintOperator.EQ,
-                        value_ref="fiber_type",
-                        message="光纤类型不匹配",
-                    ),
-                ],
-            ),
-        )
 
 
 def check_pdu_budget(ctx):

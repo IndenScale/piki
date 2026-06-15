@@ -63,7 +63,7 @@ class TestFormatHuman:
         assert "💡 建议: 将设备迁移到 PDU-B" in output
 
     def test_fail_with_related_info(self) -> None:
-        from piki.core.models.diagnostic import Location, RelatedInformation
+        from adl.diagnostics import Location, RelatedInformation
 
         report = CheckReport(
             results=[

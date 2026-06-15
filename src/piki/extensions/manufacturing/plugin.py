@@ -10,12 +10,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from adl.diagnostics import Severity
+from adl.models import Tags
+from adl.types import TypeRegistry
 from pydantic import BaseModel, Field
 
 from piki.core.engine.checker import Checker
-from piki.core.engine.registry import Registry
-from piki.core.models.diagnostic import Severity
-from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 
 
@@ -70,12 +70,9 @@ class ManufacturingPlugin(Plugin):
     def model_dir(self) -> Path:
         return Path(__file__).parent / "models"
 
-    def register_families(self, registry: Registry) -> None:
-        registry.add_family("ManufacturingProcessFamily", ManufacturingProcessFamily)
-        registry.add_family("BuildJobFamily", BuildJobFamily)
-
-    def register_mate_types(self, registry: Registry) -> None:
-        pass
+    def register_types(self, type_registry: TypeRegistry) -> None:
+        type_registry.add_family("ManufacturingProcessFamily", ManufacturingProcessFamily)
+        type_registry.add_family("BuildJobFamily", BuildJobFamily)
 
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule(

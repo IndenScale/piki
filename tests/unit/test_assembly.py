@@ -5,11 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from adl.models.assembly import AssemblyFamily
 from pydantic import BaseModel
 
 from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
-from piki.core.models.assembly import AssemblyFamily
 
 
 @pytest.fixture

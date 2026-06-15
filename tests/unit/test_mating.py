@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
-from piki.core.models.mating import (
+from adl.models.mating import (
     InterfacePairing,
     MateConstraint,
     MateConstraintOperator,
@@ -16,6 +14,7 @@ from piki.core.models.mating import (
     is_interface_ref,
     parse_mate_ref,
 )
+from pydantic import ValidationError
 
 # ============================================================================
 # parse_mate_ref

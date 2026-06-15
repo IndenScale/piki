@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import types
 
+from adl.diagnostics import Severity
+
 from piki.core.engine.checker import (
     _GEN_ATTR,
     _RULE_ATTR,
@@ -16,7 +18,6 @@ from piki.core.engine.checker import (
 )
 from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
-from piki.core.models.diagnostic import Severity
 
 
 class TestCheckerRun:
@@ -33,8 +34,8 @@ class TestCheckerRun:
         report = checker.run(ctx)
         assert report.passed is True
         assert report.error_count == 0
-        # 10 个内置 L2 检查（含 CATALOG-001/002）+ 1 个自定义规则
-        assert report.pass_count == 11
+        # 2 个插件类型相关内置检查 + 1 个自定义规则
+        assert report.pass_count == 3
 
     def test_single_fail(self) -> None:
         checker = Checker()
@@ -47,8 +48,8 @@ class TestCheckerRun:
         report = checker.run(ctx)
         assert report.passed is False
         assert report.error_count == 1
-        # 10 个内置 L2 检查通过，1 个自定义规则失败
-        assert report.pass_count == 10
+        # 2 个内置 L2 检查通过
+        assert report.pass_count == 2
         fail_result = next((r for r in report.results if r.rule_id == "R-001"), None)
         assert fail_result is not None
         assert "出错了" in fail_result.message
@@ -78,8 +79,8 @@ class TestCheckerRun:
         checker.add_rule("R-002", "失败", lambda ctx: exec("assert False, 'err'"))
         report = checker.run(ctx)
         assert report.error_count == 1
-        # 10 个内置 L2 检查通过 + 1 个自定义规则通过，1 个自定义规则失败
-        assert report.pass_count == 11
+        # 2 个内置 L2 检查通过 + 1 个自定义规则通过，1 个自定义规则失败
+        assert report.pass_count == 3
 
     def test_exception_handling(self) -> None:
         """非 AssertionError 异常也应被捕获。"""
@@ -250,7 +251,7 @@ class TestRelatedInformationAndSuggestion:
     """测试 related_information 和 suggestion 在规则结果中的传递。"""
 
     def test_related_info_in_rule_result(self) -> None:
-        from piki.core.models.diagnostic import Location
+        from adl.diagnostics import Location
 
         checker = Checker()
         ctx = Context(Registry(), {})
@@ -291,7 +292,7 @@ class TestRelatedInformationAndSuggestion:
         assert result.suggestion == "将设备迁移到另一个 PDU"
 
     def test_suggestion_in_diagnostic(self) -> None:
-        from piki.core.models.diagnostic import Severity
+        from adl.diagnostics import Severity
 
         checker = Checker()
         ctx = Context(Registry(), {})
@@ -308,7 +309,7 @@ class TestRelatedInformationAndSuggestion:
         assert diag.severity == Severity.ERROR
 
     def test_clear_current_file_clears_related(self) -> None:
-        from piki.core.models.diagnostic import Location
+        from adl.diagnostics import Location
 
         ctx = Context(Registry(), {})
         ctx.add_related_info(

@@ -7,8 +7,9 @@ import traceback
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from ..models.diagnostic import Diagnostic, Location, Severity
-from ..models.mating import parse_mate_ref
+from adl.diagnostics import Diagnostic, Location, Severity
+from adl.models import parse_mate_ref
+
 from .context import Context
 from .generator_registry import (
     GeneratorRegistry,
@@ -122,16 +123,8 @@ class Checker:
         sorted_rules = sorted(self._rules, key=lambda x: x[2], reverse=True)
         report = CheckReport()
 
-        # 运行内置 L2 检查（成功时也记录 PASS）
+        # 运行需要插件类型知识的内置检查（其余 ADL 层检查由 adl.validation.ADLValidator 负责）
         for rule_id, name, severity, check_fn in [
-            (
-                "REFS-001",
-                "Layout-Instance 引用完整性",
-                Severity.ERROR,
-                self.check_reference_integrity,
-            ),
-            ("TAGS-001", "Tag Schema 合规性", Severity.WARNING, self.check_tag_schema),
-            ("FK-001", "通用外键引用完整性", Severity.ERROR, self.check_foreign_keys),
             (
                 "INTERFACE-COMPAT-001",
                 "接口类型兼容性检查",
@@ -143,36 +136,6 @@ class Checker:
                 "线缆类型与接口匹配检查",
                 Severity.ERROR,
                 self.check_cable_interface_match,
-            ),
-            (
-                "MATE-001",
-                "Mate Instance 引用完整性",
-                Severity.ERROR,
-                self.check_mate_references,
-            ),
-            (
-                "MATE-002",
-                "Mate Family 兼容性检查",
-                Severity.ERROR,
-                self.check_mate_family_compat,
-            ),
-            (
-                "MATE-003",
-                "Mate 约束验证",
-                Severity.ERROR,
-                self.check_mate_constraints,
-            ),
-            (
-                "CATALOG-001",
-                "Catalog 引用完整性",
-                Severity.ERROR,
-                self.check_catalog_references,
-            ),
-            (
-                "CATALOG-002",
-                "Service Method 引用完整性",
-                Severity.ERROR,
-                self.check_catalog_service_methods,
             ),
         ]:
             try:
@@ -197,21 +160,6 @@ class Checker:
                         severity=severity,
                     )
                 )
-
-        # 运行内置 FQID 冲突检查
-        try:
-            self.check_fqid_duplicates(ctx)
-        except AssertionError as exc:
-            report.results.append(
-                RuleResult(
-                    rule_id="REFS-002",
-                    name="FQID 冲突检查",
-                    passed=False,
-                    message=str(exc),
-                    file=getattr(ctx, "_current_file", ""),
-                    severity=Severity.ERROR,
-                )
-            )
 
         for rule_id, name, _prio, default_severity, func in sorted_rules:
             if skip_set and rule_id in skip_set:
@@ -348,7 +296,7 @@ class Checker:
         2. 以 _interface 结尾的字段 → 解析 instance_id/interface_id，
            检查 Instance 和 Interface 是否都存在
         """
-        from ..models.interface import get_interfaces_from_resolved, resolve_interface_ref
+        from adl.models import get_interfaces_from_resolved, resolve_interface_ref
 
         all_ids = set(ctx._registry.all_instances_tree().keys())
 
@@ -400,7 +348,7 @@ class Checker:
         对于所有 Connection Instance，使用兼容性矩阵检查
         from_interface 和 to_interface 的 effective interface_type 是否兼容。
         """
-        from ..models.interface import (
+        from adl.models import (
             effective_interface_type,
             get_interfaces_from_resolved,
             resolve_interface_ref,
@@ -495,7 +443,7 @@ class Checker:
         对于所有 Connection Instance，检查 cable_type 是否与两端接口 effective 类型匹配。
         光纤接口不应接铜缆，铜缆接口不应接光纤跳线。
         """
-        from ..models.interface import (
+        from adl.models import (
             effective_interface_type,
             get_interfaces_from_resolved,
             resolve_interface_ref,

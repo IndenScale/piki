@@ -253,7 +253,7 @@ class TelecomPlugin(Plugin):
 **快捷构造方法：**
 
 ```python
-from piki.core.models.diagnostic import Diagnostic
+from adl.diagnostics import Diagnostic
 
 d = Diagnostic.error("PDU 过载", code="TELECOM-POWER-001")
 d = Diagnostic.warning("机柜空间紧张", code="TELECOM-RACK-001")
@@ -268,7 +268,7 @@ d = Diagnostic.fatal("配置文件损坏", code="FATAL-001")
 
 ```python
 from piki import rule, Context, Severity
-from piki.core.models.diagnostic import Diagnostic
+from adl.diagnostics import Diagnostic
 
 @rule("EXAMPLE-001", "示例规则")
 def example_rule(ctx: Context) -> None:

@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..models.diagnostic import Location, RelatedInformation
-from ..models.layout import Layout, LayoutEntry
-from ..models.mating import MateGraph, MateSpec, parse_mate_ref
+from adl.diagnostics import Location, RelatedInformation
+from adl.models import Layout, LayoutEntry, MateGraph, MateSpec, parse_mate_ref
+
 from .query import QuerySet, make_query_set
 from .registry import Registry
 

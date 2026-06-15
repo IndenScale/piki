@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...core.models.geometry import Vec3
+from adl.models.geometry import Vec3
 
 if TYPE_CHECKING:
-    from ...core.models.geometry import CSGNode, InlineGeometry, Transform
+    from adl.models.geometry import CSGNode, InlineGeometry, Transform
 
 
 def _has_manifold() -> bool:

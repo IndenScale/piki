@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from piki.core.models.base import (
+from adl.models.base import (
     Instance,
     Model,
     ResolvedInstance,

@@ -68,20 +68,13 @@ class InterfaceSpec(BaseModel):
 
         不是 Error——允许项目使用枚举外的自定义类型。
         对未知类型发出 UserWarning。
+
+        已知接口类型由框架或插件通过 ``register_interface_type`` 注册；
+        ADL 核心不硬编码任何领域的接口类型。
         """
-        known_types = _known_interface_types
-        if not known_types:
-            # 向后兼容：未启用任何插件时，尝试加载 telecom 类型作为默认已知类型
-            try:
-                from piki.extensions.telecom.types import COMPATIBILITY
-
-                known_types = set(COMPATIBILITY.keys())
-            except ImportError:
-                known_types = set()
-
-        if known_types and v not in known_types:
+        if _known_interface_types and v not in _known_interface_types:
             warnings.warn(
-                f"Unknown interface_type: '{v}'. Known types: {', '.join(sorted(known_types))}",
+                f"Unknown interface_type: '{v}'. Known types: {', '.join(sorted(_known_interface_types))}",
                 UserWarning,
                 stacklevel=2,
             )

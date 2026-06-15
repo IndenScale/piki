@@ -15,14 +15,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from adl.diagnostics import Severity
+from adl.models import GeometryAssets, Tags
+from adl.types import TypeRegistry
 from pydantic import BaseModel, Field
 
 from piki.core.engine.checker import Checker
 from piki.core.engine.generator_registry import GeneratorResult
-from piki.core.engine.registry import Registry
-from piki.core.models.diagnostic import Severity
-from piki.core.models.geometry import GeometryAssets
-from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 
 # ---------------------------------------------------------------------------
@@ -125,11 +124,31 @@ class DatacenterPlugin(Plugin):
     def model_dir(self) -> Path:
         return Path(__file__).parent / "models"
 
-    def register_families(self, registry: Registry) -> None:
-        registry.add_family("ContainerFamily", ContainerFamily)
-        registry.add_family("PowerUnitFamily", PowerUnitFamily)
-        registry.add_family("EquipmentFamily", EquipmentFamily)
-        registry.add_family("ConnectionFamily", ConnectionFamily)
+    def register_types(self, type_registry: TypeRegistry) -> None:
+        type_registry.add_family("ContainerFamily", ContainerFamily)
+        type_registry.add_family("PowerUnitFamily", PowerUnitFamily)
+        type_registry.add_family("EquipmentFamily", EquipmentFamily)
+        type_registry.add_family("ConnectionFamily", ConnectionFamily)
+
+        # 注册 datacenter 领域的 Mate 类型 (ADR-006).
+        from adl.models import MateTypeMeta
+
+        type_registry.add_mate_type(
+            "grid-mount",
+            MateTypeMeta(
+                type="grid-mount",
+                description="方舱内设备装配",
+                applicable_parent_families={"ContainerFamily"},
+                applicable_child_families={"EquipmentFamily", "PowerUnitFamily"},
+            ),
+        )
+        type_registry.add_mate_type(
+            "power-cable",
+            MateTypeMeta(
+                type="power-cable",
+                description="配电单元到设备供电电缆",
+            ),
+        )
 
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule(
@@ -198,27 +217,6 @@ class DatacenterPlugin(Plugin):
 
     def register_generators(self, checker: Checker) -> None:
         checker.add_generator("dc-bom-csv", "数据中心 BOM CSV 导出", generate_dc_bom_csv)
-
-    def register_mate_types(self, registry: Registry) -> None:
-        """注册 datacenter 领域的 Mate 类型 (ADR-006)."""
-        from piki.core.models.mating import MateTypeMeta
-
-        registry.add_mate_type(
-            "grid-mount",
-            MateTypeMeta(
-                type="grid-mount",
-                description="方舱内设备装配",
-                applicable_parent_families={"ContainerFamily"},
-                applicable_child_families={"EquipmentFamily", "PowerUnitFamily"},
-            ),
-        )
-        registry.add_mate_type(
-            "power-cable",
-            MateTypeMeta(
-                type="power-cable",
-                description="配电单元到设备供电电缆",
-            ),
-        )
 
 
 # ---------------------------------------------------------------------------

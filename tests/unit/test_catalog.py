@@ -5,9 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from adl.validation import ADLValidator
 
-from piki.core.engine.checker import Checker
-from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
 from piki.core.project import Project
 from piki.extensions.telecom.plugin import PduFamily, RackFamily, ServerFamily
@@ -304,12 +303,10 @@ class TestCatalogChecks:
         )
         registry.load_collection(devices)
 
-        ctx = Context(registry, {})
-        checker = Checker()
-        report = checker.run(ctx)
-
-        catalog_results = [r for r in report.results if r.rule_id == "CATALOG-001"]
-        assert any(not r.passed and "missing-catalog" in r.message for r in catalog_results)
+        # Catalog 引用完整性已迁移到 ADL 层验证器
+        diagnostics = ADLValidator(registry.project).validate()
+        catalog_diags = [d for d in diagnostics if d.code == "CATALOG-001"]
+        assert any(not d.passed and "missing-catalog" in d.message for d in catalog_diags)
 
     def test_catalog_002_missing_service_method(self, tmp_path: Path) -> None:
         registry = Registry()
@@ -327,12 +324,10 @@ class TestCatalogChecks:
         )
         registry.load_catalogs(tmp_path, source="project")
 
-        ctx = Context(registry, {})
-        checker = Checker()
-        report = checker.run(ctx)
-
-        catalog_results = [r for r in report.results if r.rule_id == "CATALOG-002"]
-        assert any(not r.passed and "missing-method" in r.message for r in catalog_results)
+        # Service Method 引用完整性已迁移到 ADL 层验证器
+        diagnostics = ADLValidator(registry.project).validate()
+        catalog_diags = [d for d in diagnostics if d.code == "CATALOG-002"]
+        assert any(not d.passed and "missing-method" in d.message for d in catalog_diags)
 
 
 class TestCatalogProjectLoading:

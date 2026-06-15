@@ -1,4 +1,14 @@
-"""Project 类：加载 piki.toml、扫描目录、管理嵌套项目。"""
+"""Project 类：piki 编排入口。
+
+piki 不再直接解析 YAML 或合并 Model/Instance。这些工作交给 ``adl.project.ProjectLoader``。
+piki 的职责是：
+1. 发现插件
+2. 让插件向 ADL 注册类型
+3. 调用 ADL 加载项目
+4. 让插件向 piki 注册规则和生成器
+5. 运行规则 / 生成器
+6. 格式化报告
+"""
 
 from __future__ import annotations
 
@@ -6,11 +16,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from .engine.checker import Checker, CheckReport, RuleResult, register_module_rules
+from adl.project import ProjectLoader
+from adl.types import TypeRegistry
+from adl.validation import ADLValidator
+
+from .engine.checker import Checker, register_module_rules
 from .engine.context import Context
-from .engine.generator_registry import GeneratorRegistry
 from .engine.registry import Registry
-from .parsing.loaders import load_toml
 from .plugin import Plugin, discover_plugins
 
 logger = logging.getLogger(__name__)
@@ -33,12 +45,11 @@ class Project:
         self._parent = parent
         self._children: dict[str, "Project"] = {}
 
-        # 从父项目继承 Registry
-        if parent:
-            self.registry.set_parent(parent.registry)
         # 设置项目名称用于 FQID
         project_name = config.get("project", {}).get("name", root.name)
         self.registry.set_project_name(project_name)
+        if parent:
+            self.registry.set_parent(parent.registry)
 
     # ------------------------------------------------------------------
     # 发现与工厂
@@ -50,12 +61,7 @@ class Project:
         start: Path | str | None = None,
         recurse: bool = True,
     ) -> "Project":
-        """从当前目录向上查找 piki.toml。
-
-        Args:
-            start: 起始目录，默认为当前工作目录
-            recurse: 是否递归加载子项目
-        """
+        """从当前目录向上查找 piki.toml。"""
         if start is None:
             start = Path.cwd()
         else:
@@ -65,7 +71,7 @@ class Project:
         while True:
             candidate = current / "piki.toml"
             if candidate.exists():
-                config = load_toml(candidate)
+                config = ProjectLoader._load_config(current)
                 project = cls(current, config)
                 if recurse:
                     project._discover_children()
@@ -75,29 +81,26 @@ class Project:
             current = current.parent
 
     def _discover_children(self) -> None:
-        """递归发现子项目目录。
-
-        子项目是含有 piki.toml 且不是当前项目根的直接子目录。
-        """
+        """递归发现子项目目录。"""
         for entry in sorted(self.root.iterdir()):
             if not entry.is_dir():
                 continue
             child_toml = entry / "piki.toml"
             if not child_toml.exists():
                 continue
-            # 跳过特殊目录
             if entry.name in (
                 "models",
                 "instances",
                 "layouts",
                 "rules",
+                "mates",
                 ".git",
                 "__pycache__",
                 ".piki",
             ):
                 continue
             try:
-                child_config = load_toml(child_toml)
+                child_config = ProjectLoader._load_config(entry)
                 child_project = Project(
                     root=entry,
                     config=child_config,
@@ -113,13 +116,9 @@ class Project:
     # ------------------------------------------------------------------
 
     def load(self) -> None:
-        """加载插件、型号库、Catalog、实例数据、Layout。"""
+        """加载插件、型号库、Catalog、实例数据、Layout、Mate。"""
         self._load_plugins()
-        self._load_models()
-        self._load_catalogs()  # Catalog 必须在 Instance 之前加载（ADR-011）
-        self._load_layout()  # Layout 必须在 Instance 之前加载（_resolve 依赖它）
-        self._load_instances()
-        self._load_mates()
+        self._load_project_data()
         self._load_rules()
         self._load_tag_config()
         # 加载子项目
@@ -133,100 +132,38 @@ class Project:
             if name not in plugin_classes:
                 raise ValueError(f"Unknown plugin: {name}")
             plugin = plugin_classes[name]()
-            plugin.register_families(self.registry)
-            plugin.register_rules(self.checker)
-            plugin.register_generators(self.checker)
             self._plugins.append(plugin)
 
-    def _load_models(self) -> None:
-        """加载项目本地型号库和插件型号库。"""
-        # 项目本地型号库
-        self.registry.load_models(self.root / "models")
-        # 插件自带型号库
+    def _load_project_data(self) -> None:
+        """通过 ADL ProjectLoader 加载项目数据。"""
+        type_registry = TypeRegistry()
+
+        # 插件注册 ADL 类型
         for plugin in self._plugins:
-            plugin_lib = getattr(plugin, "model_dir", None)
-            if plugin_lib:
-                self.registry.load_models(Path(plugin_lib))
+            plugin.register_types(type_registry)
 
-    def _load_catalogs(self) -> None:
-        """加载项目本地 Catalog、企业 Catalog、插件公共 Catalog（ADR-011）。
-
-        来源优先级：Project > Parent > Enterprise > Public。
-        父项目 Catalog 通过 Registry.set_parent() 自动继承。
-        """
-        # 1. 项目本地 catalogs/（source=project）
-        self.registry.load_catalogs(self.root, source="project")
-
-        # 2. 企业 Catalog（source=enterprise）
-        catalogs_config = self.config.get("catalogs", {})
-        enterprise_path = catalogs_config.get("enterprise")
-        if isinstance(enterprise_path, str):
-            self.registry.load_catalogs(Path(enterprise_path), source="enterprise")
-
-        # 3. 插件公共 Catalog（source=public）
+        extra_model_dirs: list[Path] = []
+        extra_catalog_dirs: list[Path] = []
         for plugin in self._plugins:
+            model_dir = getattr(plugin, "model_dir", None)
+            if model_dir:
+                extra_model_dirs.append(Path(model_dir))
             catalog_dir = getattr(plugin, "catalog_dir", None)
             if catalog_dir:
-                self.registry.load_catalogs(Path(catalog_dir), source="public")
+                extra_catalog_dirs.append(Path(catalog_dir))
 
-    def _load_instances(self) -> None:
-        """扫描 instances/ 目录，子目录作为独立集合加载。
+        self.registry.load_project(
+            root=self.root,
+            type_registry=type_registry,
+            config=self.config,
+            extra_model_dirs=extra_model_dirs,
+            extra_catalog_dirs=extra_catalog_dirs,
+        )
 
-        结构：
-          instances/
-            devices/           → collection "devices"
-            racks/             → collection "racks"
-            pdus/              → collection "pdus"
-            containers/        → collection "containers"
-            equipment/         → collection "equipment"
-            power/             → collection "power"
-            connections/       → collection "connections"
-          instances/srv.yaml   → collection "devices" (裸文件)
-        """
-        instances_dir = self.root / "instances"
-        if not instances_dir.exists():
-            return
-
-        has_subdirs = False
-        for entry in sorted(instances_dir.iterdir()):
-            if entry.is_dir() and not entry.name.startswith("."):
-                if any(entry.rglob("*.yaml")):
-                    self.registry.load_collection(entry, collection_name=entry.name)
-                    has_subdirs = True
-
-        if not has_subdirs:
-            raise FileNotFoundError(
-                "instances/ 目录下没有子目录。请按类型创建子目录，"
-                "例如 instances/devices/、instances/racks/、instances/pdus/"
-            )
-
-    def _load_mates(self) -> None:
-        """扫描 mates/ 目录、加载 Mate 定义、构建 MateGraph。"""
-        self.registry.load_mates(self.root)
-        if self.registry.mates:
-            logger.debug(
-                "Loaded %d mate(s) across %d type(s)",
-                len(self.registry.mates),
-                len(self.registry.mate_types),
-            )
-        # 插件注册 Mate types
+        # 插件注册规则和生成器
         for plugin in self._plugins:
-            try:
-                register_fn = getattr(plugin, "register_mate_types", None)
-                if register_fn:
-                    register_fn(self.registry)
-            except Exception as exc:
-                logger.warning(
-                    "Failed to register mate types from plugin %s: %s",
-                    getattr(plugin, "name", plugin.__class__.__name__),
-                    exc,
-                )
-
-    def _load_layout(self) -> None:
-        """加载项目 Layout 文件。"""
-        layout = self.registry.load_layout(self.root)
-        if layout is None:
-            logger.debug("No layout file found in %s", self.root)
+            plugin.register_rules(self.checker)
+            plugin.register_generators(self.checker)
 
     def _load_rules(self) -> None:
         """加载项目 rules/ 目录下的 Python 规则。"""
@@ -241,18 +178,11 @@ class Project:
                     self.checker.add_rule(rule_id, name, func, prio, severity)
 
     def _load_tag_config(self) -> None:
-        """从 piki.toml 读取允许的 Tag 键和外部项目注册。"""
+        """从 piki.toml 读取允许的 Tag 键。"""
         tag_config = self.config.get("tags", {})
         allowed = tag_config.get("allowed", [])
         if isinstance(allowed, list):
             self.registry.set_allowed_tags(allowed)
-
-        # 加载外部项目注册（ADR-001）
-        externals_config = self.config.get("external", {})
-        if isinstance(externals_config, dict):
-            for alias, path_str in externals_config.items():
-                if isinstance(path_str, str):
-                    self.registry.register_external(alias, Path(path_str))
 
     def _plugin_names(self) -> list[str]:
         plugins_config = self.config.get("plugins", {})
@@ -297,7 +227,7 @@ class Project:
         return dict(self._children)
 
     @property
-    def generator_registry(self) -> GeneratorRegistry:
+    def generator_registry(self):
         """获取项目的 GeneratorRegistry 实例。"""
         return self.checker.generator_registry
 
@@ -363,30 +293,42 @@ class Project:
         only: list[str] | None = None,
         files: list[str] | None = None,
         recurse: bool = True,
-    ) -> CheckReport:
+    ) -> Any:
         """运行检查。
 
-        Args:
-            skip: 跳过的规则 ID 列表
-            only: 仅运行的规则 ID 列表
-            files: 仅检查的文件列表
-            recurse: 是否递归检查子项目
+        流程：
+        1. ADL 层验证（引用完整性、Mate 约束等）
+        2. piki 插件规则
+        3. 收集 Registry 诊断和 Schema 失败实例
         """
+        from .engine.checker import CheckReport, RuleResult
+
         ctx = self.make_context()
         resolved_files = self._expand_files_filter(files)
         rules_config = self.config.get("rules", {})
-        report = self.checker.run(
+
+        report = CheckReport()
+
+        # 1. ADL 层验证
+        if self.registry.project is not None:
+            adl_validator = ADLValidator(self.registry.project)
+            report.diagnostics.extend(adl_validator.validate())
+
+        # 2. 插件规则
+        rule_report = self.checker.run(
             ctx,
             skip=skip,
             only=only,
             files=resolved_files,
             rules_config=rules_config,
         )
+        report.results.extend(rule_report.results)
+        report.diagnostics.extend(rule_report.diagnostics)
 
-        # 收集 Registry 诊断
+        # 3. Registry 诊断
         report.diagnostics.extend(self.registry.diagnostics)
 
-        # 收集 Schema 校验失败的实例
+        # 4. Schema 校验失败的实例
         for inst in self.registry.all_instances().values():
             if inst.family == "_invalid":
                 detail = inst._validation_error or "未知错误"

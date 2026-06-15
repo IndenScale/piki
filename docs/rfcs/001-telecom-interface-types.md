@@ -358,7 +358,7 @@ def check_cable_interface_match(self, ctx: Context) -> None:
 
 ### 方案 B：在框架层定义通用 InterfaceType
 
-在 `piki.core.models.interface` 中定义所有行业的接口类型。
+在 `adl.models.interface` 中定义所有行业的接口类型。
 
 **拒绝理由**：
 

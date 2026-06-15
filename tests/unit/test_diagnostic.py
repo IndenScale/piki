@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from piki.core.models.diagnostic import (
+from adl.diagnostics import (
     CodeDescription,
     Diagnostic,
     DiagnosticReport,

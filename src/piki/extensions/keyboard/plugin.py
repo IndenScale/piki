@@ -18,17 +18,20 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from adl.diagnostics import Severity
+from adl.models import (
+    AssemblyFamily,
+    FootprintSpec,
+    GeometryAssets,
+    InterfaceSpec,
+    MateTypeMeta,
+    Tags,
+)
+from adl.types import TypeRegistry
 from pydantic import BaseModel, Field
 
 from piki.core.engine.checker import Checker
 from piki.core.engine.generator_registry import GeneratorResult
-from piki.core.engine.registry import Registry
-from piki.core.models.assembly import AssemblyFamily
-from piki.core.models.diagnostic import Severity
-from piki.core.models.geometry import GeometryAssets
-from piki.core.models.interface import FootprintSpec, InterfaceSpec, register_interface_types
-from piki.core.models.mating import MateTypeMeta
-from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 from piki.extensions.consumer_electronics.plugin import make_power_budget
 
@@ -266,27 +269,26 @@ class KeyboardPlugin(Plugin):
     def model_dir(self) -> Path:
         return Path(__file__).parent / "models"
 
-    def register_families(self, registry: Registry) -> None:
+    def register_types(self, type_registry: TypeRegistry) -> None:
         # 注册键盘领域接口类型到核心全局表
-        register_interface_types(KEYBOARD_INTERFACE_TYPES)
+        type_registry.add_interface_types(KEYBOARD_INTERFACE_TYPES)
 
         # 注册核心 AssemblyFamily，使键盘装配体可复用核心层级遍历能力
-        registry.add_family("AssemblyFamily", AssemblyFamily)
+        type_registry.add_family("AssemblyFamily", AssemblyFamily)
 
-        registry.add_family("KeyboardAssemblyFamily", KeyboardAssemblyFamily)
-        registry.add_family("CaseFamily", CaseFamily)
-        registry.add_family("PlateFamily", PlateFamily)
-        registry.add_family("PcbFamily", PcbFamily)
-        registry.add_family("SwitchFamily", SwitchFamily)
-        registry.add_family("KeycapFamily", KeycapFamily)
-        registry.add_family("StabilizerFamily", StabilizerFamily)
-        registry.add_family("DampenerFamily", DampenerFamily)
-        registry.add_family("BatteryFamily", BatteryFamily)
-        registry.add_family("CableFamily", CableFamily)
-        registry.add_family("KeyClusterFamily", KeyClusterFamily)
+        type_registry.add_family("KeyboardAssemblyFamily", KeyboardAssemblyFamily)
+        type_registry.add_family("CaseFamily", CaseFamily)
+        type_registry.add_family("PlateFamily", PlateFamily)
+        type_registry.add_family("PcbFamily", PcbFamily)
+        type_registry.add_family("SwitchFamily", SwitchFamily)
+        type_registry.add_family("KeycapFamily", KeycapFamily)
+        type_registry.add_family("StabilizerFamily", StabilizerFamily)
+        type_registry.add_family("DampenerFamily", DampenerFamily)
+        type_registry.add_family("BatteryFamily", BatteryFamily)
+        type_registry.add_family("CableFamily", CableFamily)
+        type_registry.add_family("KeyClusterFamily", KeyClusterFamily)
 
-    def register_mate_types(self, registry: Registry) -> None:
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "case-bottom-dampener",
             MateTypeMeta(
                 type="case-bottom-dampener",
@@ -295,7 +297,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"DampenerFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "plate-gasket-mount",
             MateTypeMeta(
                 type="plate-gasket-mount",
@@ -304,7 +306,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"PlateFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "pcb-standoff-mount",
             MateTypeMeta(
                 type="pcb-standoff-mount",
@@ -313,7 +315,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"PcbFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "switch-plate-snap",
             MateTypeMeta(
                 type="switch-plate-snap",
@@ -322,7 +324,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"SwitchFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "switch-pcb-solder",
             MateTypeMeta(
                 type="switch-pcb-solder",
@@ -331,7 +333,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"SwitchFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "stabilizer-plate-mount",
             MateTypeMeta(
                 type="stabilizer-plate-mount",
@@ -340,7 +342,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"StabilizerFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "stabilizer-pcb-snap",
             MateTypeMeta(
                 type="stabilizer-pcb-snap",
@@ -349,7 +351,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"StabilizerFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "stabilizer-pcb-screw",
             MateTypeMeta(
                 type="stabilizer-pcb-screw",
@@ -358,7 +360,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"StabilizerFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "keycap-stem-mount",
             MateTypeMeta(
                 type="keycap-stem-mount",
@@ -367,7 +369,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"KeycapFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "battery-pcb-cable",
             MateTypeMeta(
                 type="battery-pcb-cable",
@@ -376,7 +378,7 @@ class KeyboardPlugin(Plugin):
                 applicable_child_families={"BatteryFamily"},
             ),
         )
-        registry.add_mate_type(
+        type_registry.add_mate_type(
             "usb-cable-mate",
             MateTypeMeta(
                 type="usb-cable-mate",

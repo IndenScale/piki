@@ -5,14 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from piki.core.models.base import ResolvedInstance
-from piki.core.models.geometry import (
+from adl.models.base import ResolvedInstance
+from adl.models.geometry import (
     GeometryAssets,
     InlineGeometry,
     Transform,
     Vec3,
 )
+
 from piki.ext.geometry import AABB, build_aabb_from_instance, find_collisions
 
 
@@ -148,7 +148,7 @@ class TestBuildAABBFromInstance:
         assert aabb.max == pytest.approx(Vec3(x=1.0, y=2.0, z=0.5), abs=1e-6)
 
     def test_from_inline_box(self) -> None:
-        from piki.core.models.geometry import AssetReference
+        from adl.models.geometry import AssetReference
 
         inst = self._make_inst(
             {

@@ -111,8 +111,10 @@ def test_json_format(demo_project: Path) -> None:
     data = json.loads(result.stdout)
     assert data["passed"] is True
     assert data["error_count"] == 0
-    # 10 个 L2 内置规则（含 CATALOG-001/002）+ 1 个 FQID 检查 + 12 个 telecom 规则（含 CATALOG-LIFECYCLE-001）
-    assert len(data["results"]) == 23
+    # ADL 层通用检查（引用完整性、Mate 约束、FQID 等）已迁移到 diagnostics；
+    # results 中仅保留需要插件类型知识的内置检查 + 插件规则：
+    # INTERFACE-COMPAT-001 + INTERFACE-CABLE-001 + 13 个 telecom 规则
+    assert len(data["results"]) == 15
 
 
 def test_init_refuses_overwrite(tmp_path: Path) -> None:

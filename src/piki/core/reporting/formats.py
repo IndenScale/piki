@@ -6,8 +6,9 @@ import json
 import xml.etree.ElementTree as ET
 from typing import Any
 
+from adl.diagnostics import Severity
+
 from ..engine.checker import CheckReport
-from ..models.diagnostic import Severity
 
 
 def _severity_label(severity: Severity) -> str:

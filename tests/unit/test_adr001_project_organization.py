@@ -5,12 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from adl.models.base import get_non_overridable_fields
+from adl.models.tags import Tags
 
 from piki.core.engine.checker import Checker
 from piki.core.engine.context import Context
 from piki.core.engine.registry import Registry
-from piki.core.models.base import get_non_overridable_fields
-from piki.core.models.tags import Tags
 from piki.extensions.telecom.plugin import ServerFamily
 
 

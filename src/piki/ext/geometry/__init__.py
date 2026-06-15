@@ -10,9 +10,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...core.models.base import ResolvedInstance
+    from adl.models import ResolvedInstance
 
-from ...core.models.geometry import Transform, Vec3
+from adl.models.geometry import Transform, Vec3
 
 
 @dataclass(frozen=True)

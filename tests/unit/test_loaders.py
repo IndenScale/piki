@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from piki.core.parsing.loaders import load_toml, load_yaml, save_yaml
+from adl.parsing.loaders import load_toml, load_yaml, save_yaml
 
 
 class TestLoadYaml:

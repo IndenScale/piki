@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "piki"
+name = "adl"
 version = "0.1.0"
-description = "Text-Native Declarative System Modeling Framework (DSMF) — 用文本定义设计，用规则检查合理性。"
+description = "Assembly Definition Language (ADL) — 装配体定义语言运行时"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
@@ -16,10 +16,9 @@ keywords = [
     "engineering",
     "validation",
     "yaml",
-    "design-check",
-    "rule-engine",
-    "sdm",
-    "folder-db",
+    "declarative-modeling",
+    "assembly",
+    "adl",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -34,15 +33,11 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
-    "adl>=0.1.0",
     "pydantic>=2.0",
     "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
-usd = ["usd-core>=24.0"]
-geometry = ["manifold3d>=2.0"]
-all = ["usd-core>=24.0", "manifold3d>=2.0"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -52,38 +47,12 @@ dev = [
 
 [project.urls]
 Homepage = "https://indenscale.github.io/piki/"
-Documentation = "https://github.com/indenscale/piki/tree/main/docs"
+Documentation = "https://github.com/indenscale/piki/tree/main/adl"
 Repository = "https://github.com/indenscale/piki.git"
 Issues = "https://github.com/indenscale/piki/issues"
-Changelog = "https://github.com/indenscale/piki/blob/main/CHANGELOG.md"
-
-[project.scripts]
-piki = "piki.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src", "adl/src"]
-
-[tool.mypy]
-python_version = "3.11"
-ignore_missing_imports = true
-# FIXME: 项目当前类型注解不完整，临时禁用一批 mypy 错误代码，
-# 待类型系统完善后再逐步收紧。
-disable_error_code = [
-    "import-untyped",
-    "name-defined",
-    "attr-defined",
-    "arg-type",
-    "assignment",
-    "valid-type",
-    "index",
-    "var-annotated",
-    "misc",
-    "no-redef",
-]
 
 [tool.ruff]
 line-length = 100
@@ -97,15 +66,24 @@ ignore = ["E501"]
 max-line-length = 100
 
 [tool.ruff.lint.isort]
-known-first-party = ["piki"]
+known-first-party = ["adl"]
 
 [tool.ruff.lint.per-file-ignores]
 # from __future__ import annotations 环境下，函数签名中的字符串注解被 ruff 当作未定义名称
-"adl/src/adl/models/base.py" = ["F821"]
-"src/piki/ext/geometry/csg.py" = ["F821"]
-"src/piki/ext/geometry/__init__.py" = ["F401"]
-"src/piki/extensions/datacenter/plugin.py" = ["F821"]
-"src/piki/extensions/telecom/plugin.py" = ["F821"]
-"tests/unit/test_checker.py" = ["E402"]
+"src/adl/models/base.py" = ["F821"]
 
-[tool.ruff.format]
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disable_error_code = [
+    "import-untyped",
+    "name-defined",
+    "attr-defined",
+    "arg-type",
+    "assignment",
+    "valid-type",
+    "index",
+    "var-annotated",
+    "misc",
+    "no-redef",
+]

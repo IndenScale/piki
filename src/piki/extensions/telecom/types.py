@@ -258,7 +258,7 @@ def known_interface_types() -> list[str]:
 # ---------------------------------------------------------------------------
 
 try:
-    from piki.core.models.interface import register_interface_types
+    from adl.models.interface import register_interface_types
 
     register_interface_types(list(COMPATIBILITY.keys()))
 except ImportError:  # pragma: no cover

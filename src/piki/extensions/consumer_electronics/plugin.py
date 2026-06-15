@@ -12,18 +12,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from adl.diagnostics import Severity
+from adl.models import InterfaceSpec, Tags, get_interfaces_from_resolved
+from adl.types import TypeRegistry
 from pydantic import BaseModel, Field, model_validator
 
 from piki.core.engine.checker import Checker
 from piki.core.engine.context import Context
-from piki.core.engine.registry import Registry
-from piki.core.models.diagnostic import Severity
-from piki.core.models.interface import (
-    InterfaceSpec,
-    get_interfaces_from_resolved,
-    register_interface_types,
-)
-from piki.core.models.tags import Tags
 from piki.core.plugin import Plugin
 from piki.extensions.environments.plugin import OperatingEnvironmentFamily
 
@@ -118,14 +113,10 @@ class ConsumerElectronicsPlugin(Plugin):
     def model_dir(self) -> Path:
         return Path(__file__).parent / "models"
 
-    def register_families(self, registry: Registry) -> None:
-        register_interface_types(CONSUMER_ELECTRONICS_INTERFACE_TYPES)
-        registry.add_family("NetFamily", NetFamily)
-        registry.add_family("OperatingEnvironmentFamily", OperatingEnvironmentFamily)
-
-    def register_mate_types(self, registry: Registry) -> None:
-        # Net 不是 Mate，不需要注册 Mate type
-        pass
+    def register_types(self, type_registry: TypeRegistry) -> None:
+        type_registry.add_interface_types(CONSUMER_ELECTRONICS_INTERFACE_TYPES)
+        type_registry.add_family("NetFamily", NetFamily)
+        type_registry.add_family("OperatingEnvironmentFamily", OperatingEnvironmentFamily)
 
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule(

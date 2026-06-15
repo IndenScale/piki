@@ -12,7 +12,7 @@
 
 ### 2. Interface 类型校验解耦 telecom 插件
 
-**修复**：核心 `piki.core.models.interface` 新增全局接口类型注册表（`register_interface_type(s)` / `is_known_interface_type` / `get_known_interface_types`）。
+**修复**：核心 `adl.models.interface` 新增全局接口类型注册表（`register_interface_type(s)` / `is_known_interface_type` / `get_known_interface_types`）。
 
 - `telecom/types.py` 在模块导入时自动注册所有电信接口类型
 - `keyboard` 插件注册键盘领域接口类型
@@ -28,7 +28,7 @@
 
 ### 4. Footprint/Symbol 复合接口抽象
 
-**修复**：核心 `piki.core.models.interface` 新增 `FootprintSpec`，支持 `pins: list[InterfaceSpec]`；`get_interfaces_from_resolved` 自动把 footprint pin 的 id 展开为 `footprint_id/pin_id`。
+**修复**：核心 `adl.models.interface` 新增 `FootprintSpec`，支持 `pins: list[InterfaceSpec]`；`get_interfaces_from_resolved` 自动把 footprint pin 的 id 展开为 `footprint_id/pin_id`。
 
 **验证**：键盘示例的 PCB、电池、线材模型改用 `footprints` 声明 USB-C、JST 等多 pin 连接器，Net 节点使用 3 级引用（如 `PCB-01/usb-c/VBUS`）。
 
@@ -58,7 +58,7 @@
 
 ### 9. 装配层级（Assembly）支持
 
-**修复**：核心新增 `piki.core.models.assembly.AssemblyFamily`，支持 `children` 和 `sub_assemblies`；`Context` 新增 `mated_descendants()` / `mated_ancestors()` 递归层级遍历。`KeyboardAssemblyFamily` 继承自 `AssemblyFamily`。
+**修复**：核心新增 `adl.models.assembly.AssemblyFamily`，支持 `children` 和 `sub_assemblies`；`Context` 新增 `mated_descendants()` / `mated_ancestors()` 递归层级遍历。`KeyboardAssemblyFamily` 继承自 `AssemblyFamily`。
 
 **验证**：键盘示例新增 `SUB-ALPHA` 子装配体，`KB-MAIN` 通过 `sub_assemblies` 引用，并通过 `KB-ASSEMBLY-001` 规则校验。
 
