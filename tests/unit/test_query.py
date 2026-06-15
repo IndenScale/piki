@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-from aql.query import QuerySet
+from piki.core.engine._query_engine import QuerySet
 
 
 def _make_items() -> list[SimpleNamespace]:

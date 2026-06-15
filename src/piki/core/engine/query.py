@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aql import QuerySet as _AQLQuerySet
+from ._query_engine import QuerySet as _AQLQuerySet
 
 # Nested field prefixes for ADR-011 Catalog queries
 _PIKI_NESTED_FIELD_PREFIXES = {"catalog", "service_method", "service_methods", "resolved"}
