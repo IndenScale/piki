@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
+
 from piki.core.engine._query_engine import QuerySet
 
 
