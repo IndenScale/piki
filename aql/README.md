@@ -1,4 +1,152 @@
-# AQL：工程设计的查询语言
+# AQL — Abstract Query Language
+
+> 独立 pip 包：`pip install aql` | 源码：`aql/src/aql/query.py`
+
+AQL 是 piki 的查询 DSL，提供 Django-style 的惰性链式查询。用于在 piki 规则中过滤、排序和聚合设计实体。
+
+---
+
+## 快速开始
+
+```python
+from aql import QuerySet
+
+items = [
+    {"name": "Alice", "age": 30, "tags": ["dev"]},
+    {"name": "Bob",   "age": 25, "tags": ["ops"]},
+    {"name": "Charlie", "age": 35, "tags": ["dev", "ops"]},
+]
+
+qs = QuerySet(items).filter(age__gt=25).order_by("name")
+qs.list()  # [{"name": "Alice", ...}, {"name": "Charlie", ...}]
+```
+
+---
+
+## 操作符
+
+`filter(**kwargs)` 支持 Django-style 双下划线操作符：
+
+| 操作符          | 含义       | 示例                                |
+| --------------- | ---------- | ----------------------------------- |
+| （默认）        | 等值       | `filter(age=30)`                    |
+| `__eq`          | 等值（显式）| `filter(age__eq=30)`               |
+| `__ne`          | 不等       | `filter(status__ne="retired")`      |
+| `__gt`          | 大于       | `filter(age__gt=30)`                |
+| `__gte`         | 大于等于   | `filter(age__gte=30)`               |
+| `__lt`          | 小于       | `filter(age__lt=30)`                |
+| `__lte`         | 小于等于   | `filter(age__lte=30)`               |
+| `__in`          | 在集合中   | `filter(id__in=["A", "B"])`         |
+| `__in`（list 字段） | 字段任一元素在集合中 | `filter(tags__in=["dev"])` |
+| `__contains`    | 包含子串/元素 | `filter(name__contains="li")`      |
+| `__startswith`  | 前缀匹配   | `filter(id__startswith="SRV-")`     |
+| `__endswith`    | 后缀匹配   | `filter(id__endswith="-01")`        |
+
+---
+
+## 链式操作
+
+所有中间操作返回新的 `QuerySet`，原对象不变：
+
+```python
+qs = (
+    QuerySet(items)
+    .filter(age__gte=25)         # 过滤
+    .exclude(status="retired")   # 排除
+    .order_by("name")            # 排序
+    .order_by("-age")            # 降序
+    .limit(10)                   # 限制数量
+    .fields("id", "name")        # 字段投影
+)
+```
+
+---
+
+## 终结操作
+
+以下操作触发求值：
+
+| 方法             | 返回                      |
+| ---------------- | ------------------------- |
+| `.list()`        | `list[Any]`               |
+| `.first()`       | `Any | None`              |
+| `.count()`       | `int`                     |
+| `.values("a","b")` | `list[dict]`            |
+| `.group_by("f")` | `dict[Any, list[Any]]`    |
+| `.aggregate(**fn)` | `dict[str, Any]`        |
+| 迭代 `for x in qs` | 惰性求值               |
+| `qs[i]` / `qs[i:j]` | 索引/切片              |
+
+```python
+qs = QuerySet(items).filter(age__gte=25)
+
+qs.count()                      # 3
+qs.first()                      # {"name": "Alice", ...}
+qs.values("name", "age")        # [{"name": "Alice", "age": 30}, ...]
+qs.group_by("age")              # {25: [...], 30: [...], 35: [...]}
+qs.aggregate(
+    avg_age=lambda items: sum(i["age"] for i in items) / len(items),
+    count=len,
+)
+# {"avg_age": 30.0, "count": 3}
+```
+
+---
+
+## 连接
+
+```python
+devices = [{"id": "D1", "rack_id": "R1"}, {"id": "D2", "rack_id": "R2"}]
+racks   = [{"id": "R1", "location": "A"}, {"id": "R2", "location": "B"}]
+
+joined = QuerySet(devices).join(racks, "rack_id")
+for d in joined:
+    print(d["id"], d._join_related["location"])  # D1 A, D2 B
+```
+
+---
+
+## 扩展
+
+`QuerySet` 接受两个可选参数用于注入领域语义：
+
+```python
+from aql import QuerySet
+from aql.query import _KEY_UNRESOLVED
+
+def my_resolver(item, key):
+    """将 tags__discipline 解析为 item.tags["discipline"]"""
+    if key.startswith("tags__"):
+        return item.get("tags", {}).get(key[6:], _KEY_UNRESOLVED)
+    return _KEY_UNRESOLVED
+
+qs = QuerySet(
+    items,
+    key_resolver=my_resolver,
+    nested_field_prefixes={"catalog", "resolved"},
+)
+```
+
+- `key_resolver(item, key) -> value`：返回 `_KEY_UNRESOLVED` 表示不处理，否则返回值直接用于等值比较
+- `nested_field_prefixes`：`catalog__lifecycle` → `catalog.lifecycle` 嵌套路径解析
+
+---
+
+## 安装
+
+```bash
+pip install -e ./aql    # 从 piki monorepo 本地安装
+pip install aql         # 从 PyPI（未来）
+```
+
+---
+
+## 设计哲学
+
+> 以下内容摘自 piki 设计文档，描述 AQL 三子语言（PDL/PLL/PML）作为工程设计查询语言的理念。
+> 完整上下文见 [piki 文档](../docs/index.md)。
+
+---
 
 > SQL 让"查询数据"从程序员的专有技能变成了一种通用语言。工程领域至今没有等价物——我们仍然在用图纸、表格和口头沟通来表达"什么东西存在、放在哪里、怎么连接"。AQL（Assembly Query Language）要成为工程设计的 SQL：一组让人类和 Agent 都能精确表达工程意图的声明式子语言。
 

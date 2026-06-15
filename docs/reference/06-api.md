@@ -92,7 +92,7 @@ def export_bom(ctx: Context, config: dict):
 
 #### `Context.query(collection, **filters) -> QuerySet`
 
-查询指定集合，支持过滤操作符和链式操作。
+查询指定集合，返回 [AQL QuerySet](../../aql/README.md)。piki 为 AQL 注入了 `tags__discipline` 标签解析和 `catalog__lifecycle` 等嵌套字段路径支持。
 
 **参数：**
 
@@ -101,129 +101,52 @@ def export_bom(ctx: Context, config: dict):
 | `collection` | `str` | 集合名称（对应目录名，如 `"devices"`、`"racks"`） |
 | `**filters`  | —     | 过滤条件，支持 Django-style 双下划线操作符        |
 
-**支持的操作符：**
+完整操作符表、链式操作和聚合用法见 [AQL 文档](../../aql/README.md)。
 
-| 操作符         | 说明         | 示例                         |
-| -------------- | ------------ | ---------------------------- |
-| `__eq`         | 等值（默认） | `rack_id="RACK-A01"`         |
-| `__ne`         | 不等         | `status__ne="removed"`       |
-| `__gt`         | 大于         | `tdp_w__gt=300`              |
-| `__gte`        | 大于等于     | `position_u__gte=10`         |
-| `__lt`         | 小于         | `position_u__lt=20`          |
-| `__lte`        | 小于等于     | `height_u__lte=4`            |
-| `__in`         | 在列表中     | `rack_id__in=["A01", "A02"]` |
-| `__contains`   | 包含         | `tags__contains="critical"`  |
-| `__startswith` | 前缀匹配     | `id__startswith="SRV-"`      |
-| `__endswith`   | 后缀匹配     | `id__endswith="-01"`         |
+piki 扩展的操作符：
 
-**链式操作（返回 `QuerySet`）：**
+| 操作符             | 说明                        | 示例                                  |
+| ------------------ | --------------------------- | ------------------------------------- |
+| `tags__<key>`      | 按 Instance 标签过滤        | `tags__discipline="hvac"`             |
+| `catalog__<field>` | 嵌套字段路径（ADR-011）     | `catalog__lifecycle="active"`         |
+| `service_method__*`| 嵌套字段路径（ADR-011）     | `service_method__fire_watch_required=true` |
+| `resolved__<field>` | 解析后字段（含 Model 默认） | `resolved__tdp_w__gt=300`             |
 
-```python
-devices = ctx.query("devices")
+#### `Context.layout_entry(instance_id) -> LayoutEntry | None`
 
-# 排序
-ordered = devices.order_by("position_u")           # 升序
-ordered = devices.order_by("-tdp_w")               # 降序
-ordered = devices.order_by("rack_id", "-position_u")  # 多字段
+获取指定 Instance 的 Layout 条目。
 
-# 限制数量
-top3 = devices.order_by("-tdp_w").limit(3)
+#### `Context.find_instance(instance_id) -> ResolvedInstance | None`
 
-# 字段投影（只保留指定字段）
-ids = devices.fields("id", "model")
-```
+在项目树中查找 Instance（跨项目）。
 
-**终结操作：**
+#### `Context.instance_family(instance_id) -> str | None`
 
-```python
-devices = ctx.query("devices", rack_id="RACK-A01")
+返回指定 Instance 的 Family 名称。
 
-# 遍历
-for d in devices:
-    print(d.id, d.tdp_w)
+#### `Context.mated_children(ref) -> list[MateSpec]`
 
-# 获取第一个
-first = devices.first()
+返回被该引用承载的所有 Mate。
 
-# 计数
-count = devices.count()
+#### `Context.mated_parents(ref) -> list[MateSpec]`
 
-# 转为列表
-items = devices.list()
+返回承载该引用的所有 Mate。
 
-# 转为 dict 列表
-values = devices.values("id", "model", "tdp_w")
+#### `Context.mated_descendants(instance_id) -> list[str]`
 
-# 按字段分组
-groups = devices.group_by("rack_id")  # -> {"RACK-A01": [...], "RACK-A02": [...]}
+返回该 Instance 通过 Mate 承载的所有后代实例 ID（递归）。
 
-# 聚合计算
-stats = devices.aggregate(
-    total_power=lambda items: sum(d.tdp_w for d in items),
-    count=len,
-    avg_power=lambda items: sum(d.tdp_w for d in items) / len(items) if items else 0,
-)
+#### `Context.mated_ancestors(instance_id) -> list[str]`
 
-# 连接查询
-racks = ctx.query("racks")
-joined = devices.join(racks.list(), "rack_id")
-for d in joined:
-    rack = d._join_related  # 关联的 rack 对象
-```
-
----
-
-### `Severity`
-
-诊断严重级别枚举，与 LSP `DiagnosticSeverity` 兼容。
-
-| 级别      | 数值 | LSP 映射      | 说明                            |
-| --------- | ---- | ------------- | ------------------------------- |
-| `DEBUG`   | `0`  | `Information` | 调试信息，仅在 verbose 模式显示 |
-| `INFO`    | `1`  | `Information` | 一般信息                        |
-| `WARNING` | `2`  | `Warning`     | 警告，不影响继续执行            |
-| `ERROR`   | `3`  | `Error`       | 错误，当前检查项失败            |
-| `FATAL`   | `4`  | `Error`       | 致命错误，系统无法继续          |
-
-**用法：**
-
-```python
-from piki import Severity
-
-@rule("TELECOM-RACK-001", "机柜空间检查", severity=Severity.WARNING)
-def check_rack_space(ctx: Context):
-    # 失败时产生 WARNING 而非 ERROR
-    ...
-```
+返回承载该 Instance 的所有祖先实例 ID（递归）。
 
 ---
 
 ### `Project`
 
-项目类，负责加载配置、扫描目录、运行检查。
+项目入口，负责加载配置、插件和所有数据文件。
 
 **类方法：**
-
-#### `Project.discover(start=None) -> Project`
-
-从指定目录向上查找 `piki.toml`，返回 `Project` 实例。
-
-| 参数    | 类型                  | 必填 | 默认值       | 说明     |
-| ------- | --------------------- | ---- | ------------ | -------- |
-| `start` | `Path \| str \| None` | 否   | `Path.cwd()` | 起始目录 |
-
-**示例：**
-
-```python
-from piki import Project
-
-project = Project.discover("./my-datacenter")
-project.load()
-report = project.run_check()
-print(f"Passed: {report.passed}")
-```
-
-**实例方法：**
 
 | 方法                                                         | 说明                                 |
 | ------------------------------------------------------------ | ------------------------------------ |
@@ -309,15 +232,7 @@ class TelecomPlugin(Plugin):
 
 ### `QuerySet`
 
-惰性求值的查询结果集。所有过滤和链式操作都不立即执行，直到调用终结操作（`first()`、`list()`、迭代等）时才求值。
-
-**特性：**
-
-- 每次链式操作返回新的 `QuerySet`，原对象不变
-- 支持嵌套属性访问（如 `d.resolved.height_u`）
-- 支持 dict 和对象两种数据类型的统一访问
-
----
+惰性求值的查询结果集，由 [AQL](../../aql/README.md) 提供。piki 扩展了 `tags__` 键解析和 `catalog__` / `resolved__` / `service_method__` 嵌套字段前缀。详见 [AQL 文档](../../aql/README.md)。
 
 ### `Diagnostic`
 

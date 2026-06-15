@@ -15,7 +15,7 @@ from typing import Any
 from ..models.diagnostic import Location, RelatedInformation
 from ..models.layout import Layout, LayoutEntry
 from ..models.mating import MateGraph, MateSpec, parse_mate_ref
-from .query import QuerySet
+from .query import QuerySet, make_query_set
 from .registry import Registry
 
 
@@ -56,7 +56,7 @@ class Context:
         if self._files_filter is not None:
             allowed = self._files_filter
             items = [item for item in qs if str(getattr(item, "source", "")) in allowed]
-            qs = QuerySet(items)
+            qs = make_query_set(items)
         return qs
 
     def instances(self) -> QuerySet:
@@ -65,11 +65,11 @@ class Context:
         返回 QuerySet，支持链式操作。
         """
         items = list(self._registry.all_instances_tree().values())
-        qs = QuerySet(items)
+        qs = make_query_set(items)
         if self._files_filter is not None:
             allowed = self._files_filter
             items = [item for item in qs if str(getattr(item, "source", "")) in allowed]
-            qs = QuerySet(items)
+            qs = make_query_set(items)
         return qs
 
     # ------------------------------------------------------------------

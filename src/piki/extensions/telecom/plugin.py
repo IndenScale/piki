@@ -419,11 +419,15 @@ def check_rack_space(ctx):
 def check_rack_capacity(ctx):
     """检查机柜内设备总高度不超过机柜容量。"""
     for rack in ctx.query("racks"):
+        # Skip racks that failed schema validation (no total_u)
+        rack_total = getattr(rack.resolved, "total_u", 0)
+        if rack_total <= 0:
+            continue
         ctx.set_current_file(str(rack.source))
         devices = ctx.query("devices", rack_id=rack.id)
         total_height = sum(d.resolved.height_u for d in devices)
-        assert total_height <= rack.resolved.total_u, (
-            f"机柜 {rack.id} 已用 U 位 {total_height}，超过总容量 {rack.resolved.total_u}"
+        assert total_height <= rack_total, (
+            f"机柜 {rack.id} 已用 U 位 {total_height}，超过总容量 {rack_total}"
         )
     ctx.clear_current_file()
 
@@ -488,10 +492,10 @@ def check_device_physical_fit(ctx):
         if rack is None:
             continue
 
-        dev_depth = device.resolved.depth_mm
-        dev_width = device.resolved.width_mm
-        rack_depth = rack.resolved.depth_mm
-        rack_width = rack.resolved.width_mm
+        dev_depth = getattr(device.resolved, "depth_mm", 0)
+        dev_width = getattr(device.resolved, "width_mm", 0)
+        rack_depth = getattr(rack.resolved, "depth_mm", 0)
+        rack_width = getattr(rack.resolved, "width_mm", 0)
 
         # 跳过：任一方缺少尺寸数据
         if dev_depth <= 0 or rack_depth <= 0:
@@ -765,7 +769,7 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
     svg_outputs: dict[str, str] = {}
 
     for rack in racks:
-        total_u = rack.resolved.total_u
+        total_u = getattr(rack.resolved, "total_u", 0)
         canvas_h = MARGIN_TOP + total_u * U_HEIGHT + MARGIN_BOTTOM
 
         devices = ctx.query("devices", rack_id=rack.id).order_by("-position_u").list()
@@ -832,7 +836,7 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
         title_text = f"Rack: {rack.id}"
         if rack.resolved.name:
             title_text += f" — {rack.resolved.name}"
-        title_text += f"  ({rack.resolved.total_u}U)"
+        title_text += f"  ({getattr(rack.resolved, 'total_u', '?')}U)"
         ET.SubElement(
             svg,
             "text",

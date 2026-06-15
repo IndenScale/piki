@@ -35,7 +35,7 @@ from ..parsing.layout_loader import find_layout_file, load_layout_file
 from ..parsing.loaders import load_yaml
 from ..parsing.mate_loader import load_mates
 from ..parsing.yaml_source import SourceTrackedDict, get_field_location
-from .query import QuerySet
+from .query import QuerySet, make_query_set
 
 # Catalog 来源优先级（数值越小优先级越高）
 _CATALOG_SOURCE_PRIORITY = {
@@ -1034,7 +1034,7 @@ class Registry:
           tags__discipline=hvac  → 自动按 tags.discipline 过滤
         """
         items = list(self._collections.get(collection, {}).values())
-        qs = QuerySet(items)
+        qs = make_query_set(items)
         if filters:
             qs = qs.filter(**filters)
         return qs

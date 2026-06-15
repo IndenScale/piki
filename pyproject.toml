@@ -34,6 +34,7 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
+    "aql",
     "pydantic>=2.0",
     "pyyaml>=6.0",
 ]
@@ -60,7 +61,7 @@ Changelog = "https://github.com/indenscale/piki/blob/main/CHANGELOG.md"
 piki = "piki.cli:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "aql/src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

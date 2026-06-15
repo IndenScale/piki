@@ -15,7 +15,7 @@ from .generator_registry import (
     GeneratorResult,
     generator,
 )
-from .query import QuerySet
+from .query import QuerySet, make_query_set
 from .registry import Registry
 
 __all__ = [
@@ -32,4 +32,5 @@ __all__ = [
     "Context",
     "Registry",
     "QuerySet",
+    "make_query_set",
 ]

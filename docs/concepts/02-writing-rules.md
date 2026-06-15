@@ -71,33 +71,24 @@ $ piki check
 
 ### 关键技巧
 
-1. **用 `ctx.query` 获取数据**：支持按条件过滤和链式操作
+1. **用 `ctx.query` 获取数据**：通过 [AQL](../../aql/README.md) 过滤、排序和聚合
 2. **用 `resolved` 访问解析后的值**：自动包含 Model 默认值
 3. **用 `assert` 表达断言**：失败时自动输出详细信息
 4. **用 `ctx.config` 读取配置**：阈值等参数可配置
 
-## 查询语法速查
+## 查询语法
 
-`ctx.query(collection, **filters)` 支持 Django-style 双下划线操作符：
+`ctx.query(collection, **filters)` 使用 AQL（Abstract Query Language），支持 Django-style 双下划线操作符和链式操作。完整操作符表和链式 API 见 [AQL 文档](../../aql/README.md)。
 
-| 操作符 | 含义 | 示例 |
-|--------|------|------|
-| （默认） | 等值 | `ctx.query("devices", rack_id="RACK-A01")` |
-| `__ne` | 不等 | `ctx.query("devices", status__ne="retired")` |
-| `__gt` | 大于 | `ctx.query("devices", tdp_w__gt=300)` |
-| `__gte` | 大于等于 | `ctx.query("devices", tdp_w__gte=100)` |
-| `__lt` | 小于 | `ctx.query("devices", position_u__lt=20)` |
-| `__lte` | 小于等于 | `ctx.query("devices", height_u__lte=4)` |
-| `__in` | 在列表中 | `ctx.query("devices", rack_id__in=["A01","A02"])` |
-| `__in`（list 字段） | 字段中任一元素在期望集合中 | `ctx.query("devices", tags__in=["dev", "ops"])` |
-| `__contains` | 包含 | `ctx.query("devices", name__contains="DB")` |
-| `__contains`（list 字段） | 字段值包含期望元素 | `ctx.query("assembly", connectivity__contains="bluetooth")` |
-| `__startswith` | 前缀 | `ctx.query("devices", id__startswith="SRV-")` |
-| `__endswith` | 后缀 | `ctx.query("devices", id__endswith="-PROD")` |
-
-链式操作（返回 QuerySet）：
+速览：
 
 ```python
+# 过滤
+ctx.query("devices", rack_id="RACK-A01")
+ctx.query("devices", tdp_w__gt=300)
+ctx.query("devices", rack_id__in=["A01", "A02"])
+
+# 链式
 devices = (
     ctx.query("devices", rack_id__in=["A01", "A02"])
     .filter(tdp_w__gt=200)
@@ -105,16 +96,13 @@ devices = (
     .order_by("position_u")
     .limit(10)
 )
-```
 
-终结操作：
-
-```python
-ctx.query("devices").count()                    # 数量
-ctx.query("devices", rack_id="A01").first()     # 第一条
-ctx.query("devices").values("id", "tdp_w")      # dict 列表
-ctx.query("devices").group_by("rack_id")        # 按机柜分组
-ctx.query("devices").aggregate(                 # 聚合计算
+# 终结
+ctx.query("devices").count()
+ctx.query("devices", rack_id="A01").first()
+ctx.query("devices").values("id", "tdp_w")
+ctx.query("devices").group_by("rack_id")
+ctx.query("devices").aggregate(
     total_power=lambda items: sum(d.tdp_w for d in items),
     count=len,
 )

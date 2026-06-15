@@ -166,5 +166,5 @@ Agent Native Industry Software 的每一个词都是对旧范式的否定：
 ## 继续阅读
 
 - [软件定义工程（SDE）：大模型落地工业的必由之路](01-why-sde.md)
-- [AQL：工程设计的查询语言](03-aql.md)
+- [AQL：工程设计的查询语言](../../aql/README.md)
 - [Engineering RLVR：可验证奖励如何驱动工程 AI](04-engineering-rlvr.md)

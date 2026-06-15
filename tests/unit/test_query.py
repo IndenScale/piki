@@ -5,8 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-
-from piki.core.engine.query import QuerySet, _get_value, _match, _project
+from aql.query import QuerySet
 
 
 def _make_items() -> list[SimpleNamespace]:
@@ -113,7 +112,7 @@ class TestOperators:
 
     def test_unknown_operator_raises(self) -> None:
         items = _make_items()
-        with pytest.raises(ValueError, match="Unknown query operator"):
+        with pytest.raises(ValueError, match="Unknown query operator: 'unknown' in 'age__unknown'"):
             QuerySet(items).filter(age__unknown=1)
 
     def test_nested_field_path_via_double_underscore(self) -> None:
@@ -121,7 +120,7 @@ class TestOperators:
         from types import SimpleNamespace
 
         items = [SimpleNamespace(catalog={"lifecycle": "eol"})]
-        qs = QuerySet(items).filter(catalog__lifecycle="eol")
+        qs = QuerySet(items, nested_field_prefixes={"catalog"}).filter(catalog__lifecycle="eol")
         assert qs.count() == 1
 
     def test_nested_field_path_with_operator(self) -> None:
@@ -260,35 +259,3 @@ class TestJoin:
         joined = QuerySet(devices).join(racks, "rack_id").list()
         assert len(joined) == 1
         assert joined[0].id == "D1"
-
-
-class TestHelpers:
-    """测试内部辅助函数。"""
-
-    def test_get_value_dict(self) -> None:
-        d = {"a": {"b": 1}}
-        assert _get_value(d, "a") == {"b": 1}
-        # dict 不支持嵌套属性访问（a.b），_get_value 先尝试 getattr 再 dict.get
-        # 对于 dict，"a.b" 不会自动拆分，因为 dict 有 "a.b" 这个 key 吗？没有
-        # 实际上 _get_value 对 dict 会走 dict.get("a.b") -> None
-        # 嵌套 dict 访问应通过属性路径方式，但 _get_value 的实现是：
-        # 先 hasattr/getattr，对 dict 来说 hasattr(d, "a.b") 为 False
-        # 然后 isinstance(obj, dict) -> obj.get("a.b") -> None
-        # 所以 dict 不支持 a.b 路径访问
-        assert _get_value(d, "a.b") is None
-        assert _get_value(d, "x") is None
-
-    def test_get_value_nested_attr(self) -> None:
-        obj = SimpleNamespace(a=SimpleNamespace(b=2))
-        assert _get_value(obj, "a.b") == 2
-
-    def test_match_multiple_filters(self) -> None:
-        item = SimpleNamespace(id="A", age=30)
-        assert _match(item, {"id": "A", "age": 30}) is True
-        assert _match(item, {"id": "A", "age": 25}) is False
-
-    def test_project(self) -> None:
-        item = SimpleNamespace(id="A", age=30, name="X")
-        projected = _project(item, ["id", "age"])
-        assert projected.id == "A"
-        assert projected.age == 30
