@@ -223,4 +223,4 @@ piki 对生态的公开姿态是：
 
 - [Text-Native & Agent-Oriented](04-text-native-and-agent-oriented.md)
 - [为什么需要 piki](00-why-piki.md)
-- [ADR-002: 插件架构](../adr/002-plugin-architecture.md)
+- [ADR-002: 插件架构](../adr/engine-and-plugins/002-plugin-architecture.md)

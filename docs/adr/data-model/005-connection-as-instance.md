@@ -259,7 +259,7 @@ def check_interface_compatibility(ctx):
 
 ## 参考
 
-- [ADR-007: CAD 资产引用](007-cad-asset-reference.md)
-- [ADR-001: 项目组织](001-project-organization.md)
-- [ADR-002: 插件架构](002-plugin-architecture.md)
+- [ADR-007: CAD 资产引用](../visualization/007-cad-asset-reference.md)
+- [ADR-001: 项目组织](../data-model/001-project-organization.md)
+- [ADR-002: 插件架构](../engine-and-plugins/002-plugin-architecture.md)
 - EDA netlist 标准 / IFC: `IfcRelConnectsElements`

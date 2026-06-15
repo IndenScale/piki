@@ -417,8 +417,8 @@ enterprise = "git@internal:piki-enterprise-catalog.git"
 
 ## 参考
 
-- [ADR-001: 项目组织模型](../adr/001-project-organization.md)
-- [ADR-002: 插件架构](../adr/002-plugin-architecture.md)
-- [ADR-004: Generator 交付物管线](../adr/004-generator-as-deliverable-pipeline.md)
-- [ADR-007: CAD 资产引用](../adr/007-cad-asset-reference.md)
-- [ADR-010: 多上下文工程设计](../adr/010-brownfield-reference-instance.md)
+- [ADR-001: 项目组织模型](../data-model/001-project-organization.md)
+- [ADR-002: 插件架构](../engine-and-plugins/002-plugin-architecture.md)
+- [ADR-004: Generator 交付物管线](../engine-and-plugins/004-generator-as-deliverable-pipeline.md)
+- [ADR-007: CAD 资产引用](../visualization/007-cad-asset-reference.md)
+- [ADR-010: 多上下文工程设计](../data-model/010-brownfield-reference-instance.md)

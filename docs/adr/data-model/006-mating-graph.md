@@ -513,8 +513,8 @@ class RackMountMate(BaseModel):
 
 ## 参考
 
-- [ADR-001: 项目组织模型](001-project-organization.md) — Instance/Layout 分离先例
-- [ADR-002: 插件架构](002-plugin-architecture.md) — 插件注册 Mate type
-- [ADR-003: 多级质量检查体系](003-quality-checks-and-diagnostics.md) — L0-L6 检查分层
-- [ADR-005: 连接关系实例化与接口模型](005-connection-as-instance.md) — Connection 建模
+- [ADR-001: 项目组织模型](../data-model/001-project-organization.md) — Instance/Layout 分离先例
+- [ADR-002: 插件架构](../engine-and-plugins/002-plugin-architecture.md) — 插件注册 Mate type
+- [ADR-003: 多级质量检查体系](../engine-and-plugins/003-quality-checks-and-diagnostics.md) — L0-L6 检查分层
+- [ADR-005: 连接关系实例化与接口模型](../data-model/005-connection-as-instance.md) — Connection 建模
 - [设计知识成熟曲线](../concepts/06-knowledge-maturation.md) — 仿真 → 规则 → Mating 的演进路径

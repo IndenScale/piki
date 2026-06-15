@@ -407,7 +407,7 @@ def check_cable_interface_match(self, ctx: Context) -> None:
 
 ## 参考
 
-- [ADR-005: Connection 与 Interface 模型](../adr/005-connection-as-instance.md)
+- [ADR-005: Connection 与 Interface 模型](../adr/data-model/005-connection-as-instance.md)
 - [Telecom PRD](../../samples/01-telecom-expansion/PRD.md)
 - [IEC 60603-7: RJ45 连接器标准](https://en.wikipedia.org/wiki/IEC_60603-7)
 - [SFF-8431: SFP+ 规范](https://members.snia.org/document/dl/25876)

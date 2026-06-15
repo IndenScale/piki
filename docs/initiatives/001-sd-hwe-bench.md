@@ -3,7 +3,7 @@
 - **状态：** 倡议 / 讨论中
 - **日期：** 2026-06-13
 - **作者：** piki 核心团队与社区
-- **相关文档：** [软件定义工程（SDE）](../pitch/00-software-defined-engineering.md)、[ADR-003: 多级质量检查](../adr/003-quality-checks-and-diagnostics.md)、[piki 的生态位](../concepts/05-ecosystem-positioning.md)
+- **相关文档：** [软件定义工程（SDE）](../pitch/00-software-defined-engineering.md)、[ADR-003: 多级质量检查](../adr/engine-and-plugins/003-quality-checks-and-diagnostics.md)、[piki 的生态位](../concepts/05-ecosystem-positioning.md)
 
 ---
 
@@ -267,7 +267,7 @@ SD-HWE-Bench 与代表性工作的差异化可概括如下：
 
 1. **社区讨论**：在 GitHub Discussions 或相关渠道收集反馈；
 2. **RFC 拆分**：若倡议通过，创建 `rfcs/002-sde-hwe-bench-framework.md`，设计数据集格式、评分 API、leaderboard 接口；
-3. **治理 ADR**：创建 `adr/011-sde-hwe-bench-governance.md`，记录 piki 与 benchmark 的边界决策；
+3. **治理 ADR**：创建 `adr/engine-and-plugins/011-sde-hwe-bench-governance.md`，记录 piki 与 benchmark 的边界决策；
 4. **MVP 启动**：从 piki samples 改造第一批任务，建立可运行的评分流水线。
 
 ---
@@ -278,5 +278,5 @@ SD-HWE-Bench 与代表性工作的差异化可概括如下：
 - [SWE-Bench for HWE](../pitch/01-swe-bench-for-hwe.md)
 - [工程领域 AI Benchmark 形态与缺口调研](./001-sd-hwe-bench-benchmark-survey.md)
 - [piki 的生态位](../concepts/05-ecosystem-positioning.md)
-- [ADR-003: 多级质量检查与统一诊断](../adr/003-quality-checks-and-diagnostics.md)
-- [ADR-001: 项目组织模型](../adr/001-project-organization.md)
+- [ADR-003: 多级质量检查与统一诊断](../adr/engine-and-plugins/003-quality-checks-and-diagnostics.md)
+- [ADR-001: 项目组织模型](../adr/data-model/001-project-organization.md)

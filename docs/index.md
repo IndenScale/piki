@@ -31,7 +31,7 @@
 
 1. **[插件架构](concepts/01-core-concepts.md#7-plugin)** — Plugin 概念与内置插件
 2. **[编写检查规则](concepts/02-writing-rules.md)** — `@rule` / `@generator` 装饰器 + QuerySet API
-3. **[ADR-002: 插件架构](adr/002-plugin-architecture.md)** — 为什么用插件而非硬编码
+3. **[架构决策记录 (ADR)](adr/README.md)** — 按数据模型 / 引擎与插件 / 可视化三层组织
 4. **[telecom 插件源码](../src/piki/extensions/telecom/plugin.py)** — 完整参考实现
 5. **[datacenter 插件源码](../src/piki/extensions/datacenter/plugin.py)** — 多 Family 类型参考实现
 
@@ -52,16 +52,16 @@
 
 记录 piki 的关键技术决策及其理由，按核心主线到辅助体验的顺序排列：
 
-- **[ADR-001: 项目组织模型](adr/001-project-organization.md)** — Instance/Layout 分离、嵌套项目、正交 Tag
-- **[ADR-002: 插件架构](adr/002-plugin-architecture.md)** — 为什么用 Python 插件而非配置或硬编码
-- **[ADR-003: 多级质量检查与统一诊断](adr/003-quality-checks-and-diagnostics.md)** — L0-L6 分层检查、LSP 兼容诊断格式
-- **[ADR-004: 生成器](adr/004-generator-as-deliverable-pipeline.md)** — 从文本真相源到工程交付物
-- **[ADR-005: Connection 与 Interface](adr/005-connection-as-instance.md)** — Interface 模型、Connection 实例、引用语法
-- **[ADR-006: Mating Graph](adr/006-mating-graph.md)** — 部件耦合关系建模（机械配合、守恒、同步等）
-- **[ADR-007: CAD 资产引用](adr/007-cad-asset-reference.md)** — 引用而非嵌入、白牌型号、资产完整性
-- **[ADR-008: 空间可视化策略](adr/008-spatial-visualization-strategy.md)** — OpenUSD 选型、碰撞检测、glTF 过渡
-- **[ADR-009: Piki Studio](adr/009-piki-studio.md)** — 浏览器端 IDE、自研 USDA 解析器
-- **[ADR-010: 多上下文工程设计](adr/010-brownfield-reference-instance.md)** — 用 Context 统一建模外部、保密、标段、粗糙设计与自然环境实体（勘察中）
+- **[ADR-001: 项目组织模型](adr/data-model/001-project-organization.md)** — Instance/Layout 分离、嵌套项目、正交 Tag
+- **[ADR-002: 插件架构](adr/engine-and-plugins/002-plugin-architecture.md)** — 为什么用 Python 插件而非配置或硬编码
+- **[ADR-003: 多级质量检查与统一诊断](adr/engine-and-plugins/003-quality-checks-and-diagnostics.md)** — L0-L6 分层检查、LSP 兼容诊断格式
+- **[ADR-004: 生成器](adr/engine-and-plugins/004-generator-as-deliverable-pipeline.md)** — 从文本真相源到工程交付物
+- **[ADR-005: Connection 与 Interface](adr/data-model/005-connection-as-instance.md)** — Interface 模型、Connection 实例、引用语法
+- **[ADR-006: Mating Graph](adr/data-model/006-mating-graph.md)** — 部件耦合关系建模（机械配合、守恒、同步等）
+- **[ADR-007: CAD 资产引用](adr/visualization/007-cad-asset-reference.md)** — 引用而非嵌入、白牌型号、资产完整性
+- **[ADR-008: 空间可视化策略](adr/visualization/008-spatial-visualization-strategy.md)** — OpenUSD 选型、碰撞检测、glTF 过渡
+- **[ADR-009: Piki Studio](adr/visualization/009-piki-studio.md)** — 浏览器端 IDE、自研 USDA 解析器
+- **[ADR-010: 多上下文工程设计](adr/data-model/010-brownfield-reference-instance.md)** — 用 Context 统一建模外部、保密、标段、粗糙设计与自然环境实体（勘察中）
 
 ---
 

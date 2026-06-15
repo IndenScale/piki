@@ -103,4 +103,4 @@ assets:
 
 ## 参考
 
-- [空间可视化策略](../adr/008-spatial-visualization-strategy.md)
+- [空间可视化策略](../visualization/008-spatial-visualization-strategy.md)

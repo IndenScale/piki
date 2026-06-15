@@ -105,4 +105,4 @@ def check_3d_collision(ctx):
 ## 参考
 
 - [OpenUSD 官方文档](https://openusd.org/)
-- [Piki Studio](../adr/009-piki-studio.md)
+- [Piki Studio](../visualization/009-piki-studio.md)

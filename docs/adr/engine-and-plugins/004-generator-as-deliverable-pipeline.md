@@ -281,6 +281,6 @@ cable-list = "采购清单"
 
 ## 参考
 
-- [ADR-002: 插件架构](002-plugin-architecture.md)
+- [ADR-002: 插件架构](../engine-and-plugins/002-plugin-architecture.md)
 - [Telecom 领域 PRD](../../samples/01-telecom-expansion/PRD.md)
 - [GeneratorRegistry 源码](../../src/piki/core/engine/generator_registry.py)

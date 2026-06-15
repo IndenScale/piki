@@ -397,7 +397,7 @@ geometry:
 
 ## 参考
 
-- [ADR-001: 项目组织模型](001-project-organization.md)
-- [ADR-005: 连接关系实例化与接口模型](005-connection-as-instance.md)
-- [ADR-006: 配合图（Mating Graph）](006-mating-graph.md)
+- [ADR-001: 项目组织模型](../data-model/001-project-organization.md)
+- [ADR-005: 连接关系实例化与接口模型](../data-model/005-connection-as-instance.md)
+- [ADR-006: 配合图（Mating Graph）](../data-model/006-mating-graph.md)
 - [Instance 格式规范](../reference/04-instance.md)

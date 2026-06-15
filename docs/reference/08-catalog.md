@@ -211,6 +211,6 @@ piki 核心与内置插件不做：
 
 ## 参考
 
-- [ADR-011: Catalog 作为设计权威层](../adr/011-catalog-as-authority-layer.md)
+- [ADR-011: Catalog 作为设计权威层](../adr/engine-and-plugins/011-catalog-as-authority-layer.md)
 - [03-model.md](03-model.md)
 - [04-instance.md](04-instance.md)
