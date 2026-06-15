@@ -1,4 +1,4 @@
-"""AQL QuerySet unit tests — pure AQL, no piki dependency."""
+"""QuerySet unit tests — pure query engine, no full piki dependency."""
 
 from __future__ import annotations
 

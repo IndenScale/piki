@@ -208,4 +208,4 @@ Agent 必须更强才能通过
 
 - [软件定义工程（SDE）：大模型落地工业的必由之路](01-why-sde.md)
 - [Agent Native 工业软件：为 Agent 时代重新设计底层](02-agent-native.md)
-- [AQL：工程设计的查询语言](../../aql/README.md)
+- [ADL：装配体定义语言](03-adl.md)

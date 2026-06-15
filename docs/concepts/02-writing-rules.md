@@ -71,14 +71,14 @@ $ piki check
 
 ### 关键技巧
 
-1. **用 `ctx.query` 获取数据**：通过 [AQL](../../aql/README.md) 过滤、排序和聚合
+1. **用 `ctx.query` 获取数据**：通过 QuerySet 过滤、排序和聚合
 2. **用 `resolved` 访问解析后的值**：自动包含 Model 默认值
 3. **用 `assert` 表达断言**：失败时自动输出详细信息
 4. **用 `ctx.config` 读取配置**：阈值等参数可配置
 
 ## 查询语法
 
-`ctx.query(collection, **filters)` 使用 AQL（Abstract Query Language），支持 Django-style 双下划线操作符和链式操作。完整操作符表和链式 API 见 [AQL 文档](../../aql/README.md)。
+`ctx.query(collection, **filters)` 使用 piki 查询引擎，支持 Django-style 双下划线操作符和链式操作。完整操作符表和链式 API 见 [`piki.core.engine._query_engine`](../../src/piki/core/engine/_query_engine.py) 源码。
 
 速览：
 

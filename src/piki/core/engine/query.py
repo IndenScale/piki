@@ -1,4 +1,4 @@
-"""piki query adapter — wraps AQL QuerySet with piki-specific semantics.
+"""piki query adapter — wraps QuerySet with piki-specific semantics.
 
 Adds:
 - tags__discipline → resolved.tags[discipline] key resolution
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ._query_engine import QuerySet as _AQLQuerySet
+from ._query_engine import QuerySet as _BaseQuerySet
 
 # Nested field prefixes for ADR-011 Catalog queries
 _PIKI_NESTED_FIELD_PREFIXES = {"catalog", "service_method", "service_methods", "resolved"}
@@ -59,9 +59,9 @@ def _get_value(item: Any, field: str) -> Any:
     return obj
 
 
-def make_query_set(items: list[Any]) -> _AQLQuerySet:
-    """Create an AQL QuerySet pre-configured with piki semantics."""
-    return _AQLQuerySet(
+def make_query_set(items: list[Any]) -> _BaseQuerySet:
+    """Create a QuerySet pre-configured with piki semantics."""
+    return _BaseQuerySet(
         items,
         key_resolver=_piki_key_resolver,
         nested_field_prefixes=_PIKI_NESTED_FIELD_PREFIXES,
@@ -70,4 +70,4 @@ def make_query_set(items: list[Any]) -> _AQLQuerySet:
 
 
 # Re-export for backward compatibility
-QuerySet = _AQLQuerySet
+QuerySet = _BaseQuerySet

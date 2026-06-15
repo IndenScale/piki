@@ -29,7 +29,7 @@ piki check    # 在提交前自动发现设计错误
 |---|---|---|
 | 1 | [软件定义工程（SDE）](docs/pitch/01-why-sde.md) | 为什么这件事必须发生——大模型与工业软件的范式错配 |
 | 2 | [Agent Native 工业软件](docs/pitch/02-agent-native.md) | 新品类是什么——五项原则与生态位 |
-| 3 | [AQL：工程查询语言](docs/pitch/03-aql.md) | 怎么表达——PDL/PLL/PML 三子语言 |
+| 3 | [ADL：装配体定义语言](docs/pitch/03-adl.md) | 怎么表达——PDL/PML/PLL 三子语言 |
 | 4 | [Engineering RLVR](docs/pitch/04-engineering-rlvr.md) | 怎么进化——可验证奖励驱动工程 AI |
 
 ---

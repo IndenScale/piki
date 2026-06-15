@@ -168,5 +168,5 @@ SDE 不是要让 Agent 取代工程师。它的目标是：
 ## 继续阅读
 
 - [Agent Native 工业软件：为 Agent 时代重新设计底层](02-agent-native.md)
-- [AQL：工程设计的查询语言](../../aql/README.md)
+- [ADL：装配体定义语言](03-adl.md)
 - [Engineering RLVR：可验证奖励如何驱动工程 AI](04-engineering-rlvr.md)

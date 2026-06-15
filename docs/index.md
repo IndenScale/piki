@@ -13,7 +13,7 @@
 1. **[为什么需要 piki](concepts/00-why-piki.md)** — 从真实事故出发，理解问题与解决方案
 2. **[软件定义工程（SDE）](pitch/01-why-sde.md)** — 大模型落地工业的必由之路
 3. **[Agent Native 工业软件](pitch/02-agent-native.md)** — 为 Agent 时代重新设计底层
-4. **[AQL：工程设计的查询语言](../../aql/README.md)** — PDL + PLL + PML 三子语言
+4. **[ADL：装配体定义语言](pitch/03-adl.md)** — PDL + PML + PLL 三子语言
 5. **[Engineering RLVR](pitch/04-engineering-rlvr.md)** — 可验证奖励如何驱动工程 AI
 6. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
 
@@ -43,7 +43,7 @@
 
 1. **[01 - 软件定义工程（SDE）](pitch/01-why-sde.md)** — 范式宣言：大模型与工业软件之间的交互范式错配，以及 Headless Engineering 的解决方案
 2. **[02 - Agent Native 工业软件](pitch/02-agent-native.md)** — 品类定义：五项原则（声明式、CLI 优先、开发数据格式、Git/CICD、开源知识网络）
-3. **[03 - AQL：工程设计的查询语言](../../aql/README.md)** — 技术规范：PDL（部件定义）+ PLL（部件布局）+ PML（部件配合）三子语言
+3. **[03 - ADL：装配体定义语言](pitch/03-adl.md)** — 技术规范：PDL（部件定义）+ PML（部件配合）+ PLL（部件布局）三子语言
 4. **[04 - Engineering RLVR](pitch/04-engineering-rlvr.md)** — 驱动引擎：分层规则引擎作为 RLVR 奖励信号，SD-HWE-Bench 基线数据
 
 ---

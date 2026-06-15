@@ -92,7 +92,7 @@ def export_bom(ctx: Context, config: dict):
 
 #### `Context.query(collection, **filters) -> QuerySet`
 
-查询指定集合，返回 [AQL QuerySet](../../aql/README.md)。piki 为 AQL 注入了 `tags__discipline` 标签解析和 `catalog__lifecycle` 等嵌套字段路径支持。
+查询指定集合，返回 `QuerySet`。piki 查询引擎注入了 `tags__discipline` 标签解析和 `catalog__lifecycle` 等嵌套字段路径支持。
 
 **参数：**
 
@@ -101,7 +101,7 @@ def export_bom(ctx: Context, config: dict):
 | `collection` | `str` | 集合名称（对应目录名，如 `"devices"`、`"racks"`） |
 | `**filters`  | —     | 过滤条件，支持 Django-style 双下划线操作符        |
 
-完整操作符表、链式操作和聚合用法见 [AQL 文档](../../aql/README.md)。
+完整操作符表、链式操作和聚合用法见 [`piki.core.engine._query_engine`](../../src/piki/core/engine/_query_engine.py) 源码与对应单元测试。
 
 piki 扩展的操作符：
 
@@ -232,7 +232,7 @@ class TelecomPlugin(Plugin):
 
 ### `QuerySet`
 
-惰性求值的查询结果集，由 [AQL](../../aql/README.md) 提供。piki 扩展了 `tags__` 键解析和 `catalog__` / `resolved__` / `service_method__` 嵌套字段前缀。详见 [AQL 文档](../../aql/README.md)。
+惰性求值的查询结果集，由 piki 查询引擎提供。piki 扩展了 `tags__` 键解析和 `catalog__` / `resolved__` / `service_method__` 嵌套字段前缀。
 
 ### `Diagnostic`
 
