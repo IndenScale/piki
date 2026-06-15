@@ -11,9 +11,11 @@
 ### 🧐 评估 piki
 
 1. **[为什么需要 piki](concepts/00-why-piki.md)** — 从真实事故出发，理解问题与解决方案
-2. **[软件定义工程（SDE）](pitch/00-software-defined-engineering.md)** — 大模型落地工业的必由之路
-3. **[AI Readiness](concepts/03-advanced.md#ai-readiness)** — Text-Native + 开源 = AI 可插拔
-4. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
+2. **[软件定义工程（SDE）](pitch/01-why-sde.md)** — 大模型落地工业的必由之路
+3. **[Agent Native 工业软件](pitch/02-agent-native.md)** — 为 Agent 时代重新设计底层
+4. **[AQL：工程设计的查询语言](pitch/03-aql.md)** — PDL + PLL + PML 三子语言
+5. **[Engineering RLVR](pitch/04-engineering-rlvr.md)** — 可验证奖励如何驱动工程 AI
+6. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
 
 ### 🔧 使用 piki
 
@@ -22,7 +24,7 @@
 3. **[高级用法 & AI Readiness](concepts/03-advanced.md)** — CI/CD、Generator、AI 为何需要 Text-Native
 4. **[Text-Native & Agent-Oriented](concepts/04-text-native-and-agent-oriented.md)** — piki 的人机协同设计哲学
 5. **[piki 的生态位](concepts/05-ecosystem-positioning.md)** — 敌、友与中间力量
-6. **[软件定义工程（SDE）](pitch/00-software-defined-engineering.md)** — piki 推动的工业设计范式变革
+6. **[设计知识成熟曲线](concepts/06-knowledge-maturation.md)** — 从仿真到规则到 Mating 的设计知识演进
 7. **[示例项目](../samples/)** — 2 个精选示例：设备扩容 + 数据中心建设
 
 ### 🧩 扩展 piki
@@ -35,6 +37,17 @@
 
 ---
 
+## Pitch 系列（核心理念）
+
+四篇文章从范式到引擎，逐层深入 piki 的设计哲学：
+
+1. **[01 - 软件定义工程（SDE）](pitch/01-why-sde.md)** — 范式宣言：大模型与工业软件之间的交互范式错配，以及 Headless Engineering 的解决方案
+2. **[02 - Agent Native 工业软件](pitch/02-agent-native.md)** — 品类定义：五项原则（声明式、CLI 优先、开发数据格式、Git/CICD、开源知识网络）
+3. **[03 - AQL：工程设计的查询语言](pitch/03-aql.md)** — 技术规范：PDL（部件定义）+ PLL（部件布局）+ PML（部件配合）三子语言
+4. **[04 - Engineering RLVR](pitch/04-engineering-rlvr.md)** — 驱动引擎：分层规则引擎作为 RLVR 奖励信号，SD-HWE-Bench 基线数据
+
+---
+
 ## 架构决策记录 (ADR)
 
 记录 piki 的关键技术决策及其理由，按核心主线到辅助体验的顺序排列：
@@ -44,7 +57,7 @@
 - **[ADR-003: 多级质量检查与统一诊断](adr/003-quality-checks-and-diagnostics.md)** — L0-L6 分层检查、LSP 兼容诊断格式
 - **[ADR-004: 生成器](adr/004-generator-as-deliverable-pipeline.md)** — 从文本真相源到工程交付物
 - **[ADR-005: Connection 与 Interface](adr/005-connection-as-instance.md)** — Interface 模型、Connection 实例、引用语法
-- **[ADR-006: Mating Graph](adr/006-mating-graph.md)** — 物理配合关系建模
+- **[ADR-006: Mating Graph](adr/006-mating-graph.md)** — 部件耦合关系建模（机械配合、守恒、同步等）
 - **[ADR-007: CAD 资产引用](adr/007-cad-asset-reference.md)** — 引用而非嵌入、白牌型号、资产完整性
 - **[ADR-008: 空间可视化策略](adr/008-spatial-visualization-strategy.md)** — OpenUSD 选型、碰撞检测、glTF 过渡
 - **[ADR-009: Piki Studio](adr/009-piki-studio.md)** — 浏览器端 IDE、自研 USDA 解析器
@@ -64,7 +77,7 @@
 
 需要社区共同决策的战略性提案与跨项目倡议：
 
-- **[Initiative-001: SD-HWE-Bench](initiatives/001-sde-hwe-bench.md)** — 面向实体工程领域的开放式端到端能力评测基准
+- **[Initiative-001: SD-HWE-Bench](initiatives/001-sd-hwe-bench.md)** — 面向实体工程领域的开放式端到端能力评测基准
 
 ---
 
@@ -80,7 +93,6 @@
 ## 工具
 
 - **[Piki Studio](../studio/)** — 浏览器端 3D 预览 IDE，打开项目即看布局
-- **[SDE (Software Defined Engineering)](pitch/00-software-defined-engineering.md)** — piki 推动的软件定义工程理念
 
 ## 参与贡献
 
