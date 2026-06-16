@@ -52,7 +52,7 @@
 1. **ADL 作为 Git 中的唯一设计真相源**：Instance、Model、Catalog、Layout、Mating 全部以 YAML 文本存在；
 2. **大文件进入 EPM 注册**：几何数据（STEP/GLB）、有限元网格（INP/MESH）、图纸（PDF/DWG）等通过 EPM 包分发，Git 中只保留内容寻址引用；
 3. **无需 Git LFS**：用 EPM 的内容寻址存储和本地缓存替代 LFS；
-4. **CI/CD 设计质量门**：在 GitHub Actions / GitLab CI 等流水线中运行 `piki check`，覆盖 L0-L4 规则；
+4. **CI/CD 设计质量门**：在 GitHub Actions / GitLab CI 等流水线中运行 `piki check`，覆盖 L0-L5a 规则；
 5. **PR 即设计评审**：Reviewer 看到的是 ADL diff 和规则检查结果，而不是二进制文件；
 6. **可复现的设计环境**：`git clone` + `epm install` + `piki check` 即可复现完整设计状态。
 
@@ -106,7 +106,7 @@
         ▼                                       ▼
 ┌─────────────────────┐               ┌─────────────────────┐
 │    EPM Registry     │               │   piki 规则引擎      │
-│  几何 / 网格 / 图纸  │               │  L0-L4 自动校验      │
+│  几何 / 网格 / 图纸  │               │  L0-L5a 自动校验     │
 └─────────────────────┘               └─────────────────────┘
 ```
 
@@ -199,14 +199,17 @@ jobs:
 | 层级 | 检查内容 | 工具 |
 |---|---|---|
 | L0 | YAML / TOML 语法 | ADL parser |
-| L1 | Schema / 类型 / FK 引用 | ADL validator |
+| L1a | Schema / 类型 / 值域 | ADL validator |
+| L1b | 风格与约定（命名、文件组织、Tag） | `adl lint` |
 | L2 | Mate / Layout / Catalog 自洽 | ADL validator |
 | L3 | 领域规则（电信、数据中心、机械等） | piki plugins |
-| L4 | 生成物检查（BOM、报告、3D 场景） | piki generators |
-| L5 | 仿真验证（可选） | 外部求解器 |
-| L6 | 专家审查（可选） | 人工 |
+| L4a | 快速几何检查（AABB、U 位、经验空间规则） | piki plugins |
+| L4b | 精确几何检查（CAD 内核干涉、间隙、包容） | `piki verify geom` |
+| L5a | 快速物理规则（负载率、热预算、重量累积） | piki plugins |
+| L5b | 物理仿真验证（CFD / FEA / 电磁 / 振动） | `piki verify phys` |
+| L6 | 签核与综合评估（交付物验证、专家/AI 评审） | `piki signoff` |
 
-CI 默认覆盖 L0-L4，L5-L6 作为可选深度检查。
+CI 默认覆盖 L0-L5a，L4b / L5b / L6 作为可选深度检查或签核步骤。
 
 ---
 
@@ -249,7 +252,7 @@ CI 默认覆盖 L0-L4，L5-L6 作为可选深度检查。
 
 1. **是否强制所有项目使用 EPM，还是保留 Git LFS 作为备选？**
 2. **ADL 引用 EPM 资产的语法是否采用 `epm://` URL 还是内容 hash？**
-3. **CI 默认检查层级是 L0-L3 还是 L0-L4？**
+3. **CI 默认检查层级是 L0-L5a，是否允许项目降级为 L0-L3？**
 4. **是否先聚焦 GitHub，再支持 GitLab / Gitea？**
 5. **PR 评论由 GitHub Action 实现还是独立 GitHub App？**
 
