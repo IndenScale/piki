@@ -257,3 +257,4 @@ SDH 不是要让 Agent 取代工程师。它的目标是：
 - [ADL：装配体定义语言](03-adl.md)
 - [Engineering RLVR：可验证奖励如何驱动工程 AI](04-engineering-rlvr.md)
 - [文本驱动，Agent 原生的通信设计工具链](05-text-driven-agent-native-telecom-design.md)
+- [HDA：Hardware Design Automation，实体工程的设计自动化赛道](07-hardware-design-automation.md)

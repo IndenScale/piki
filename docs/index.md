@@ -15,7 +15,8 @@
 3. **[SDH 框架的设计原则](pitch/02-agent-native.md)** — 文本原生、CLI 优先、开放格式与 Agent 友好
 4. **[ADL：装配体定义语言](pitch/03-adl.md)** — PDL + PML + PLL 三子语言
 5. **[Engineering RLVR](pitch/04-engineering-rlvr.md)** — 可验证奖励如何驱动工程 AI
-6. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
+6. **[HDA：Hardware Design Automation](pitch/07-hardware-design-automation.md)** — SDH 思想落地的产品赛道，与 EDA/CAD/BIM 的关系
+7. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
 
 ### 🔧 使用 piki
 
@@ -49,9 +50,11 @@
 2. **[02 - SDH 框架的设计原则](pitch/02-agent-native.md)** — 文本原生、CLI 优先、开放格式、Git/CICD 与 Agent 友好
 3. **[03 - ADL：装配体定义语言](pitch/03-adl.md)** — 技术规范：PDL（部件定义）+ PML（部件配合）+ PLL（部件布局）三子语言
 4. **[04 - Engineering RLVR](pitch/04-engineering-rlvr.md)** — 驱动引擎：分层规则引擎作为 RLVR 奖励信号，SD-HWE-Bench 基线数据
+5. **[07 - HDA：Hardware Design Automation](pitch/07-hardware-design-automation.md)** — 赛道定位：SDH 思想如何落地为产品，与 EDA/CAD/BIM 的边界
 
 ### Pitch 延伸阅读
 
+- **[05 - 文本驱动，Agent 原生的通信设计工具链](pitch/05-text-driven-agent-native-telecom-design.md)** — 现场演讲指导稿，含完整电信扩容案例与听众互动节奏
 - **[工程领域 AI Benchmark 形态与缺口调研](pitch/06-engineering-ai-benchmark-landscape.md)** — 支撑 SD-HWE-Bench 定位的现有 benchmark 调研
 
 ---
