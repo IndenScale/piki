@@ -177,37 +177,11 @@ Simulation → Rule → Mating（Structural Declaration）
   隐式知识     显式代码      结构化预防
 ```
 
-### 第一阶段：Simulation（发现）
+- **Simulation**：通过仿真、试验或现场失败发现约束（慢、贵、隐式）。
+- **Rule**：把反复出现的问题写成检查规则（毫秒到秒级反馈，显式代码）。
+- **Mating**：把稳定的关系约束提升为配合类型，引擎在加载时自动校验（微秒级，结构化预防）。
 
-一个新约束的最初发现方式往往是昂贵的——有限元仿真、CFD 计算、物理试验、甚至是现场安装失败。反馈延迟：小时到天。
-
-### 第二阶段：Rule（捕获）
-
-当同一个问题反复出现，工程师会把它写成检查规则：一段代码，遍历相关实体并执行断言。反馈延迟：毫秒到秒。
-
-```python
-# rule.py
-@rule
-def check_pdu_power(context):
-    for pdu in context.query("pdus"):
-        devices = context.query("devices", pdu_id=pdu.id)
-        total_load = sum(d.tdp_w for d in devices)
-        capacity = pdu.capacity_w
-        assert total_load <= capacity * 0.8, \
-            f"PDU {pdu.id}: {total_load}W/{capacity}W (>80%)"
-```
-
-### 第三阶段：Mating（预防）
-
-当约束变得足够稳定——"这件事在所有项目里都是对的"——它可以被升级为配合类型。引擎在加载时自动校验，不需要任何遍历。反馈延迟：微秒。
-
-| 领域 | Simulation 阶段 | Rule 阶段          | Mating 阶段                  |
-| ---- | --------------- | ------------------ | ---------------------------- |
-| 管道 | CFD 仿真压降    | 规则检查管径       | `mass-conservation` 配合类型 |
-| RF   | EM 仿真时钟偏移 | 规则检查信号完整性 | `clock-sync` 配合类型        |
-| 机柜 | 现场安装失败    | 规则检查尺寸匹配   | `rack-mount-19inch` 配合类型 |
-
-一个领域的成熟度，体现在它有多少约束已经进入了 Mating 层。
+一个领域的成熟度，体现在它有多少约束已经进入了 Mating 层。这条曲线与 PML（Part Mating Language）的关系、演进案例和实践建议，详见 [设计知识成熟曲线](../concepts/06-knowledge-maturation.md)。
 
 ---
 

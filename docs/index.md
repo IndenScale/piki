@@ -21,7 +21,7 @@
 
 1. **[核心概念与快速上手](concepts/01-core-concepts.md)** — Family → Model → Instance → Interface + Layout + Rule
 2. **[编写检查规则](concepts/02-writing-rules.md)** — 从实际问题出发，学习写规则
-3. **[高级用法 & AI Readiness](concepts/03-advanced.md)** — CI/CD、Generator、AI 为何需要 Text-Native
+3. **[高级用法](concepts/03-advanced.md)** — CI/CD、Generator、项目配置
 4. **[Text-Native & Agent-Oriented](concepts/04-text-native-and-agent-oriented.md)** — piki 的人机协同设计哲学
 5. **[piki 的生态位](concepts/05-ecosystem-positioning.md)** — 敌、友与中间力量
 6. **[设计知识成熟曲线](concepts/06-knowledge-maturation.md)** — 从仿真到规则到 Mating 的设计知识演进
@@ -35,6 +35,10 @@
 4. **[telecom 插件源码](../src/piki/extensions/telecom/plugin.py)** — 完整参考实现
 5. **[datacenter 插件源码](../src/piki/extensions/datacenter/plugin.py)** — 多 Family 类型参考实现
 
+### 🎤 演讲与路演
+
+1. **[文本驱动，Agent 原生的通信设计工具链](pitch/05-text-driven-agent-native-telecom-design.md)** — 现场演讲指导稿，含完整电信扩容案例与听众互动节奏
+
 ---
 
 ## Pitch 系列（核心理念）
@@ -45,6 +49,10 @@
 2. **[02 - SDH 框架的设计原则](pitch/02-agent-native.md)** — 文本原生、CLI 优先、开放格式、Git/CICD 与 Agent 友好
 3. **[03 - ADL：装配体定义语言](pitch/03-adl.md)** — 技术规范：PDL（部件定义）+ PML（部件配合）+ PLL（部件布局）三子语言
 4. **[04 - Engineering RLVR](pitch/04-engineering-rlvr.md)** — 驱动引擎：分层规则引擎作为 RLVR 奖励信号，SD-HWE-Bench 基线数据
+
+### Pitch 延伸阅读
+
+- **[工程领域 AI Benchmark 形态与缺口调研](pitch/06-engineering-ai-benchmark-landscape.md)** — 支撑 SD-HWE-Bench 定位的现有 benchmark 调研
 
 ---
 

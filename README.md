@@ -3,9 +3,9 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Software-Defined Hardware (SDH) Framework**
+> **用代码定义世界。**
 >
-> 工程师（或 Agent）用声明式语言描述设计意图，piki 在提交前自动发现错误——从 YAML 语法到三维空间碰撞，全部在秒级内完成。
+> piki 是 Software-Defined Hardware (SDH) 框架：工程师用声明式 YAML 描述设计意图，用 Python 规则检查设计合理性，在提交前自动发现错误——从语法到功率预算，从 U 位冲突到三维碰撞，全部在秒级内完成。
 
 ---
 
@@ -19,31 +19,70 @@ piki check    # 在提交前自动发现设计错误
 
 ---
 
-## 为什么是 piki
+## 为什么需要 piki
 
-当前的大模型无法可靠操作工业软件——它们是"盲的"，而工业软件是为人类眼手协调设计的 GUI。piki 是 **Headless Engineering** 的工程实现：设计意图以纯文本存在，Agent 直接读写，规则引擎在毫秒级返回结构化验证结果。
+### 一个真实的问题
 
-更完整的理念请阅读：
+你设计了一个机房扩容方案：新增 2 台交换机、1 台防火墙，放在 RACK-A01 的 U18-U20。
 
-| | 文章 | 说什么 |
-|---|---|---|
-| 1 | [软件定义硬件（SDH）](docs/pitch/01-why-sdh.md) | 为什么这件事必须发生——大模型与工业软件的范式错配 |
-| 2 | [SDH 框架的设计原则](docs/pitch/02-agent-native.md) | 文本原生、CLI 优先、Git/CICD、开放格式与 Agent 友好 |
-| 3 | [ADL：装配体定义语言](docs/pitch/03-adl.md) | 怎么表达——PDL/PML/PLL 三子语言 |
-| 4 | [Engineering RLVR](docs/pitch/04-engineering-rlvr.md) | 怎么进化——可验证奖励驱动工程 AI |
+你检查了 U 位，没有冲突。你检查了线缆长度，都在合理范围。方案评审通过，施工完成。
+
+上电后，PDU-A 跳闸了。
+
+因为你忘了算功率。PDU-A 上已有 2 台核心交换机，新增设备后总负载超过额定容量的 80%，加上浪涌电流，过载跳闸。这个错误如果在施工前被发现，代价是改几行 YAML；如果在施工后被发现，代价是停机、返工、甚至烧毁设备。
+
+### 问题不在于人不专业
+
+工程设计的约束维度太多：U 位、功率、接口、线缆、散热、重量、兼容性……人脑不适合同时追踪所有维度。Excel 检查表是静态的，CAD/BIM 数据锁在专有格式里，专业软件的规则由厂商定义。
+
+**工程设计缺少一个像软件工程那样的外部约束系统**——编译器检查语法，类型系统检查一致性，测试套件检查行为。Agent 写代码时不需要永远正确，因为 CI 会在秒级内发现错误。工程设计却没有等价物。
+
+### piki 的做法
+
+piki 是 **Headless Engineering** 的工程实现：
+
+- **设计意图以纯文本存在**：YAML 文件是唯一真相源，Agent 和人类都能读写。
+- **规则引擎秒级反馈**：把项目经验、国标强条、企业规范写成 Python 规则，`piki check` 在毫秒到秒级内返回结构化诊断。
+- **Git / CI/CD 原生**：设计变更可 diff、可 review、可回滚，错误在提交前就被拦截。
+
+> piki 不是另一个 CAD，而是工程设计的**编译器**。
+
+更完整的理念请阅读 [docs/pitch/](docs/pitch/) 下的理念系列，或从 [为什么需要 piki](docs/concepts/00-why-piki.md) 开始。
 
 ---
 
-## 文本为什么优于图纸
+## piki 怎么工作
 
-| 能力 | piki（声明式 YAML） | 图形 CAD / BIM |
-|---|---|---|
-| **版本控制** | `git diff` 精确到字段 | 二进制文件，diff 无意义 |
-| **自动化检查** | Python 规则直接读取 | 需解析专有格式 |
-| **批量修改** | `sed` / grep / 脚本 | 手动逐个点选 |
-| **CI/CD 集成** | 原生支持 | 需额外导出步骤 |
-| **多人协作** | Git 分支合并 | 文件锁定或冲突 |
-| **AI 参与** | 文本是 LLM 原生格式 | 需 OCR / 视觉模型猜测 |
+工程设计 = 什么东西存在 + 它们怎么配合 + 它们放在哪里。
+
+piki 用 **ADL（Assembly Definition Language，装配体定义语言）** 把这三个维度写成声明式文本：
+
+```yaml
+# instances/servers/SRV-01.yaml
+id: SRV-01
+family: ServerFamily
+model: generic-server
+interfaces:
+  - id: eth0
+    interface_type: SFP28
+```
+
+然后规则引擎自动验证：PDU 功率是否超载、U 位是否冲突、接口是否兼容、三维空间是否碰撞。
+
+ADL 的三层子语言——PDL（部件定义）、PML（部件配合）、PLL（部件布局）——让设计意图、配合关系、空间位置相互独立，可分别版本控制。详细规范见 [ADL：装配体定义语言](docs/pitch/03-adl.md)。
+
+---
+
+## 文本原生：工程设计的新真相源
+
+| 能力           | piki（声明式 YAML）   | 图形 CAD / BIM          |
+| -------------- | --------------------- | ----------------------- |
+| **版本控制**   | `git diff` 精确到字段 | 二进制文件，diff 无意义 |
+| **自动化检查** | Python 规则直接读取   | 需解析专有格式          |
+| **批量修改**   | `sed` / grep / 脚本   | 手动逐个点选            |
+| **CI/CD 集成** | 原生支持              | 需额外导出步骤          |
+| **多人协作**   | Git 分支合并          | 文件锁定或冲突          |
+| **AI 参与**    | 文本是 LLM 原生格式   | 需 OCR / 视觉模型猜测   |
 
 预览是**只读**的。修改设计？改文本，重新生成。文本是设计的**唯一真相源**。
 
@@ -59,20 +98,13 @@ piki report --format markdown   # 生成报告
 piki generate bom-csv           # 导出 BOM 清单
 ```
 
-完整教程和示例：`[samples/](samples/)` 目录。
+完整教程和示例：[samples/](samples/) 目录。
 
 ---
 
 ## 文档
 
-- **[为什么需要 piki](docs/concepts/00-why-piki.md)** — 从真实事故出发
-- **[核心概念](docs/concepts/01-core-concepts.md)** — Family → Model → Instance 声明体系
-- **[编写检查规则](docs/concepts/02-writing-rules.md)** — @rule 装饰器 + QuerySet API
-- **[CLI 参考](docs/reference/07-cli.md)** — 所有命令
-- **[API 参考](docs/reference/06-api.md)** — 核心类与装饰器
-- **[配置参考](docs/reference/01-configuration.md)** — piki.toml 完整字段
-- **[架构决策记录](docs/adr/)** — 关键设计决策与理由
-- **[路线图](ROADMAP.md)** — 当前进展和未来计划
+完整文档导航见 **[docs/index.md](docs/index.md)**。
 
 ---
 
