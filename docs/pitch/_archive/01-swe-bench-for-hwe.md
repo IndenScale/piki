@@ -123,7 +123,7 @@ Telecom 是率先突破的切口。这个领域几乎没有面向设计生成的
 
 ## 相关阅读
 
-- [软件定义工程（SDE）](./00-software-defined-engineering.md)
+- [软件定义硬件（SDH）](./00-software-defined-engineering.md)
 - [SD-HWE-Bench 倡议](../initiatives/001-sd-hwe-bench.md)
 - [工程领域 AI Benchmark 形态与缺口调研](../initiatives/001-sd-hwe-bench-benchmark-survey.md)
 - [ADR-003: 多级质量检查](../adr/engine-and-plugins/003-quality-checks-and-diagnostics.md)

@@ -165,6 +165,6 @@ Agent Native Industry Software 的每一个词都是对旧范式的否定：
 
 ## 继续阅读
 
-- [软件定义工程（SDE）：大模型落地工业的必由之路](01-why-sde.md)
+- [软件定义硬件（SDH）：大模型落地工业的必由之路](01-why-sdh.md)
 - [ADL：装配体定义语言](03-adl.md)
 - [Engineering RLVR：可验证奖励如何驱动工程 AI](04-engineering-rlvr.md)
