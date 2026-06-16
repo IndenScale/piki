@@ -1,6 +1,0 @@
-id: FIBER-S02-SW01
-family: FiberPatchCordFamily
-model: om4-lc-lc-3m
-name: "SRV-02 eth1 ↔ SW-01 Gi1/0/2"
-length_m: 5.0
-status: planned

@@ -1,0 +1,11 @@
+id: XC-AGG-TEN1
+model: qsfp28-sr-100g
+family: TransceiverFamily
+status: planned
+interfaces:
+  - id: host
+    interface_type: QSFP28
+    direction: bidirectional
+  - id: line
+    interface_type: MPO/MTP
+    direction: bidirectional

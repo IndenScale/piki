@@ -1,0 +1,14 @@
+id: RACK-A02
+name: 接入服务器机柜
+model: standard-rack
+family: RackFamily
+location: A 列第 2 机柜
+room_id: ROOM-01
+room_column: A
+room_row: 2
+floor_x_mm: 1000
+floor_y_mm: 2600
+orientation_deg: 0
+tags:
+  room: ROOM-01
+  column: A

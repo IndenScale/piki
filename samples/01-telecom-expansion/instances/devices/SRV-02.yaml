@@ -1,17 +1,8 @@
 id: SRV-02
-name: 服务器-02
-model: generic-server
-status: installed
-interfaces:
-  - id: eth0
-    interface_type: SFP28
-    direction: bidirectional
-    description: "25G 管理网口"
-  - id: eth1
-    interface_type: QSFP28
-    direction: bidirectional
-    description: "100G 业务网口"
-  - id: power-a
-    interface_type: IEC-C14
-    direction: input
-    description: "A路电源"
+name: 业务服务器-02
+model: dell-r750
+family: ServerFamily
+status: planned
+tags:
+  role: compute
+  discipline: server

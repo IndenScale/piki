@@ -1,0 +1,3 @@
+type: sfp28-cage
+parent: SRV-01/eth0
+child: XC-SRV01-ETH0/host

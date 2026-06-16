@@ -1,6 +1,0 @@
-id: SW-01-Gi1-0-1
-family: PortFamily
-device_id: SW-01
-port_name: Gi1/0/1
-port_type: SFP28
-status: installed

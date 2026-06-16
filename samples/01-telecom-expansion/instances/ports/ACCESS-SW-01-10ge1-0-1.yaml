@@ -1,0 +1,6 @@
+id: ACCESS-SW-01-10ge1-0-1
+family: PortFamily
+device_id: ACCESS-SW-01
+port_name: 10GE1/0/1
+port_type: SFP28
+status: installed

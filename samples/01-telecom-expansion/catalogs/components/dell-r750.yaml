@@ -1,0 +1,17 @@
+catalog_id: dell-r750
+family: ComponentCatalogFamily
+
+manufacturer: Dell
+mpn: PowerEdge R750
+sku: R750-2U-XX
+lifecycle: active
+revision: "A09"
+
+unit_price_cny: 85000
+
+model_ref: dell-r750
+
+certifications:
+  - RoHS
+  - REACH
+  - Energy Star

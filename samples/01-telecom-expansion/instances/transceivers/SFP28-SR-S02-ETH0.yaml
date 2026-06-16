@@ -1,5 +1,0 @@
-id: SFP28-SR-S02-ETH0
-family: TransceiverFamily
-model: sfp28-sr-25g
-name: "SFP28 SR 25G - SRV-02 eth0"
-status: installed

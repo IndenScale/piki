@@ -1,3 +1,0 @@
-type: lc-connector
-parent: SFP28-SR-S01-ETH1/line
-child: FIBER-S01-SW01/end-a

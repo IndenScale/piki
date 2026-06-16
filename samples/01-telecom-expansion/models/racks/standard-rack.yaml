@@ -1,6 +1,14 @@
 model: standard-rack
 family: RackFamily
 
+name: 19英寸标准机柜
 total_u: 42
-depth_mm: 800
+power_capacity_w: 6000
+
+# 物理尺寸与承重散热
+depth_mm: 1000
 width_mm: 600
+max_load_kg: 1500
+cooling_capacity_w: 8000
+maintenance_front_mm: 800
+maintenance_rear_mm: 600

@@ -1,0 +1,6 @@
+id: PDU-A02-A
+name: RACK-A02 A路 PDU
+family: PduFamily
+rack_id: RACK-A02
+phase: L1
+capacity_w: 3000

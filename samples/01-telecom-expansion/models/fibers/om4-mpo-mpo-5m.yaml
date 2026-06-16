@@ -1,0 +1,11 @@
+model: om4-mpo-mpo-5m
+family: FiberPatchCordFamily
+
+name: OM4 MPO-MPO 5m
+fiber_type: OM4
+connector: MPO-MPO
+length_m: 5
+attenuation_db: 0.5
+max_distance_m: 100
+attenuation_db_per_km: 3.0
+bend_radius_mm: 35

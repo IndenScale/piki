@@ -1,3 +1,0 @@
-type: power-iec-c14-c13
-parent: PDU-B/outlet-1
-child: SRV-01/power-b

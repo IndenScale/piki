@@ -111,6 +111,10 @@ def build_parser() -> argparse.ArgumentParser:
         "-o",
         help="输出文件路径",
     )
+    generate.add_argument(
+        "--rack",
+        help="按机柜过滤（仅对面板图等生成器有效）",
+    )
 
     # --- plugins ---
     plugins = sub.add_parser("plugins", help="管理插件")
@@ -152,7 +156,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             output=args.output,
         )
     if args.command == "generate":
-        return cmd_generate(args.path, args.generator, args.output)
+        return cmd_generate(args.path, args.generator, args.output, rack=args.rack)
     if args.command == "plugins":
         if args.subcommand == "list":
             return cmd_plugins_list()

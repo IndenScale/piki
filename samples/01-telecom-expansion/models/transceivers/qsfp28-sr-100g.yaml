@@ -1,0 +1,16 @@
+model: qsfp28-sr-100g
+family: TransceiverFamily
+
+name: QSFP28 SR 100G
+form_factor: QSFP28
+reach: SR
+speed_gbps: 100
+wavelength_nm: 850
+
+interfaces:
+  - id: host
+    interface_type: QSFP28
+    direction: bidirectional
+  - id: line
+    interface_type: MPO/MTP
+    direction: bidirectional

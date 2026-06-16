@@ -1,0 +1,3 @@
+type: lc-connector
+parent: XC-AGG-TEN1/line
+child: FIBER-CORE-AGG/end-b

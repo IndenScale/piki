@@ -1,6 +1,6 @@
 id: SRV-02-power-a
 family: PortFamily
 device_id: SRV-02
-port_name: power-a
+port_name: PSU1
 port_type: IEC-C14
-status: installed
+status: planned

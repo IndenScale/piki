@@ -1,0 +1,3 @@
+type: power-iec-c14-c13
+parent: PDU-A01-A/outlet-2
+child: AGG-SW-01/PSU1

@@ -1,0 +1,7 @@
+id: CONN-AGG-ACCESS
+family: PortConnectionFamily
+from_port: AGG-SW-01/Gi1/0/1
+to_port: ACCESS-SW-01/10GE1/0/49
+cable_type: OM4-LC-LC
+length_m: 10
+status: planned

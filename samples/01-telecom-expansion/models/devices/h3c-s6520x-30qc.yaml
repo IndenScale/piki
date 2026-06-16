@@ -1,0 +1,24 @@
+model: h3c-s6520x-30qc
+family: ServerFamily
+
+brand: H3C
+mpn: S6520X-30QC-EI
+description: 24×SFP28 + 4×QSFP28 核心/汇聚交换机
+
+height_u: 1
+tdp_w: 120
+typical_power_w: 80
+psu_count: 2
+psu_redundancy: true
+
+# 物理尺寸（毫米）
+depth_mm: 420
+width_mm: 440
+height_mm: 89
+weight_kg: 9.5
+
+# 默认接口：实际实例可覆盖
+interfaces:
+  - id: console
+    interface_type: RJ45
+    direction: bidirectional

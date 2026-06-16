@@ -1,0 +1,16 @@
+catalog_id: hw-ce6881-48s6cq
+family: ComponentCatalogFamily
+
+manufacturer: Huawei
+mpn: CE6881-48S6CQ
+sku: 02312PWN
+lifecycle: active
+revision: "V300R022"
+
+unit_price_cny: 48000
+
+model_ref: hw-ce6881-48s6cq
+
+certifications:
+  - RoHS
+  - REACH

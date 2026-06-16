@@ -1,0 +1,23 @@
+model: dell-r750
+family: ServerFamily
+
+brand: Dell
+mpn: PowerEdge R750
+description: 2U 机架式服务器
+
+height_u: 2
+tdp_w: 600
+typical_power_w: 350
+psu_count: 2
+psu_redundancy: true
+
+# 物理尺寸（毫米）
+depth_mm: 715
+width_mm: 445
+height_mm: 89
+weight_kg: 28.5
+
+interfaces:
+  - id: idrac
+    interface_type: RJ45
+    direction: bidirectional

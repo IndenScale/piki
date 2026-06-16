@@ -1,0 +1,11 @@
+model: om4-lc-lc-10m
+family: FiberPatchCordFamily
+
+name: OM4 LC-LC 10m
+fiber_type: OM4
+connector: LC-LC
+length_m: 10
+attenuation_db: 0.6
+max_distance_m: 100
+attenuation_db_per_km: 3.0
+bend_radius_mm: 30

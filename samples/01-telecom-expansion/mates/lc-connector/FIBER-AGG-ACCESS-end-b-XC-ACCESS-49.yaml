@@ -1,0 +1,3 @@
+type: lc-connector
+parent: XC-ACCESS-49/line
+child: FIBER-AGG-ACCESS/end-b

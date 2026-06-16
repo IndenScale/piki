@@ -1,0 +1,16 @@
+model: sfp28-sr-25g
+family: TransceiverFamily
+
+name: SFP28 SR 25G
+form_factor: SFP28
+reach: SR
+speed_gbps: 25
+wavelength_nm: 850
+
+interfaces:
+  - id: host
+    interface_type: SFP28
+    direction: bidirectional
+  - id: line
+    interface_type: LC
+    direction: bidirectional

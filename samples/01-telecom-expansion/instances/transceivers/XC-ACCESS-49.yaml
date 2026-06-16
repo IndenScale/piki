@@ -1,0 +1,11 @@
+id: XC-ACCESS-49
+model: sfp28-sr-25g
+family: TransceiverFamily
+status: installed
+interfaces:
+  - id: host
+    interface_type: SFP28
+    direction: bidirectional
+  - id: line
+    interface_type: LC
+    direction: bidirectional

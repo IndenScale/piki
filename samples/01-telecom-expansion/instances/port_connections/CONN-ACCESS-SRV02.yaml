@@ -1,0 +1,7 @@
+id: CONN-ACCESS-SRV02
+family: PortConnectionFamily
+from_port: ACCESS-SW-01/10GE1/0/2
+to_port: SRV-02/eth0
+cable_type: OM4-LC-LC
+length_m: 3
+status: planned

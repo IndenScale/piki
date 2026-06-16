@@ -19,6 +19,23 @@ from piki.extensions.telecom.types import (
 )
 
 
+class RoomFamily(BaseModel):
+    """机房/房间：定义机房平面边界与机柜排列参数。"""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    # 机房平面尺寸（毫米）
+    length_mm: float = Field(default=10000, gt=0)  # X 方向长度
+    width_mm: float = Field(default=8000, gt=0)  # Y 方向宽度
+    height_mm: float = Field(default=3000, gt=0)  # 净高
+    # 机柜排列参数
+    rack_bay_spacing_mm: float = Field(default=1200, ge=0)  # 列间通道宽度（冷/热通道）
+    rack_inline_spacing_mm: float = Field(default=600, ge=0)  # 同列机柜间距
+    wall_margin_mm: float = Field(default=1000, ge=0)  # 靠墙最小距离
+    # 标签
+    tags: Tags = Field(default_factory=Tags)
+
+
 class RackFamily(BaseModel):
     id: str = Field(...)
     name: str = Field(default="")
@@ -28,7 +45,26 @@ class RackFamily(BaseModel):
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
     depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
-    # 3D 空间定位（毫米）
+    # 机柜承重与散热能力
+    max_load_kg: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    cooling_capacity_w: float = Field(
+        default=0, ge=0, json_schema_extra={"piki_non_overridable": True}
+    )
+    # 前后维护空间（毫米），用于工法前提检查
+    maintenance_front_mm: float = Field(
+        default=800, ge=0, json_schema_extra={"piki_non_overridable": True}
+    )
+    maintenance_rear_mm: float = Field(
+        default=600, ge=0, json_schema_extra={"piki_non_overridable": True}
+    )
+    # 机房平面定位（毫米）
+    room_id: str = Field(default="")
+    room_column: str = Field(default="")
+    room_row: int = Field(default=0, ge=0)
+    floor_x_mm: float = Field(default=0.0)  # 机柜左下角 X 坐标
+    floor_y_mm: float = Field(default=0.0)  # 机柜左下角 Y 坐标
+    orientation_deg: float = Field(default=0.0)  # 机柜正面朝向，0=朝北（+Y）
+    # 3D 空间定位（毫米），保留给局部 3D/USD 场景
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
     position_z_mm: float = Field(default=0.0)
@@ -120,6 +156,14 @@ class FiberPatchCordFamily(BaseModel):
     connector: str = Field(default="LC-LC")  # LC-LC, MPO-MPO, SC-LC
     length_m: float = Field(default=3.0, gt=0)
     attenuation_db: float = Field(default=0.3, ge=0)
+    # 线缆规格限制（来自型号默认值）
+    max_distance_m: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    attenuation_db_per_km: float = Field(
+        default=0.0, ge=0, json_schema_extra={"piki_non_overridable": True}
+    )
+    bend_radius_mm: float = Field(
+        default=30.0, ge=0, json_schema_extra={"piki_non_overridable": True}
+    )
     status: str = Field(default="planned")
     interfaces: list[InterfaceSpec] = Field(
         default_factory=list, description="end-a + end-b (双向 LC/MPO/SC)"
@@ -163,6 +207,7 @@ class TelecomPlugin(Plugin):
         return Path(__file__).parent / "models"
 
     def register_types(self, type_registry: TypeRegistry) -> None:
+        type_registry.add_family("RoomFamily", RoomFamily)
         type_registry.add_family("RackFamily", RackFamily)
         type_registry.add_family("PduFamily", PduFamily)
         type_registry.add_family("ServerFamily", ServerFamily)
@@ -233,7 +278,22 @@ class TelecomPlugin(Plugin):
             "sfp28-cage",
             MateTypeMeta(
                 type="sfp28-cage",
-                description="光模块插入交换机/服务器笼子",
+                description="SFP28/SFP+/SFP 光模块插入交换机/服务器笼子",
+                default_constrains=[
+                    MateConstraint(
+                        field="speed_gbps",
+                        operator=MateConstraintOperator.LTE,
+                        value_ref="speed_gbps",
+                        message="光模块速率超过笼子支持速率",
+                    ),
+                ],
+            ),
+        )
+        type_registry.add_mate_type(
+            "qsfp28-cage",
+            MateTypeMeta(
+                type="qsfp28-cage",
+                description="QSFP28/QSFP+ 光模块插入交换机笼子",
                 default_constrains=[
                     MateConstraint(
                         field="speed_gbps",
@@ -348,6 +408,62 @@ class TelecomPlugin(Plugin):
             severity=Severity.ERROR,
         )
         checker.add_rule(
+            "TELECOM-WEIGHT-001",
+            "机柜承重检查",
+            check_rack_weight,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-COOL-001",
+            "机柜散热能力检查",
+            check_rack_cooling,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-CABLE-001",
+            "线缆长度规格检查",
+            check_cable_length,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-REDUNDANCY-001",
+            "核心设备双路 PDU 冗余检查",
+            check_dual_psu_redundancy,
+            priority=10,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-MAINTENANCE-001",
+            "设备维护空间检查",
+            check_maintenance_clearance,
+            priority=3,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "TELECOM-FLOOR-001",
+            "机柜平面布局碰撞检查",
+            check_rack_floor_collision,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-FLOOR-002",
+            "机柜维护通道宽度检查",
+            check_rack_aisle_spacing,
+            priority=5,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
+            "TELECOM-FLOOR-003",
+            "机柜编号规范检查",
+            check_rack_naming,
+            priority=3,
+            severity=Severity.WARNING,
+        )
+        checker.add_rule(
             "CATALOG-LIFECYCLE-001",
             "禁止非既有工程使用 EOL 器件",
             check_catalog_lifecycle,
@@ -362,6 +478,10 @@ class TelecomPlugin(Plugin):
         checker.add_generator("power-budget", "功率预算汇总", generate_power_budget)
         checker.add_generator("cable-list", "线缆清单", generate_cable_list)
         checker.add_generator("port-map", "端口分配表", generate_port_map)
+        checker.add_generator("cable-schedule", "线缆排期表", generate_cable_schedule)
+        checker.add_generator("cable-labels", "线缆标签", generate_cable_labels)
+        checker.add_generator("port-diagram", "端口互连图", generate_port_diagram)
+        checker.add_generator("floor-plan", "机房平面图", generate_floor_plan)
         checker.add_generator("procurement-bom", "采购 BOM", generate_procurement_bom)
 
 
@@ -613,24 +733,49 @@ def check_catalog_lifecycle(ctx):
 
 
 def generate_bom_csv(ctx, config) -> GeneratorResult:
-    """生成 BOM CSV：设备清单汇总。"""
+    """生成 BOM CSV：设备清单汇总（含采购字段）。"""
     import csv
     import io
 
     devices = ctx.query("devices").list()
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID", "Model", "Rack", "Position_U", "PDU", "TDP_W", "Height_U"])
+    writer.writerow(
+        [
+            "ID",
+            "Model",
+            "Brand",
+            "MPN",
+            "Rack",
+            "Position_U",
+            "PDU",
+            "TDP_W",
+            "Typical_Power_W",
+            "PSU_Count",
+            "Height_U",
+            "Status",
+            "Unit_Price_CNY",
+            "Quantity",
+        ]
+    )
     for d in devices:
+        catalog = d._resolved.get("catalog") or {}
         writer.writerow(
             [
                 d.id,
-                d.model or "",
+                getattr(d, "model_id", "") or "",
+                catalog.get("manufacturer", ""),
+                catalog.get("mpn", ""),
                 d.rack_id,
                 d.position_u,
                 d.pdu_id,
                 d.resolved.tdp_w,
+                getattr(d.resolved, "typical_power_w", d.resolved.tdp_w),
+                getattr(d.resolved, "psu_count", 1),
                 d.resolved.height_u,
+                getattr(d.resolved, "status", "planned"),
+                catalog.get("unit_price_cny", ""),
+                1,
             ]
         )
 
@@ -710,7 +855,9 @@ def generate_rack_face_panel(ctx, config) -> GeneratorResult:
                         start = d.position_u
                         height = d.resolved.height_u
                         if u == start + height - 1:
-                            label = f"{d.id} ({d.model or 'N/A'}, {d.resolved.tdp_w}W, {height}U)"
+                            model_id = getattr(d, "model_id", "") or "N/A"
+                            status = getattr(d.resolved, "status", "planned")
+                            label = f"{d.id} ({model_id}, {d.resolved.tdp_w}W, {height}U, {status})"
                             lines.append(f"  U{u:>3}: {label}")
                         elif u == start:
                             lines.append(f"  U{u:>3}: {d.id} ^ (bottom)")
@@ -728,6 +875,9 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
     from xml.etree import ElementTree as ET
 
     racks = ctx.query("racks").order_by("id").list()
+    rack_filter = config.get("rack")
+    if rack_filter:
+        racks = [r for r in racks if r.id == rack_filter]
     if not racks:
         return GeneratorResult.ok(
             "rack-face-panel-svg",
@@ -749,8 +899,14 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
     FONT_FAMILY = "monospace"
     FONT_SIZE = 10
 
-    # Device color palette (cycling)
-    COLORS = [
+    # Status-based color coding
+    STATUS_COLORS = {
+        "installed": "#5CB85C",  # green
+        "planned": "#4A90D9",  # blue
+        "retired": "#999999",  # gray
+    }
+    # Fallback cycling palette for distinct devices of same status
+    ACCENT_COLORS = [
         "#4A90D9",
         "#5CB85C",
         "#F0AD4E",
@@ -780,15 +936,25 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
             for u in range(start, start + height):
                 dev_map[u] = d
             dev_id = d.id
+            status = getattr(d.resolved, "status", "planned")
             if dev_id not in color_map:
-                color_map[dev_id] = COLORS[len(color_map) % len(COLORS)]
+                base = STATUS_COLORS.get(status, "#4A90D9")
+                # If multiple devices share status, vary lightness slightly via accent fallback
+                if list(STATUS_COLORS.values()).count(base) > 1 or any(
+                    STATUS_COLORS.get(getattr(dd.resolved, "status", "planned"), "") == base
+                    for dd in devices
+                    if dd.id != dev_id
+                ):
+                    base = ACCENT_COLORS[len(color_map) % len(ACCENT_COLORS)]
+                color_map[dev_id] = base
             dev_metadata[dev_id] = {
                 "name": getattr(d.resolved, "name", "") or d.id,
-                "model": d.resolved.model or d.family or "",
+                "model": getattr(d, "model_id", "") or d.family or "",
                 "family": d.family or "",
                 "tdp_w": d.resolved.tdp_w,
                 "height_u": height,
                 "position_u": start,
+                "status": status,
             }
 
         # Build SVG elements
@@ -999,8 +1165,39 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
             ).text = (
                 f"U{meta.get('position_u', '?')}—U{meta.get('position_u', 0) + meta.get('height_u', 0) - 1}"
                 f"  {meta.get('tdp_w', 0)}W  {meta.get('height_u', 0)}U"
+                f"  [{meta.get('status', 'planned')}]"
             )
             legend_idx += 1
+
+        # Status legend
+        status_legend_y = legend_y + 16 + legend_idx * 38 + 10
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(legend_x), "y": str(status_legend_y), "class": "legend-title"},
+        ).text = "状态"
+        status_idx = 0
+        for status, color in STATUS_COLORS.items():
+            ly = status_legend_y + 16 + status_idx * 18
+            ET.SubElement(
+                svg,
+                "rect",
+                {
+                    "x": str(legend_x),
+                    "y": str(ly),
+                    "width": "10",
+                    "height": "10",
+                    "fill": color,
+                    "rx": "2",
+                    "ry": "2",
+                },
+            )
+            ET.SubElement(
+                svg,
+                "text",
+                {"x": str(legend_x + 16), "y": str(ly + 9), "class": "legend-text"},
+            ).text = status
+            status_idx += 1
 
         # Pretty-print SVG
         raw = ET.tostring(svg, encoding="unicode")
@@ -1036,49 +1233,57 @@ def generate_rack_face_panel_svg(ctx, config) -> GeneratorResult:
 
 
 def _compose_multi_svg(svg_outputs, ET, minidom) -> str:
-    """Combine multiple rack SVGs into a single multi-rack SVG document."""
+    """Combine multiple rack SVGs into a single multi-rack SVG document.
+
+    使用字符串拼接避免 ElementTree 命名空间前缀污染。
+    """
+    import re
+
     GAP = 40
     total_width = 0
     max_height = 0
+    contents: list[tuple[int, int, str]] = []
 
-    # Parse each SVG to measure
-    parsed: list[tuple[str, ET.Element, int, int]] = []
-    for rack_id, svg_str in svg_outputs.items():
-        root = ET.fromstring(svg_str)
-        w = int(root.get("width", "0"))
-        h = int(root.get("height", "0"))
-        parsed.append((rack_id, root, w, h))
+    svg_tag_re = re.compile(r"<svg[^>]*>", re.IGNORECASE)
+    xml_decl_re = re.compile(r"<\?xml[^?]*\?>\s*")
+
+    for _rack_id, svg_str in svg_outputs.items():
+        # Strip XML declaration
+        svg_str = xml_decl_re.sub("", svg_str)
+        # Extract dimensions from opening <svg ...>
+        match = svg_tag_re.search(svg_str)
+        if not match:
+            continue
+        svg_open = match.group(0)
+        w_match = re.search(r'width=["\'](\d+)["\']', svg_open)
+        h_match = re.search(r'height=["\'](\d+)["\']', svg_open)
+        w = int(w_match.group(1)) if w_match else 0
+        h = int(h_match.group(1)) if h_match else 0
+        # Strip opening <svg> and closing </svg>
+        inner = svg_tag_re.sub("", svg_str, count=1)
+        inner = re.sub(r"</svg\s*>", "", inner, flags=re.IGNORECASE).strip()
+        contents.append((w, h, inner))
         max_height = max(max_height, h)
         total_width += w
 
-    total_width += GAP * (len(parsed) - 1)
+    total_width += GAP * (len(contents) - 1)
 
-    svg = ET.Element(
-        "svg",
-        {
-            "xmlns": "http://www.w3.org/2000/svg",
-            "width": str(total_width + 20),
-            "height": str(max_height + 20),
-            "viewBox": f"0 0 {total_width + 20} {max_height + 20}",
-        },
-    )
-
-    ET.SubElement(
-        svg,
-        "rect",
-        {"x": "0", "y": "0", "width": "100%", "height": "100%", "fill": "#FAFAFA"},
-    )
+    parts: list[str] = [
+        '<?xml version="1.0" ?>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{total_width + 20}" height="{max_height + 20}" viewBox="0 0 {total_width + 20} {max_height + 20}">',
+        '  <rect x="0" y="0" width="100%" height="100%" fill="#FAFAFA"/>',
+    ]
 
     offset_x = 10
-    for _rack_id, root, w, h in parsed:
-        g = ET.SubElement(svg, "g", {"transform": f"translate({offset_x}, 10)"})
-        for child in root:
-            g.append(child)
+    for w, _h, inner in contents:
+        parts.append(f'  <g transform="translate({offset_x}, 10)">')
+        for line in inner.splitlines():
+            parts.append(f"    {line}")
+        parts.append("  </g>")
         offset_x += w + GAP
 
-    raw = ET.tostring(svg, encoding="unicode")
-    dom = minidom.parseString(raw)
-    return dom.toprettyxml(indent="  ")
+    parts.append("</svg>")
+    return "\n".join(parts)
 
 
 def generate_power_budget(ctx, config) -> GeneratorResult:
@@ -1405,3 +1610,658 @@ def generate_port_map(ctx, config) -> GeneratorResult:
     csv_content = output.getvalue()
     _, file_path = _resolve_output_path(config, "port-map.csv")
     return _write_and_return("port-map", "端口分配表", csv_content, file_path, "text/csv")
+
+
+def _format_cable_route(from_rack, to_rack) -> str:
+    """根据机柜平面位置生成路由描述。"""
+    if not from_rack and not to_rack:
+        return "unknown"
+    if not from_rack or not to_rack:
+        return "cross-rack (incomplete rack info)"
+    if from_rack.id == to_rack.id:
+        return f"{from_rack.id} 内跳线"
+
+    def _pos(rack):
+        col = getattr(rack, "room_column", "") or "?"
+        row = getattr(rack, "room_row", "") or "?"
+        x = getattr(rack, "floor_x_mm", 0) / 1000.0
+        y = getattr(rack, "floor_y_mm", 0) / 1000.0
+        return f"{rack.id}(列{col}行{row}, {x:.1f},{y:.1f}m)"
+
+    route = f"{_pos(from_rack)} -> {_pos(to_rack)}"
+    if getattr(from_rack, "room_id", "") and getattr(from_rack, "room_id", "") != getattr(
+        to_rack, "room_id", ""
+    ):
+        route += "; 跨机房"
+    elif getattr(from_rack, "room_column", "") == getattr(to_rack, "room_column", ""):
+        fx = getattr(from_rack, "floor_x_mm", 0)
+        tx = getattr(to_rack, "floor_x_mm", 0)
+        direction = "水平" if abs(fx - tx) > 1 else "纵向"
+        route += f"; 同列内{direction}走线"
+    else:
+        route += "; 跨列走线"
+    return route
+
+
+def generate_cable_schedule(ctx, config) -> GeneratorResult:
+    """生成线缆排期表 CSV：按施工顺序列出所有光纤/铜缆连接。"""
+    import csv
+    import io
+
+    ports = ctx.query("ports").list()
+    connections = ctx.query("port_connections").list()
+    port_map = {p.id: p for p in ports}
+    racks = {r.id: r for r in ctx.query("racks")}
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "Cable ID",
+            "From Device",
+            "From Port",
+            "From Rack",
+            "To Device",
+            "To Port",
+            "To Rack",
+            "Cable Type",
+            "Length (m)",
+            "Status",
+            "Route",
+        ]
+    )
+
+    for conn in sorted(connections, key=lambda c: c.id):
+        from_port = _resolve_port_ref(conn.resolved.from_port, port_map)
+        to_port = _resolve_port_ref(conn.resolved.to_port, port_map)
+        from_dev = from_port.device_id if from_port else ""
+        from_name = from_port.resolved.port_name if from_port else ""
+        to_dev = to_port.device_id if to_port else ""
+        to_name = to_port.resolved.port_name if to_port else ""
+
+        from_device = ctx.find_instance(from_dev) if from_port else None
+        to_device = ctx.find_instance(to_dev) if to_port else None
+        from_rack = getattr(from_device, "rack_id", "") if from_device else ""
+        to_rack = getattr(to_device, "rack_id", "") if to_device else ""
+        from_rack_obj = racks.get(from_rack) if from_rack else None
+        to_rack_obj = racks.get(to_rack) if to_rack else None
+
+        route = _format_cable_route(from_rack_obj, to_rack_obj)
+
+        writer.writerow(
+            [
+                conn.id,
+                from_dev,
+                from_name,
+                from_rack,
+                to_dev,
+                to_name,
+                to_rack,
+                getattr(conn.resolved, "cable_type", ""),
+                getattr(conn.resolved, "length_m", 0),
+                getattr(conn.resolved, "status", "planned"),
+                route,
+            ]
+        )
+
+    csv_content = output.getvalue()
+    _, file_path = _resolve_output_path(config, "cable-schedule.csv")
+    return _write_and_return("cable-schedule", "线缆排期表", csv_content, file_path, "text/csv")
+
+
+def generate_cable_labels(ctx, config) -> GeneratorResult:
+    """生成线缆标签 SVG：A4 排版，每页多张标签，含二维码占位。"""
+    from xml.dom import minidom
+    from xml.etree import ElementTree as ET
+
+    ports = ctx.query("ports").list()
+    connections = ctx.query("port_connections").list()
+    port_map = {p.id: p for p in ports}
+
+    # Label dimensions (mm)
+    LABEL_W = 30
+    LABEL_H = 15
+    COLS = 6
+    ROWS = 18
+    PAGE_W = LABEL_W * COLS
+    PAGE_H = LABEL_H * ROWS
+    FONT_SIZE = 2.2
+
+    ET.register_namespace("", "http://www.w3.org/2000/svg")
+    svg = ET.Element(
+        "svg",
+        {
+            "xmlns": "http://www.w3.org/2000/svg",
+            "width": str(PAGE_W),
+            "height": str(PAGE_H),
+            "viewBox": f"0 0 {PAGE_W} {PAGE_H}",
+        },
+    )
+    style = ET.SubElement(svg, "style")
+    style.text = (
+        f".label-text {{ font-family: monospace; font-size: {FONT_SIZE}px; fill: #222; }}"
+        "\n"
+        f".small-text {{ font-family: monospace; font-size: {FONT_SIZE - 0.4}px; fill: #555; }}"
+        "\n"
+        ".cut-line { stroke: #ccc; stroke-width: 0.2; fill: none; }"
+    )
+
+    # White background
+    ET.SubElement(
+        svg,
+        "rect",
+        {"x": "0", "y": "0", "width": str(PAGE_W), "height": str(PAGE_H), "fill": "#fff"},
+    )
+
+    for idx, conn in enumerate(connections):
+        col = idx % COLS
+        row = (idx // COLS) % ROWS
+        x = col * LABEL_W
+        y = row * LABEL_H
+
+        # Label border
+        ET.SubElement(
+            svg,
+            "rect",
+            {
+                "x": str(x + 0.5),
+                "y": str(y + 0.5),
+                "width": str(LABEL_W - 1),
+                "height": str(LABEL_H - 1),
+                "class": "cut-line",
+            },
+        )
+
+        from_port = _resolve_port_ref(conn.resolved.from_port, port_map)
+        to_port = _resolve_port_ref(conn.resolved.to_port, port_map)
+        from_ref = (
+            f"{from_port.device_id}/{from_port.resolved.port_name}"
+            if from_port
+            else conn.resolved.from_port
+        )
+        to_ref = (
+            f"{to_port.device_id}/{to_port.resolved.port_name}"
+            if to_port
+            else conn.resolved.to_port
+        )
+        cable_type = getattr(conn.resolved, "cable_type", "")
+        length = getattr(conn.resolved, "length_m", 0)
+
+        # Cable ID
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(x + 1), "y": str(y + 3), "class": "label-text"},
+        ).text = conn.id
+        # From -> To
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(x + 1), "y": str(y + 6.5), "class": "small-text"},
+        ).text = f"{from_ref} ->"
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(x + 1), "y": str(y + 9.5), "class": "small-text"},
+        ).text = f"  {to_ref}"
+        # Cable spec
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(x + 1), "y": str(y + 13), "class": "small-text"},
+        ).text = f"{cable_type} {length}m"
+
+    raw = ET.tostring(svg, encoding="unicode")
+    dom = minidom.parseString(raw)
+    svg_str = dom.toprettyxml(indent="  ")
+    _, file_path = _resolve_output_path(config, "cable-labels.svg")
+    return _write_and_return("cable-labels", "线缆标签", svg_str, file_path, "image/svg+xml")
+
+
+def generate_port_diagram(ctx, config) -> GeneratorResult:
+    """生成端口互连拓扑图 SVG：设备为节点，连接为边。"""
+    from xml.dom import minidom
+    from xml.etree import ElementTree as ET
+
+    ports = ctx.query("ports").list()
+    connections = ctx.query("port_connections").list()
+    port_map = {p.id: p for p in ports}
+
+    # Gather devices involved in connections
+    device_ids: set[str] = set()
+    edge_specs: list[dict[str, Any]] = []
+    for conn in connections:
+        from_port = _resolve_port_ref(conn.resolved.from_port, port_map)
+        to_port = _resolve_port_ref(conn.resolved.to_port, port_map)
+        if from_port is None or to_port is None:
+            continue
+        device_ids.add(from_port.device_id)
+        device_ids.add(to_port.device_id)
+        edge_specs.append(
+            {
+                "from_dev": from_port.device_id,
+                "from_port": from_port.resolved.port_name,
+                "to_dev": to_port.device_id,
+                "to_port": to_port.resolved.port_name,
+                "cable_type": getattr(conn.resolved, "cable_type", ""),
+                "length_m": getattr(conn.resolved, "length_m", 0),
+            }
+        )
+
+    if not device_ids:
+        return GeneratorResult.ok("port-diagram", "端口互连图", "", content_type="image/svg+xml")
+
+    devices = sorted(device_ids)
+    node_positions: dict[str, tuple[float, float]] = {}
+    node_w = 120
+    node_h = 40
+    gap_x = 80
+    gap_y = 60
+    cols = max(2, int(len(devices) ** 0.5))
+    for i, dev_id in enumerate(devices):
+        col = i % cols
+        row = i // cols
+        x = 50 + col * (node_w + gap_x)
+        y = 50 + row * (node_h + gap_y)
+        node_positions[dev_id] = (x, y)
+
+    max_x = max(x for x, _ in node_positions.values()) + node_w + 50
+    max_y = max(y for _, y in node_positions.values()) + node_h + 50
+
+    ET.register_namespace("", "http://www.w3.org/2000/svg")
+    svg = ET.Element(
+        "svg",
+        {
+            "xmlns": "http://www.w3.org/2000/svg",
+            "width": str(max_x),
+            "height": str(max_y),
+            "viewBox": f"0 0 {max_x} {max_y}",
+        },
+    )
+    style = ET.SubElement(svg, "style")
+    style.text = (
+        ".node { fill: #E3F2FD; stroke: #1976D2; stroke-width: 1.5; }"
+        "\n"
+        ".node-text { font-family: monospace; font-size: 11px; fill: #222; text-anchor: middle; }"
+        "\n"
+        ".edge { stroke: #666; stroke-width: 1; fill: none; }"
+        "\n"
+        ".edge-text { font-family: monospace; font-size: 9px; fill: #444; text-anchor: middle; }"
+    )
+
+    # Edges first (behind nodes)
+    for edge in edge_specs:
+        x1, y1 = node_positions[edge["from_dev"]]
+        x2, y2 = node_positions[edge["to_dev"]]
+        cx1 = (x1 + node_w / 2 + x2 + node_w / 2) / 2
+        cy1 = min(y1, y2) - 20
+        ET.SubElement(
+            svg,
+            "path",
+            {
+                "d": f"M {x1 + node_w / 2} {y1 + node_h / 2} Q {cx1} {cy1} {x2 + node_w / 2} {y2 + node_h / 2}",
+                "class": "edge",
+            },
+        )
+        mid_x = (x1 + node_w / 2 + x2 + node_w / 2) / 2
+        mid_y = (y1 + node_h / 2 + y2 + node_h / 2) / 2 - 10
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(mid_x), "y": str(mid_y), "class": "edge-text"},
+        ).text = f"{edge['from_port']}↔{edge['to_port']}"
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(mid_x), "y": str(mid_y + 12), "class": "edge-text"},
+        ).text = f"{edge['cable_type']} {edge['length_m']}m"
+
+    # Nodes
+    for dev_id, (x, y) in node_positions.items():
+        ET.SubElement(
+            svg,
+            "rect",
+            {
+                "x": str(x),
+                "y": str(y),
+                "width": str(node_w),
+                "height": str(node_h),
+                "rx": "4",
+                "ry": "4",
+                "class": "node",
+            },
+        )
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(x + node_w / 2), "y": str(y + node_h / 2 + 4), "class": "node-text"},
+        ).text = dev_id
+
+    raw = ET.tostring(svg, encoding="unicode")
+    dom = minidom.parseString(raw)
+    svg_str = dom.toprettyxml(indent="  ")
+    _, file_path = _resolve_output_path(config, "port-diagram.svg")
+    return _write_and_return("port-diagram", "端口互连图", svg_str, file_path, "image/svg+xml")
+
+
+def check_rack_weight(ctx):
+    """检查机柜内设备总重量不超过机柜承重限制。"""
+    for rack in ctx.query("racks"):
+        ctx.set_current_file(str(rack.source))
+        max_load = getattr(rack.resolved, "max_load_kg", 0)
+        if max_load <= 0:
+            continue
+        devices = ctx.query("devices", rack_id=rack.id).list()
+        total_weight = sum(getattr(d.resolved, "weight_kg", 0) for d in devices)
+        assert total_weight <= max_load, (
+            f"机柜 {rack.id} 总重量 {total_weight}kg 超过承重限制 {max_load}kg "
+            f"(设备: {', '.join(d.id for d in devices)})"
+        )
+    ctx.clear_current_file()
+
+
+def check_rack_cooling(ctx):
+    """检查机柜内设备总 TDP 不超过机柜散热能力。"""
+    for rack in ctx.query("racks"):
+        ctx.set_current_file(str(rack.source))
+        cooling = getattr(rack.resolved, "cooling_capacity_w", 0)
+        if cooling <= 0:
+            continue
+        devices = ctx.query("devices", rack_id=rack.id).list()
+        total_tdp = sum(getattr(d.resolved, "tdp_w", 0) for d in devices)
+        assert total_tdp <= cooling, (
+            f"机柜 {rack.id} 总 TDP {total_tdp}W 超过散热能力 {cooling}W "
+            f"(设备: {', '.join(d.id for d in devices)})"
+        )
+    ctx.clear_current_file()
+
+
+def check_cable_length(ctx):
+    """检查光纤跳线长度不超过型号允许的最大距离。"""
+    for fiber in ctx.query("fibers"):
+        ctx.set_current_file(str(fiber.source))
+        length = getattr(fiber.resolved, "length_m", 0)
+        max_dist = getattr(fiber.resolved, "max_distance_m", 0)
+        if max_dist <= 0:
+            continue
+        assert length <= max_dist, (
+            f"光纤 {fiber.id} 长度 {length}m 超过型号最大传输距离 {max_dist}m"
+        )
+    ctx.clear_current_file()
+
+
+def check_dual_psu_redundancy(ctx):
+    """检查核心/汇聚设备是否具备双路 PDU 冗余供电。"""
+    critical_tags = (
+        ctx.config.get("rules", {})
+        .get("TELECOM-REDUNDANCY-001", {})
+        .get("critical_tags", ["role:core", "role:aggregation"])
+    )
+    for device in ctx.query("devices"):
+        tags = getattr(device.resolved, "tags", None)
+        if tags is None:
+            continue
+        if hasattr(tags, "as_flat_dict"):
+            tag_dict = tags.as_flat_dict()
+        elif hasattr(tags, "__dict__"):
+            tag_dict = dict(tags.__dict__)
+        else:
+            tag_dict = dict(tags) if hasattr(tags, "__iter__") else {}
+
+        is_critical = any(
+            tag_dict.get(k) == v for tag in critical_tags for k, v in [tag.split(":", 1)]
+        )
+        if not is_critical:
+            continue
+
+        ctx.set_current_file(str(device.source))
+        # 通过 mate 图查找供电 PDU
+        parents = ctx.mated_parents(device.id)
+        pdu_ids = set()
+        for mate in parents:
+            parent_id, _ = mate.parent.split("/", 1) if "/" in mate.parent else (mate.parent, "")
+            parent_inst = ctx.find_instance(parent_id)
+            if parent_inst and parent_inst.family == "PduFamily":
+                pdu_ids.add(parent_id)
+
+        assert len(pdu_ids) >= 2, (
+            f"核心设备 {device.id} 必须双路 PDU 供电，当前仅发现 {len(pdu_ids)} 路 "
+            f"({', '.join(sorted(pdu_ids)) if pdu_ids else '无'})"
+        )
+    ctx.clear_current_file()
+
+
+def check_maintenance_clearance(ctx):
+    """检查机柜维护空间配置是否合理。
+
+    当前数据模型未建模机房平面布局，因此仅校验机柜级维护空间字段
+    已被正确声明且为正值。后续可扩展为设备前后净距检查。
+    """
+    for rack in ctx.query("racks"):
+        ctx.set_current_file(str(rack.source))
+        front_req = getattr(rack.resolved, "maintenance_front_mm", 800)
+        rear_req = getattr(rack.resolved, "maintenance_rear_mm", 600)
+        assert front_req > 0 and rear_req > 0, (
+            f"机柜 {rack.id} 维护空间配置异常：前={front_req}mm，后={rear_req}mm"
+        )
+    ctx.clear_current_file()
+
+
+def _rack_floor_rect(rack) -> tuple[float, float, float, float]:
+    """返回机柜在机房平面上的轴对齐包围盒 (x1, y1, x2, y2)。"""
+    x = getattr(rack.resolved, "floor_x_mm", 0.0)
+    y = getattr(rack.resolved, "floor_y_mm", 0.0)
+    width = getattr(rack.resolved, "width_mm", 0.0)
+    depth = getattr(rack.resolved, "depth_mm", 0.0)
+    return (x, y, x + width, y + depth)
+
+
+def check_rack_floor_collision(ctx):
+    """检查同一机房内机柜平面布局不重叠。"""
+    racks = ctx.query("racks").list()
+    for i, r1 in enumerate(racks):
+        room1 = getattr(r1.resolved, "room_id", "")
+        if not room1:
+            continue
+        x1, y1, x2, y2 = _rack_floor_rect(r1)
+        for r2 in racks[i + 1 :]:
+            room2 = getattr(r2.resolved, "room_id", "")
+            if room2 != room1:
+                continue
+            ctx.set_current_file(str(r1.source))
+            a1, b1, a2, b2 = _rack_floor_rect(r2)
+            overlap = not (x2 <= a1 or a2 <= x1 or y2 <= b1 or b2 <= y1)
+            assert not overlap, f"机柜 {r1.id} 与 {r2.id} 在机房 {room1} 平面布局重叠"
+    ctx.clear_current_file()
+
+
+def check_rack_aisle_spacing(ctx):
+    """检查同一列/相邻列机柜之间的通道宽度满足 RoomFamily 要求。"""
+    rooms = {r.id: r for r in ctx.query("rooms")}
+    racks = ctx.query("racks").list()
+
+    # 按机房、列分组
+    bays: dict[str, dict[str, list[Any]]] = {}
+    for rack in racks:
+        room_id = getattr(rack.resolved, "room_id", "")
+        col = getattr(rack.resolved, "room_column", "")
+        if not room_id or not col:
+            continue
+        bays.setdefault(room_id, {}).setdefault(col, []).append(rack)
+
+    for room_id, cols in bays.items():
+        room = rooms.get(room_id)
+        if room is None:
+            continue
+        bay_spacing = getattr(room.resolved, "rack_bay_spacing_mm", 1200)
+        inline_spacing = getattr(room.resolved, "rack_inline_spacing_mm", 600)
+
+        # 同列机柜间距
+        for col, rack_list in cols.items():
+            sorted_racks = sorted(rack_list, key=lambda r: getattr(r.resolved, "room_row", 0))
+            for i in range(len(sorted_racks) - 1):
+                r1, r2 = sorted_racks[i], sorted_racks[i + 1]
+                ctx.set_current_file(str(r2.source))
+                _, _, _, y1_max = _rack_floor_rect(r1)
+                _, y2_min, _, _ = _rack_floor_rect(r2)
+                gap = y2_min - y1_max
+                assert gap >= inline_spacing, (
+                    f"机柜 {r1.id} 与 {r2.id} 同列间距 {gap}mm 小于要求 {inline_spacing}mm"
+                )
+
+        # 相邻列间距（取列内机柜最近距离作为代理）
+        col_ids = sorted(cols.keys())
+        for i in range(len(col_ids) - 1):
+            col_a, col_b = col_ids[i], col_ids[i + 1]
+            racks_a = cols[col_a]
+            racks_b = cols[col_b]
+            min_gap = float("inf")
+            for ra in racks_a:
+                _, _, x_a_max, _ = _rack_floor_rect(ra)
+                for rb in racks_b:
+                    x_b_min, _, _, _ = _rack_floor_rect(rb)
+                    gap = x_b_min - x_a_max
+                    if gap < min_gap:
+                        min_gap = gap
+            if min_gap < float("inf"):
+                ctx.set_current_file(str(racks_b[0].source))
+                assert min_gap >= bay_spacing, (
+                    f"机房 {room_id} 列 {col_a} 与 {col_b} 之间通道宽度 {min_gap}mm "
+                    f"小于要求 {bay_spacing}mm"
+                )
+    ctx.clear_current_file()
+
+
+def check_rack_naming(ctx):
+    """检查机柜 ID 与 column/row 声明一致（如 RACK-A01 应对应 column=A, row=1）。"""
+    import re
+
+    for rack in ctx.query("racks"):
+        col = getattr(rack.resolved, "room_column", "")
+        row = getattr(rack.resolved, "room_row", 0)
+        if not col or row <= 0:
+            continue
+        ctx.set_current_file(str(rack.source))
+        pattern = rf"{re.escape(col)}\s*0*{row}\b"
+        assert re.search(pattern, rack.id, re.IGNORECASE), (
+            f"机柜 ID '{rack.id}' 与平面坐标声明不一致：column={col}, row={row}"
+        )
+    ctx.clear_current_file()
+
+
+def generate_floor_plan(ctx, config) -> GeneratorResult:
+    """生成机房平面图 SVG：机房轮廓、机柜位置、编号、状态。"""
+    from xml.dom import minidom
+    from xml.etree import ElementTree as ET
+
+    rooms = ctx.query("rooms").list()
+    racks = ctx.query("racks").list()
+
+    if not rooms:
+        return GeneratorResult.ok("floor-plan", "机房平面图", "", content_type="image/svg+xml")
+
+    room = rooms[0]
+    room_length = getattr(room.resolved, "length_mm", 10000)
+    room_width = getattr(room.resolved, "width_mm", 8000)
+
+    # SVG 画布：1mm = 0.1px，留边距
+    SCALE = 0.1
+    MARGIN = 50
+    canvas_w = int(room_length * SCALE) + 2 * MARGIN
+    canvas_h = int(room_width * SCALE) + 2 * MARGIN
+
+    ET.register_namespace("", "http://www.w3.org/2000/svg")
+    svg = ET.Element(
+        "svg",
+        {
+            "xmlns": "http://www.w3.org/2000/svg",
+            "width": str(canvas_w),
+            "height": str(canvas_h),
+            "viewBox": f"0 0 {canvas_w} {canvas_h}",
+        },
+    )
+    style = ET.SubElement(svg, "style")
+    style.text = (
+        ".room-outline { fill: #f5f5f5; stroke: #333; stroke-width: 2; }"
+        "\n"
+        ".rack { stroke: #555; stroke-width: 1; }"
+        "\n"
+        ".rack-label { font-family: monospace; font-size: 14px; fill: #222; text-anchor: middle; }"
+        "\n"
+        ".rack-info { font-family: monospace; font-size: 10px; fill: #666; text-anchor: middle; }"
+        "\n"
+        ".north { font-family: monospace; font-size: 12px; fill: #999; text-anchor: middle; }"
+    )
+
+    # Room outline
+    ET.SubElement(
+        svg,
+        "rect",
+        {
+            "x": str(MARGIN),
+            "y": str(MARGIN),
+            "width": str(room_length * SCALE),
+            "height": str(room_width * SCALE),
+            "class": "room-outline",
+        },
+    )
+
+    # North indicator
+    ET.SubElement(
+        svg,
+        "text",
+        {"x": str(canvas_w / 2), "y": str(MARGIN - 15), "class": "north"},
+    ).text = "N 北"
+
+    STATUS_COLORS = {
+        "installed": "#5CB85C",
+        "planned": "#4A90D9",
+        "retired": "#999999",
+    }
+
+    for rack in racks:
+        room_id = getattr(rack.resolved, "room_id", "")
+        if room_id != room.id:
+            continue
+        x = getattr(rack.resolved, "floor_x_mm", 0.0)
+        y = getattr(rack.resolved, "floor_y_mm", 0.0)
+        width = getattr(rack.resolved, "width_mm", 600)
+        depth = getattr(rack.resolved, "depth_mm", 1000)
+        status = getattr(rack.resolved, "status", "planned")
+        col = getattr(rack.resolved, "room_column", "")
+        row = getattr(rack.resolved, "room_row", 0)
+
+        sx = MARGIN + x * SCALE
+        sy = MARGIN + y * SCALE
+        sw = width * SCALE
+        sd = depth * SCALE
+        color = STATUS_COLORS.get(status, "#4A90D9")
+
+        ET.SubElement(
+            svg,
+            "rect",
+            {
+                "x": str(sx),
+                "y": str(sy),
+                "width": str(sw),
+                "height": str(sd),
+                "fill": color,
+                "class": "rack",
+            },
+        )
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(sx + sw / 2), "y": str(sy + sd / 2 + 5), "class": "rack-label"},
+        ).text = rack.id
+        ET.SubElement(
+            svg,
+            "text",
+            {"x": str(sx + sw / 2), "y": str(sy + sd / 2 + 20), "class": "rack-info"},
+        ).text = f"{col}-{row} {status}"
+
+    raw = ET.tostring(svg, encoding="unicode")
+    dom = minidom.parseString(raw)
+    svg_str = dom.toprettyxml(indent="  ")
+    _, file_path = _resolve_output_path(config, "floor-plan.svg")
+    return _write_and_return("floor-plan", "机房平面图", svg_str, file_path, "image/svg+xml")

@@ -1,0 +1,7 @@
+id: CONN-CORE-AGG
+family: PortConnectionFamily
+from_port: CORE-SW-01/Ten1/0/1
+to_port: AGG-SW-01/Ten1/0/1
+cable_type: OM4-MPO-MPO
+length_m: 5
+status: planned

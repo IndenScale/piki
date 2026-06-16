@@ -1,0 +1,16 @@
+catalog_id: h3c-s6520x-30qc
+family: ComponentCatalogFamily
+
+manufacturer: H3C
+mpn: S6520X-30QC-EI
+sku: 0235A2C2
+lifecycle: active
+revision: "V200R020"
+
+unit_price_cny: 65000
+
+model_ref: h3c-s6520x-30qc
+
+certifications:
+  - RoHS
+  - REACH

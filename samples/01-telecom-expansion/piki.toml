@@ -1,24 +1,49 @@
 [project]
 name = "01-telecom-expansion"
-version = "1.0.0"
-description = "电信机架示例：PDU 功率检查 + U 位冲突检查"
+version = "1.1.0"
+description = "电信机房扩容真实场景：多机柜、真实设备型号、brownfield、双路供电、线缆标签、机房平面图"
 
 [plugins]
 enabled = ["telecom"]
 
 [plugins.telecom]
-power_threshold = 0.4
+power_threshold = 0.8
 rack_usage_threshold = 0.8
+power_phase_imbalance_threshold = 0.25
+
+[rules]
+# 维护空间阈值（毫米）
+maintenance_front_mm = 800
+maintenance_rear_mm = 600
+
+[rules.TELECOM-REDUNDANCY-001]
+critical_tags = ["role:core", "role:aggregation"]
 
 [generators]
-enabled = ["bom-csv", "rack-face-panel-svg", "power-budget", "cable-list", "port-map"]
+enabled = [
+    "bom-csv",
+    "rack-face-panel",
+    "rack-face-panel-svg",
+    "power-budget",
+    "cable-list",
+    "port-map",
+    "cable-schedule",
+    "cable-labels",
+    "port-diagram",
+    "floor-plan",
+]
 
 [generators.dist]
 root = "dist"
 
 [generators.dist.targets]
 bom-csv = "采购清单"
+rack-face-panel = "施工图"
 rack-face-panel-svg = "施工图"
 power-budget = "设计评审"
 cable-list = "采购清单"
 port-map = "设计评审"
+cable-schedule = "施工清单"
+cable-labels = "施工清单"
+port-diagram = "设计评审"
+floor-plan = "施工图"

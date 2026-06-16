@@ -1,0 +1,3 @@
+type: lc-connector
+parent: XC-ACCESS-P1/line
+child: FIBER-ACCESS-SRV01/end-a

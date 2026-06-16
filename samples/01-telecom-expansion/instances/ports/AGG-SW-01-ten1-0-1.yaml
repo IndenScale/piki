@@ -1,0 +1,6 @@
+id: AGG-SW-01-ten1-0-1
+family: PortFamily
+device_id: AGG-SW-01
+port_name: Ten1/0/1
+port_type: QSFP28
+status: planned

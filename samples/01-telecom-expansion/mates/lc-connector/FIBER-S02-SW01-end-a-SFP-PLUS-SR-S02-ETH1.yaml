@@ -1,3 +1,0 @@
-type: lc-connector
-parent: SFP-PLUS-SR-S02-ETH1/line
-child: FIBER-S02-SW01/end-a

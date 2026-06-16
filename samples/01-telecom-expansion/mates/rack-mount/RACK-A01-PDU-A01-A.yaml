@@ -1,0 +1,6 @@
+type: rack-mount-19inch
+parent: RACK-A01
+child: PDU-A01-A
+at:
+  u_start: 1
+  u_span: 0

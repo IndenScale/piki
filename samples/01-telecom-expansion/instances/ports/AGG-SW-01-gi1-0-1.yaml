@@ -1,0 +1,6 @@
+id: AGG-SW-01-gi1-0-1
+family: PortFamily
+device_id: AGG-SW-01
+port_name: Gi1/0/1
+port_type: SFP28
+status: planned

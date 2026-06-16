@@ -1,0 +1,11 @@
+id: ROOM-01
+name: 主机房
+family: RoomFamily
+length_mm: 10000
+width_mm: 8000
+height_mm: 3000
+rack_bay_spacing_mm: 1200
+rack_inline_spacing_mm: 600
+wall_margin_mm: 1000
+tags:
+  site: main-data-hall

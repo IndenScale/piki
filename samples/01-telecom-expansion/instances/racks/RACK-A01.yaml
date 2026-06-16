@@ -1,6 +1,14 @@
 id: RACK-A01
-family: RackFamily
+name: 核心汇聚机柜
 model: standard-rack
-name: 主列头柜-A01
-location: 机房A-A列
-power_capacity_w: 2000
+family: RackFamily
+location: A 列第 1 机柜
+room_id: ROOM-01
+room_column: A
+room_row: 1
+floor_x_mm: 1000
+floor_y_mm: 1000
+orientation_deg: 0
+tags:
+  room: ROOM-01
+  column: A

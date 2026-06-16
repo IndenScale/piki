@@ -23,7 +23,12 @@ def _print_result(result: GeneratorResult) -> None:
         print(f"Generator '{result.generator_id}' failed: {result.error}")
 
 
-def cmd_generate(path: str | None, generator: str | None, output: str | None) -> int:
+def cmd_generate(
+    path: str | None,
+    generator: str | None,
+    output: str | None,
+    rack: str | None = None,
+) -> int:
     """执行 generate 命令。
 
     Args:
@@ -86,6 +91,8 @@ def cmd_generate(path: str | None, generator: str | None, output: str | None) ->
         # 构建 config：如果 --output 指定，优先级最高；
         # 否则使用 dist/ 约定路径
         config: dict[str, Any] = {}
+        if rack is not None:
+            config["rack"] = rack
         if out_path is not None:
             config["output"] = str(out_path)
         elif dist_root:

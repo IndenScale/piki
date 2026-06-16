@@ -1,0 +1,15 @@
+type: rack-mount-19inch
+parent: RACK-A01
+child: AGG-SW-01
+at:
+  u_start: 37
+  u_span: 1
+constrains:
+  - field: depth_mm
+    operator: "<="
+    value_ref: depth_mm
+    message: "AGG-SW-01 深度超过 RACK-A01 机柜深度，无法安装"
+  - field: width_mm
+    operator: "<="
+    value_ref: width_mm
+    message: "AGG-SW-01 宽度超过 RACK-A01 机柜安装宽度"

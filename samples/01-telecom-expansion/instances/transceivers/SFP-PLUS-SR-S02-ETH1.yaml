@@ -1,5 +1,0 @@
-id: SFP-PLUS-SR-S02-ETH1
-family: TransceiverFamily
-model: sfp-plus-sr-10g
-name: "SFP+ SR 10G - SRV-02 eth1"
-status: installed

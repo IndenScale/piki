@@ -1,0 +1,8 @@
+id: CORE-SW-01
+name: 核心交换机-01
+model: h3c-s6520x-30qc
+family: ServerFamily
+status: installed
+tags:
+  role: core
+  discipline: network

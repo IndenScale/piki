@@ -1,0 +1,3 @@
+type: qsfp28-cage
+parent: CORE-SW-01/Ten1/0/1
+child: XC-CORE-TEN1/host

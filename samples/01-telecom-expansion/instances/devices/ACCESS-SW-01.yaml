@@ -1,0 +1,8 @@
+id: ACCESS-SW-01
+name: 接入交换机-01
+model: hw-ce6881-48s6cq
+family: ServerFamily
+status: installed
+tags:
+  role: access
+  discipline: network

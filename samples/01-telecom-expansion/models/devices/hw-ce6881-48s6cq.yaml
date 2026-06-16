@@ -1,0 +1,23 @@
+model: hw-ce6881-48s6cq
+family: ServerFamily
+
+brand: Huawei
+mpn: CE6881-48S6CQ
+description: 48×SFP28 + 6×QSFP28 接入交换机
+
+height_u: 1
+tdp_w: 150
+typical_power_w: 100
+psu_count: 2
+psu_redundancy: true
+
+# 物理尺寸（毫米）
+depth_mm: 420
+width_mm: 442
+height_mm: 44
+weight_kg: 7.2
+
+interfaces:
+  - id: console
+    interface_type: RJ45
+    direction: bidirectional

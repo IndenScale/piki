@@ -1,0 +1,11 @@
+id: FIBER-CORE-AGG
+model: om4-mpo-mpo-5m
+family: FiberPatchCordFamily
+status: planned
+interfaces:
+  - id: end-a
+    interface_type: MPO/MTP
+    direction: bidirectional
+  - id: end-b
+    interface_type: MPO/MTP
+    direction: bidirectional

@@ -1,0 +1,11 @@
+id: FIBER-ACCESS-SRV01
+model: om4-lc-lc-3m
+family: FiberPatchCordFamily
+status: planned
+interfaces:
+  - id: end-a
+    interface_type: LC
+    direction: bidirectional
+  - id: end-b
+    interface_type: LC
+    direction: bidirectional

@@ -1,0 +1,8 @@
+id: AGG-SW-01
+name: 汇聚交换机-01
+model: h3c-s6520x-30qc
+family: ServerFamily
+status: planned
+tags:
+  role: aggregation
+  discipline: network
