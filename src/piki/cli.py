@@ -27,7 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     """构建 argparse 解析器，定义所有 CLI 命令和参数。"""
     parser = argparse.ArgumentParser(
         prog="piki",
-        description="Text-Native Declarative Modeling Framework — 用文本定义设计，用规则检查合理性。",
+        description="Software-Defined Hardware (SDH) Framework — 用文本定义设计，用规则检查合理性。",
     )
     parser.add_argument("--version", action="version", version=f"piki {__version__}")
     sub = parser.add_subparsers(dest="command", required=True, help="可用命令")

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>piki — Agent Native 工业软件</title>
-  <meta name="description" content="piki 是软件定义工程（SDE）运动的第一个参考实现。让工程设计像软件一样可定义、可校验、可协作。" />
+  <title>piki — Software-Defined Hardware (SDH) Framework</title>
+  <meta name="description" content="piki 是一个 Software-Defined Hardware (SDH) Framework。让工程设计像软件一样可定义、可校验、可协作。" /
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -68,14 +68,14 @@
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="max-w-3xl reveal">
         <div class="inline-flex items-center rounded-full border border-piki-500/30 bg-piki-500/10 px-3 py-1 text-sm font-medium text-piki-300 mb-6">
-          软件定义工程 · SDE
+          Software-Defined Hardware · SDH
         </div>
         <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
           工程设计，<br />
           <span class="gradient-text">应该像软件一样</span>
         </h1>
         <p class="mt-6 text-lg text-slate-400 leading-relaxed max-w-xl">
-          可定义、可校验、可协作。piki 是 Agent Native 工业软件的第一个参考实现——用声明式语言描述设计意图，规则引擎在提交前自动发现错误。
+          可定义、可校验、可协作。piki 是一个 Software-Defined Hardware (SDH) Framework——用声明式语言描述设计意图，规则引擎在提交前自动发现错误。
         </p>
         <div class="mt-8 flex flex-wrap gap-4">
           <a href="#quickstart" class="rounded-xl bg-piki-600 px-6 py-3 text-base font-semibold text-white hover:bg-piki-500 transition-colors shadow-lg shadow-piki-900/30">
@@ -98,22 +98,22 @@
   <section id="manifesto" class="py-24 border-t border-slate-800/60">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="max-w-3xl reveal">
-        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">软件定义工程</h2>
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">软件定义硬件</h2>
         <p class="mt-4 text-lg text-slate-400">四篇文章，从范式到引擎。</p>
       </div>
       <div class="mt-12 grid gap-6 sm:grid-cols-2">
         <!-- Card 1 -->
-        <a href="articles/01-why-sde.html" class="reveal block rounded-2xl border border-slate-800 bg-slate-900/50 p-8 transition-all hover:border-piki-500/30 hover:bg-slate-900 group">
+        <a href="articles/01-why-sdh.html" class="reveal block rounded-2xl border border-slate-800 bg-slate-900/50 p-8 transition-all hover:border-piki-500/30 hover:bg-slate-900 group">
           <span class="text-piki-400 text-sm font-mono mb-3 block">01 · 范式宣言</span>
-          <h3 class="text-xl font-semibold text-white group-hover:text-piki-300 transition-colors">软件定义工程（SDE）</h3>
-          <p class="mt-2 text-slate-400 leading-relaxed">大模型落地工业的必由之路。为什么 GUI 时代的工业软件在 Agent 时代变成了负债，以及 Headless Engineering 的解决方案。</p>
+          <h3 class="text-xl font-semibold text-white group-hover:text-piki-300 transition-colors">软件定义硬件（SDH）</h3>
+          <p class="mt-2 text-slate-400 leading-relaxed">实体工程的必由之路。为什么工程设计必须从 GUI 和专有文件走向文本声明、规则校验与版本控制。</p>
           <span class="inline-flex items-center gap-1 mt-4 text-sm text-piki-400 group-hover:gap-2 transition-all">阅读文章 →</span>
         </a>
         <!-- Card 2 -->
         <a href="articles/02-agent-native.html" class="reveal block rounded-2xl border border-slate-800 bg-slate-900/50 p-8 transition-all hover:border-piki-500/30 hover:bg-slate-900 group">
-          <span class="text-piki-400 text-sm font-mono mb-3 block">02 · 品类定义</span>
-          <h3 class="text-xl font-semibold text-white group-hover:text-piki-300 transition-colors">Agent Native 工业软件</h3>
-          <p class="mt-2 text-slate-400 leading-relaxed">ANIS 的五项原则：声明式、CLI 优先、开放数据格式、Git/CICD、开源知识网络。以及规则引擎的物理边界。</p>
+          <span class="text-piki-400 text-sm font-mono mb-3 block">02 · 设计原则</span>
+          <h3 class="text-xl font-semibold text-white group-hover:text-piki-300 transition-colors">SDH 框架的设计原则</h3>
+          <p class="mt-2 text-slate-400 leading-relaxed">piki 的五项设计原则：声明式、CLI 优先、开放数据格式、Git/CICD、开源知识网络。以及规则引擎的物理边界。</p>
           <span class="inline-flex items-center gap-1 mt-4 text-sm text-piki-400 group-hover:gap-2 transition-all">阅读文章 →</span>
         </a>
         <!-- Card 3 -->
@@ -291,7 +291,7 @@ piki generate rack-face-panel</pre>
   <section class="py-24 bg-piki-950/30 border-t border-slate-800/60">
     <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center reveal">
       <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">让工程设计像软件一样</h2>
-      <p class="mt-4 text-lg text-slate-400">阅读 SDE 宣言，或直接开始使用 piki。</p>
+      <p class="mt-4 text-lg text-slate-400">阅读 SDH 宣言，或直接开始使用 piki。</p>
       <div class="mt-10 flex flex-wrap justify-center gap-4">
         <a href="#manifesto" class="rounded-xl border border-slate-700 bg-slate-900/50 px-8 py-4 text-base font-semibold text-slate-200 hover:border-piki-500/50 hover:text-white transition-colors">
           阅读理念

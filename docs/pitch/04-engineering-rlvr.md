@@ -206,6 +206,6 @@ Agent 必须更强才能通过
 
 ## 继续阅读
 
-- [软件定义硬件（SDH）：大模型落地工业的必由之路](01-why-sdh.md)
-- [Agent Native 工业软件：为 Agent 时代重新设计底层](02-agent-native.md)
+- [软件定义硬件（SDH）：实体工程的必由之路](01-why-sdh.md)
+- [SDH 框架的设计原则：文本原生与 Agent 友好](02-agent-native.md)
 - [ADL：装配体定义语言](03-adl.md)

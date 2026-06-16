@@ -3,9 +3,9 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Agent Native 工业软件的第一个参考实现。**
+> **Software-Defined Hardware (SDH) Framework**
 >
-> piki 让工程设计变得像软件一样可定义、可校验、可协作。工程师（或 Agent）用声明式语言描述设计意图，piki 在提交前自动发现错误——从 YAML 语法到三维空间碰撞，全部在秒级内完成。
+> 工程师（或 Agent）用声明式语言描述设计意图，piki 在提交前自动发现错误——从 YAML 语法到三维空间碰撞，全部在秒级内完成。
 
 ---
 
@@ -28,7 +28,7 @@ piki check    # 在提交前自动发现设计错误
 | | 文章 | 说什么 |
 |---|---|---|
 | 1 | [软件定义硬件（SDH）](docs/pitch/01-why-sdh.md) | 为什么这件事必须发生——大模型与工业软件的范式错配 |
-| 2 | [Agent Native 工业软件](docs/pitch/02-agent-native.md) | 新品类是什么——五项原则与生态位 |
+| 2 | [SDH 框架的设计原则](docs/pitch/02-agent-native.md) | 文本原生、CLI 优先、Git/CICD、开放格式与 Agent 友好 |
 | 3 | [ADL：装配体定义语言](docs/pitch/03-adl.md) | 怎么表达——PDL/PML/PLL 三子语言 |
 | 4 | [Engineering RLVR](docs/pitch/04-engineering-rlvr.md) | 怎么进化——可验证奖励驱动工程 AI |
 

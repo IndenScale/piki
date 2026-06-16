@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>软件定义硬件（SDH）：实体工程的必由之路 — piki</title>
+  <meta name="description" content="实体工程的形式化程度远低于软件和芯片设计。SDH 让工程设计像软件一样可定义、可校验、可协作。" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            piki: { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a', 950: '#042f2e' }
+          },
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .gradient-text {
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .prose { color: #e2e8f0; line-height: 1.85; }
+    .prose h1 { font-size: 2.25rem; font-weight: 800; color: #fff; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.02em; }
+    .prose h2 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin-top: 2.5rem; margin-bottom: 0.75rem; border-left: 4px solid #0d9488; padding-left: 1rem; }
+    .prose h3 { font-size: 1.2rem; font-weight: 600; color: #e2e8f0; margin-top: 2rem; margin-bottom: 0.5rem; }
+    .prose p { margin-bottom: 1.25rem; }
+    .prose blockquote { border-left: 3px solid #0d9488; padding: 0.75rem 1.25rem; margin: 1.5rem 0; background: rgba(13,148,136,0.06); border-radius: 0 0.5rem 0.5rem 0; color: #94a3b8; font-style: italic; }
+    .prose strong { color: #fff; }
+    .prose code { background: rgba(30,41,59,0.8); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; color: #5eead4; }
+    .prose pre { background: #0f172a; padding: 1.25rem; border-radius: 0.75rem; overflow-x: auto; margin: 1.25rem 0; border: 1px solid #1e293b; }
+    .prose pre code { background: none; padding: 0; color: #e2e8f0; font-size: 0.85rem; line-height: 1.7; }
+    .prose table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+    .prose th { background: #1e293b; color: #5eead4; padding: 0.75rem 1rem; text-align: left; font-weight: 600; border-bottom: 2px solid #0d9488; }
+    .prose td { padding: 0.6rem 1rem; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+    .prose ul, .prose ol { margin-bottom: 1.25rem; padding-left: 1.5rem; color: #cbd5e1; }
+    .prose li { margin-bottom: 0.4rem; }
+    .prose hr { border: none; border-top: 1px solid #1e293b; margin: 2rem 0; }
+    .prose a { color: #2dd4bf; text-decoration: none; }
+    .prose a:hover { text-decoration: underline; }
+    .back-link { display: inline-flex; align-items: center; gap: 0.5rem; color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem; transition: color 0.2s; }
+    .back-link:hover { color: #2dd4bf; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-md">
+    <div class="mx-auto max-w-3xl px-4 sm:px-6 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-lg font-bold text-white">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-piki-500 text-white font-mono text-sm">π</span>
+        piki
+      </a>
+      <a href="/" class="text-sm text-slate-400 hover:text-piki-400 transition-colors">← 返回首页</a>
+    </div>
+  </nav>
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 pt-24 pb-16">
+    <article class="prose">
+
+<h1 id="软件定义硬件sdh实体工程的必由之路">软件定义硬件（SDH）：实体工程的必由之路</h1>
+<blockquote>
+<p>机械设计、通信站点设计、建筑暖通设计——它们仍然以 GUI 为主要交互媒介，设计意图锁在专有文件里，验证靠人工逐项打勾，错误往往在施工阶段才暴露。软件工程和芯片设计已经证明：当设计意图变成文本、规则变成可执行代码、变更进入版本控制，整个行业的知识再生产能力会被彻底重塑。实体工程不是不需要这套方法论，只是才刚开始认真地往这个方向移动。</p>
+</blockquote>
+<hr />
+<h2 id="一错配工业软件为人类设计工程知识需要被机器执行">一、错配：工业软件为人类设计，工程知识需要被机器执行</h2>
+<p>工业软件行业过去三十年极大地提升了单点效率，但它们有一个共同默认：<strong>使用者是有经验的人类工程师</strong>。</p>
+<p>菜单、对话框、快捷键、专有文件格式——一切为人类眼手协调优化。一个完整的设计流程通常是这样的：工程师打开 CAD/BIM，在图形界面里逐个点选、拖拽、填参数，把设计意图编码进二进制或半结构化文件；校验阶段再打开另一套软件，人工逐项核对规范；最后导出图纸、BOM 和报告，交给下游采购与施工。</p>
+<p>这个模式在“人主导一切”的时代运转良好。但它带来了一个深层问题：<strong>设计知识被锁在人类操作、专有格式和文档经验里，无法被机器直接读取、校验和继承。</strong></p>
+<p>当行业开始引入自动化工具、脚本、CI/CD 乃至 Agent 时，这个问题立刻暴露：</p>
+<ul>
+<li><strong>专有格式不可解析</strong>：DWG/RVT/SLDPRT 等文件需要特定软件打开，无法被标准工具链 grep、diff、脚本消费。</li>
+<li><strong>GUI 语义无法复用</strong>：一次鼠标点击序列无法被另一个程序重复执行，更无法被版本控制。</li>
+<li><strong>规则锁在人脑中</strong>：PDU 负载不超过 80%、同一机柜 U 位不能重叠、光模块速率必须匹配——这些确定性约束没有暴露为可执行规则，而是靠工程师记忆和人工检查。</li>
+</ul>
+<p>AI 和大模型的出现，让这套错配变得不可回避。当前的大模型是”盲”的，当前的工业软件是”给健全人类用的”。当非人类智能体试图操作为人类眼手协调设计的界面时，摩擦与失败不可避免。</p>
+<p>但这只是让问题变得更紧迫，不是问题的根源。即使没有 AI，工程行业也会走向同一个方向：把设计意图从 GUI 和专有文件里解放出来，变成可被机器执行的声明和规则。</p>
+<h3 id="第一性问题工程缺少外部约束系统">第一性问题：工程缺少外部约束系统</h3>
+<p>一个机房的完整设计涉及数十条硬约束：</p>
+<ul>
+<li>PDU 总负载 ≤ 额定容量的 80%</li>
+<li>同一机柜内设备 U 位不能重叠</li>
+<li>光模块波长、速率、接头类型必须与两端端口精确匹配</li>
+<li>设备深度不能超过机柜深度</li>
+<li>核心设备必须双路供电</li>
+</ul>
+<p><strong>每一条约束都是确定性的、可自动计算的——但当前的工业软件没有把它们暴露为可执行规则。</strong> 它们锁在 CAD 文件里、藏在 Excel 公式里、存在工程师的直觉里。自动化系统或人类工程师产出一个设计方案后，系统无法在秒级内回答”这个设计对吗？”</p>
+<p>软件工程之所以能容忍概率性工具（如代码补全），是因为它有<strong>外部约束系统</strong>：编译器检查语法，类型系统检查一致性，测试套件检查行为。Agent 写代码 → 编译/测试/CI 兜底。Agent 不需要永远正确，它只需要产出”大概率正确、错了能被秒级发现”的候选。</p>
+<p>工程设计没有这个外部约束系统。这就是 SDH 要解决的问题：不是用软件辅助人来设计工程，而是把工程设计的约束、规则、验证流程本身变成可执行的软件系统。</p>
+<hr />
+<h2 id="二形式化程度光谱工程设计的连续演进">二、形式化程度光谱：工程设计的连续演进</h2>
+<p>上面的论述可能会造成一个误解：软件工程做对了，工业软件做错了——这是二元对立。</p>
+<p><strong>真实情况不是二元，是连续谱。</strong></p>
+<p>工程设计的形式化程度，从高到低是一条清晰的光谱：</p>
+<pre><code>高形式化 ←——————————————————————————————→ 低形式化
+
+  数学        软件工程      IC/EE       机械/通信/建筑
+  (纯理论)     (代码)      (EDA)        (CAD/BIM)
+     │           │           │              │
+  公理证明    编译+测试    DRC+LVS      人工校审+施工返工
+  零歧义      确定性判对   规则自动判对   经验驱动</code></pre>
+<h3 id="光谱左端形式化的极致">光谱左端：形式化的极致</h3>
+<p><strong>数学</strong>是光谱的最左端。一个定理的证明是纯符号操作——要么对，要么错，没有中间态。所有推理步骤都可以被形式化验证（Coq、Lean）。</p>
+<p><strong>软件工程</strong>是数学向实践的第一个投影。源代码是文本，编译器和类型检查器是自动裁判，测试套件是行为契约。每一次提交都可以在秒级内获得确定性反馈：通过 or 不通过。</p>
+<p><strong>IC/EE（芯片设计）</strong>是软件工程向物理世界跨出的关键一步。EDA 工具链几乎完整复刻了软件工程的验证金字塔：Verilog 源码 → 逻辑综合 → 布局布线 → DRC（设计规则检查）→ LVS（网表一致性对比）→ 静态时序分析 → Signoff。每一步都有自动裁判。流片前的 Signoff 是极严酷的质量门——一条不通过，几亿打水漂。</p>
+<p><strong>注意：EDA 不是”和 CAD 不同的另一类软件”。EDA 就是 CAD——它是形式化程度最高的制造业软件。</strong> 芯片设计师用 EDA 做的事情，和机械工程师用 SolidWorks 做的事情，在物理本质上完全一样：把几何实体放在空间里，定义它们的配合关系和约束，验证它们不会互相干涉。区别只在于形式化程度：EDA 把每一步都做成了可自动验证的文本级操作，而 CAD 还停留在 GUI 交互。</p>
+<h3 id="光谱右端尚未形式化的工程设计">光谱右端：尚未形式化的工程设计</h3>
+<p>机械设计、通信站点设计、建筑暖通设计——它们仍然以 GUI 为主要交互媒介。设计意图存在 DWG/RVT 文件里，验证靠人工逐项打勾，错误往往在施工阶段才发现。</p>
+<p>它们和 EDA 的差距，不是领域复杂度不同，是<strong>形式化程度不同</strong>。而形式化程度，不是天生的——它是可以逐步提升的。</p>
+<h3 id="同一个方向不同的速度">同一个方向，不同的速度</h3>
+<p>关键洞察在于：<strong>SE 和 EDA 不是一开始就在光谱左侧的。它们在过去的 60 年里移动得更快。</strong></p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 26%" />
+<col style="width: 20%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr>
+<th>时代</th>
+<th>软件工程</th>
+<th>IC/EE</th>
+<th>机械/通信工程</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1960s</td>
+<td>打孔卡，手工汇编</td>
+<td>手画版图，用尺子量 DRC</td>
+<td>绘图板，丁字尺</td>
+</tr>
+<tr>
+<td>1980s</td>
+<td>C 编译器，make，lint</td>
+<td>SPICE 仿真，早期 DRC</td>
+<td>AutoCAD（数字图板）</td>
+</tr>
+<tr>
+<td>2000s</td>
+<td>Git, CI/CD, 单元测试框架</td>
+<td>Verilog-AMS, UVM, STA</td>
+<td>3D CAD，PDM/PLM</td>
+</tr>
+<tr>
+<td>2020s</td>
+<td>声明式基础设施 + 自动化流水线</td>
+<td>AI 辅助生成约束</td>
+<td><strong>仍在 GUI 层</strong></td>
+</tr>
+</tbody>
+</table>
+<p>软件工程从”手工打补丁”进化到”声明式基础设施 + 自动化修改”用了 60 年。EDA 从”手画版图”进化到”AI 生成网表过 DRC”用了 60 年。机械和通信设计——它们不是失败了，它们只是<strong>才刚开始认真地往光谱左边移动</strong>。</p>
+<p>而 AI Agent 的出现，给这个移动加了一个从未有过的加速度。</p>
+<h3 id="形式化提升-帕累托改进">形式化提升 = 帕累托改进</h3>
+<p>往光谱左边移动，不需要一步登天。每一个形式化步骤都是<strong>帕累托改进</strong>——它不会让任何现有能力变差，只会增加新的自动化收益：</p>
+<ul>
+<li>把设备型号从 Excel 提取到结构化 YAML → <strong>型号库可被 grep、diff、脚本消费</strong></li>
+<li>把一条设计规范从 PDF 写成 Python 规则函数 → <strong>每个项目自动检查，不再依赖人的记忆</strong></li>
+<li>把”机柜深度匹配”从口头经验变成 Mate 约束 → <strong>加载时自动校验，永久免疫此类错误</strong></li>
+<li>把设计输出从手工画图变成生成器 → <strong>BOM、面板图、端口图一键生成</strong></li>
+</ul>
+<p>一个通信设计团队不需要变成芯片设计团队才能受益。<strong>只要把今天最痛的那条检查——比如 PDU 功率预算——写成一条规则，明天就少返一个工。</strong></p>
+<p>这就是 SDH 的核心主张：不是”全部或全不”，而是”每次向左移动一步，每一步都产生可测量的收益”。</p>
+<hr />
+<h2 id="三为什么-ai-需要-sdh以及为什么-sdh-不只为-ai">三、为什么 AI 需要 SDH，以及为什么 SDH 不只为 AI</h2>
+<p>AI 的爆发让工程行业被迫直面一个事实：如果设计意图不能以结构化文本存在、不能被规则自动校验，那么任何自动化系统——无论是脚本、CI/CD 还是 Agent——都无法可靠地参与设计流程。</p>
+<h3 id="事实代码拥有从语法到运行时的完整可验证链条工程没有">事实：代码拥有从语法到运行时的完整可验证链条——工程没有</h3>
+<p>代码之所以成为 AI 中期训练（RLVR）的主战场，不是因为代码数据多，而是因为代码拥有从语法到运行时反馈的完整可验证链条：</p>
+<table>
+<thead>
+<tr>
+<th>验证层级</th>
+<th>代码领域</th>
+<th>工程设计领域</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L0 格式</td>
+<td>语法高亮、缩进</td>
+<td>文件格式合法性</td>
+</tr>
+<tr>
+<td>L1 Schema</td>
+<td>类型系统</td>
+<td>字段约束与值域</td>
+</tr>
+<tr>
+<td>L2 完整性</td>
+<td>单元测试</td>
+<td>引用完整性、接口兼容性</td>
+</tr>
+<tr>
+<td>L3 业务规则</td>
+<td>集成测试</td>
+<td>功率预算、空间冲突</td>
+</tr>
+<tr>
+<td>L4 运行时</td>
+<td>端到端测试</td>
+<td>几何碰撞、物理干涉</td>
+</tr>
+<tr>
+<td>L5 仿真</td>
+<td>性能基准</td>
+<td>热、流体、电磁仿真</td>
+</tr>
+<tr>
+<td>L6 评估</td>
+<td>人工代码评审</td>
+<td>AI/专家综合评估</td>
+</tr>
+</tbody>
+</table>
+<p>工程设计天然具备类似的结构：约束、规则、物理定律、制造规范、验收标准。但工业软件没有把这些结构暴露给机器。它们把工程语义埋在菜单、对话框、私有文件格式和云端数据库里。程序无法直接读取设计意图，无法直接获得可验证的反馈信号，因此无法建立有效的自动化闭环。</p>
+<p><strong>工业数据稀缺是结果，工业软件不可被机器操作才是原因。</strong></p>
+<p>这是绝大多数工业软件在设计时隐含的假设：</p>
+<table>
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr>
+<th>假设</th>
+<th>对自动化的影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>用户能通过视觉快速理解复杂界面</td>
+<td>自动化系统需要 VLM + OCR + 元素检测，成本高且易错</td>
+</tr>
+<tr>
+<td>用户能根据经验判断哪些菜单里有需要的功能</td>
+<td>自动化系统需要大量领域特定的 UI 探索策略</td>
+</tr>
+<tr>
+<td>用户能接受”在对话框里逐步输入”</td>
+<td>自动化系统必须模拟鼠标键盘，动作序列冗长</td>
+</tr>
+<tr>
+<td>用户会主动保存、命名、管理文件</td>
+<td>自动化系统需要额外的状态追踪和恢复机制</td>
+</tr>
+<tr>
+<td>用户能理解专有文件格式和二进制数据</td>
+<td>自动化系统无法直接读取、diff、验证设计意图</td>
+</tr>
+</tbody>
+</table>
+<p>这些假设在 GUI 时代是优势，在自动化时代是负债。它们让工业软件成为一座设计精美但只对人类开放的建筑——入口狭窄、台阶陡峭、没有盲道、没有电梯。</p>
+<p>但请注意：<strong>这套负债不是 AI 带来的，而是一直存在的。</strong> 即使没有大模型，一个试图用脚本自动检查 CAD 设计的工程师也会遇到同样的困难。AI 只是把这个问题放大到了无法忽视的程度。</p>
+<hr />
+<h2 id="四工业软件无障碍化headless-engineering">四、工业软件无障碍化：Headless Engineering</h2>
+<p>面对这个错配，最常见的补救思路是给工业软件加 API 包装层——用 RPA、UI 自动化、插件系统让自动化系统间接操作旧软件。</p>
+<p>这实际上是在”盲人指挥健全人”的模型上打补丁。它有几个致命缺陷：</p>
+<ul>
+<li><strong>语义层仍然是 GUI</strong>。API 包装层传递的是 UI 事件（点击、输入、拖拽），而不是设计意图（“SRV-01 安装在 RACK-A01 的 U18-19，功率分配来自 PDU-A 端口 3”）。</li>
+<li><strong>验证代价昂贵</strong>。每次操作后要截图确认、OCR 识别、状态推断——成本高、可靠性差。</li>
+<li><strong>不可组合</strong>。多个自动化流程不能同时操作一个界面，两个设计变更不能通过 git merge 自动合并。</li>
+<li><strong>不可版本化</strong>。旧软件里的”版本历史”是操作序列的录像，不是设计意图的 diff。</li>
+</ul>
+<p>正确的路径是<strong>工业软件无障碍化</strong>——不是给旧软件加辅助功能，而是重新设计底层，使设计意图以可被机器直接操作的形式存在。我们称之为 <strong>Headless Engineering</strong>：</p>
+<ol type="1">
+<li><strong>设计意图以文本声明形式存在</strong>。用人类可读、机器可解析的声明式语言描述”什么东西存在、放在哪里、怎么连接”，而不是用点击和拖拽。</li>
+<li><strong>规则引擎提供秒级、确定性、可解释的验证反馈</strong>。提交修改后，几百毫秒内就能知道是否符合约束——不是一个需要人类用眼睛确认的可视化结果，而是一组结构化的 pass/fail 诊断。</li>
+<li><strong>生成器将文本声明转化为交付物</strong>。BOM 清单、配电图、施工图、电缆表等交付物不再是人工绘制的结果，而是从文本声明出发的可重复生成产物。</li>
+<li><strong>可视化是消费层，不是设计层</strong>。3D 预览、AR 叠加、图纸等人类需要的视觉输出仍然存在，但它们是只读的——看到问题后，修改必须回到文本。</li>
+</ol>
+<hr />
+<h2 id="五sdh-的核心类比工程设计-软件工程">五、SDH 的核心类比：工程设计 = 软件工程</h2>
+<p>在 SDH 的框架下，一次设计迭代看起来像软件工程：</p>
+<pre class="text"><code>写设计声明 → 规则检查（多层自动校验） → 修正违规 → 生成交付物 → git commit</code></pre>
+<p>这不是隐喻，而是真实的 workflow。工程师（或 Agent）用声明式语言定义设备、布局、连接和配合。规则引擎在秒级内从语法到空间碰撞逐层检查。诊断信息精确到行号，可以逐条修复。交付物从声明自动生成，而非人工绘制。文本文件天然支持 diff、review、merge、blame。</p>
+<p>错误在提交前被发现，而不是在现场施工后。</p>
+<p>这就是 SDH 的本质：<strong>不是用软件辅助人来设计工程，而是让工程设计本身像软件一样被定义、被验证、被版本化、被自动化。</strong></p>
+<hr />
+<h2 id="六sdh-的未来蓝图">六、SDH 的未来蓝图</h2>
+<h3 id="规则市场从项目经验到行业知识">1. 规则市场：从项目经验到行业知识</h3>
+<ul>
+<li>国标、行标以开源规则包形式维护</li>
+<li>设备厂商发布官方型号数据与配套验证规则</li>
+<li>设计院把项目特殊要求贡献回社区规则库</li>
+<li>学术界把研究成果沉淀为可复用的检查器</li>
+</ul>
+<h3 id="工程自动化的-rlvr-训练场">2. 工程自动化的 RLVR 训练场</h3>
+<ul>
+<li>模型或脚本提出设计方案（修改文本声明）</li>
+<li>系统在秒级返回规则检查反馈</li>
+<li>高成本仿真和专家评估为少数高质量样本提供最终奖励</li>
+<li>自动化系统在数百万次迭代中学会多目标权衡、长程规划和物理一致性</li>
+</ul>
+<h3 id="跨企业跨仓库的设计协作">3. 跨企业、跨仓库的设计协作</h3>
+<ul>
+<li>每个参与方维护自己的设计仓库</li>
+<li>通过标准引用机制互相引用资产与约束</li>
+<li>区分”我的设计范围”和”我引用的外部约束”</li>
+<li>接口变更通过 CI 自动触发依赖方规则检查</li>
+</ul>
+<h3 id="制造端的非确定性">4. 制造端的非确定性</h3>
+<p>一个诚实的限定：SDH 的”编译”类比不能无限延伸。</p>
+<p>软件编译是确定性的——同样的源代码产出的字节码完全一致。工程设计的”编译器”却是供应链、非标物料、车间机床和现场施工人员。文本声明中一个完美的 <code>rack-mount-19inch</code> 配合约束，在现场可能因为钣金件 2mm 的加工形变而完全失效。公差、良率、材料批次差异——这些物理世界的噪声，是当前声明式文本难以完全建模的。</p>
+<p>这不是否定 SDH，而是划定了它的边界：SDH 保证的是<strong>设计意图的正确性</strong>，不是<strong>物理实现的完美性</strong>。前者是必要条件，后者需要制造端的标准化配合。</p>
+<p>这自然引出一个更大的命题——<strong>制造即服务（Manufacturing as a Service, MaaS）</strong>：当各个加工厂乃至加工机器人能够接收标准的工艺文件并确定性执行加工时，SDH 的”编译”类比才能真正闭环。从设计声明到工艺文件到加工执行，形成一条完整且可验证的单向数据流。这是 SDH 的下一个前沿。</p>
+<h3 id="从设计意图到制造安装的单向数据流">5. 从设计意图到制造安装的单向数据流</h3>
+<ul>
+<li>工厂从结构化 BOM 直接读取采购数据</li>
+<li>数控机床从开放几何格式读取加工数据</li>
+<li>施工队从施工图和线缆表按图施工</li>
+<li>运维系统从设计仓库继承资产台账和连接关系</li>
+</ul>
+<hr />
+<h2 id="七为什么是现在">七、为什么是现在</h2>
+<p>SDH 之所以在这个时刻成立，是因为三个长期趋势同时成熟：</p>
+<ol type="1">
+<li><strong>工程复杂度突破临界点</strong>：人力成本上升、项目复杂度上升、交付周期缩短，传统”人眼+鼠标”模式难以为继。</li>
+<li><strong>软件工程方法论的可移植性已被验证</strong>：从 DevOps 到 Infrastructure as Code，从软件到芯片，文本声明 + 自动校验 + 版本控制的范式已被反复证明。</li>
+<li><strong>AI 与开放生态的共同推动</strong>：大模型和 Agent 让”机器参与设计”从可选变成必需；专有格式和封闭接口在自动化时代加速贬值，能够被机器读写的开放系统将获得网络效应。</li>
+</ol>
+<p>谁先完成 SDH 转型，谁就能让自动化真正进入工程核心流程；谁固守 GUI-only 的旧范式，谁就会发现自己拥有世界上最精良的工具，却没有任何程序能高效使用它。</p>
+<hr />
+<h2 id="八结语不是替代工程师而是升级工程">八、结语：不是替代工程师，而是升级工程</h2>
+<p>SDH 不是要让 Agent 取代工程师。它的目标是：</p>
+<blockquote>
+<p>让工程师从”画图+点击+校对”的执行者，变成”定义意图和规则、审阅自动化输出”的设计架构师。</p>
+</blockquote>
+<p>人类仍然是不可替代的：复杂权衡、现场经验、价值判断、创造性设计。但这些高级能力只有在低级执行工作被有效自动化的前提下，才能得到最大程度的释放。</p>
+<p>大模型和 Agent 是这场转型的加速器，但不是原因。即使没有 AI，工程行业也会走向文本化、规则化、自动化——因为软件工程已经展示了这条路的终点。AI 只是让慢变量变成了急变量，让”应该发生”变成了”必须现在发生”。</p>
+<p>正确的路径是：<strong>让工业软件变得对机器友好，让工程设计变得像软件一样可定义、可校验、可协作</strong>。</p>
+<p>这就是 SDH——不是用软件辅助工程设计，而是用软件工程的方法论定义和管理硬件。</p>
+<hr />
+<h2 id="继续阅读">继续阅读</h2>
+<ul>
+<li><a href="02-agent-native.md">SDH 框架的设计原则：文本原生与 Agent 友好</a></li>
+<li><a href="03-adl.md">ADL：装配体定义语言</a></li>
+<li><a href="04-engineering-rlvr.md">Engineering RLVR：可验证奖励如何驱动工程 AI</a></li>
+<li><a href="05-text-driven-agent-native-telecom-design.md">文本驱动，Agent 原生的通信设计工具链</a></li>
+</ul>
+
+    </article>
+  </main>
+  <footer class="border-t border-slate-800/60 py-8 mt-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center text-sm text-slate-500">
+      © 2026 piki. Released under MIT License.
+    </div>
+  </footer>
+</body>
+</html>
