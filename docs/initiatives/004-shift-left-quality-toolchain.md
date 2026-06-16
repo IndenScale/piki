@@ -129,7 +129,7 @@ layouts/rack-a01.yaml:22:5 error [LAYOUT-001] SRV-02 与 SRV-03 在 U20-U21 空�
 ### 5.3 LSP Server
 
 ```bash
-$ piki lsp
+piki lsp
 ```
 
 提供：

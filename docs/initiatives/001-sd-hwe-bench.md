@@ -281,13 +281,12 @@ SD-HWE-Bench 与代表性工作的差异化可概括如下：
 - [ADR-003: 多级质量检查与统一诊断](../adr/engine-and-plugins/003-quality-checks-and-diagnostics.md)
 - [ADR-001: 项目组织模型](../adr/data-model/001-project-organization.md)
 
-
 ---
 
 ## 附录 A：工程领域 AI Benchmark 形态与缺口调研
 
-> 状态：**调研草稿**  
-> 日期：2026-06-13  
+> 状态：**调研草稿**
+> 日期：2026-06-13
 > 用途：为 `docs/pitch/01-why-engineering-benchmarks-must-be-executable.md` 提供论据与事实基础
 
 ---
