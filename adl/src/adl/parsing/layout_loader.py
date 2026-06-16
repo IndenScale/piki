@@ -11,6 +11,7 @@ from typing import Any
 
 import yaml
 
+from ..models.geometry import Transform
 from ..models.layout import Layout, LayoutEntry
 
 
@@ -80,24 +81,52 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         "rack_id",
         "position_u",
         "pdu_id",
+        "row_id",
+        "bay_index",
         "grid_id",
         "position_x_mm",
         "position_y_mm",
         "position_z_mm",
+        "parent",
+        "transform",
     }
     extra = {k: v for k, v in item.items() if k not in known}
+
+    transform = _parse_transform(item.get("transform"))
 
     return LayoutEntry(
         instance=str(instance_id),
         rack_id=item.get("rack_id"),
         position_u=item.get("position_u"),
         pdu_id=item.get("pdu_id"),
+        row_id=item.get("row_id"),
+        bay_index=item.get("bay_index"),
         grid_id=item.get("grid_id"),
         position_x_mm=item.get("position_x_mm"),
         position_y_mm=item.get("position_y_mm"),
         position_z_mm=item.get("position_z_mm"),
+        parent=item.get("parent"),
+        transform=transform,
         extra=extra,
     )
+
+
+def _parse_transform(data: Any) -> Transform | None:
+    """从 YAML 值解析 Transform，支持 dict 与列表简写。"""
+    if data is None:
+        return None
+
+    if isinstance(data, Transform):
+        return data
+
+    if isinstance(data, dict):
+        return Transform.model_validate(data)
+
+    # 允许 YAML 中省略，表示默认单位变换
+    if data == {}:
+        return Transform()
+
+    return Transform.model_validate(data)
 
 
 def find_layout_file(project_root: Path) -> Path | None:

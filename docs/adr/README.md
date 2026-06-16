@@ -14,6 +14,7 @@
 | [005](data-model/005-connection-as-instance.md) | Connection 与 Interface 模型 | ✅ 已实现 |
 | [006](data-model/006-mating-graph.md) | Mating Graph：部件耦合关系建模 | ✅ 已实现 |
 | [010](data-model/010-brownfield-reference-instance.md) | 多上下文建模：既有/保密/标段/自然环境 | 🔍 提案中 |
+| [013](data-model/013-relative-coordinate-layout.md) | 层级相对坐标布局 | ✅ 已实现 |
 
 ## 引擎与插件
 

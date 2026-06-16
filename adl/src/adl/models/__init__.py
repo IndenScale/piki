@@ -25,7 +25,7 @@ from .catalog import (
     ServiceMethodCatalogFamily,
     merge_service_methods,
 )
-from .geometry import GeometryAssets
+from .geometry import GeometryAssets, Transform
 from .interface import (
     FootprintSpec,
     InterfaceSpec,
@@ -81,4 +81,5 @@ __all__ = [
     "Layout",
     "LayoutEntry",
     "Tags",
+    "Transform",
 ]

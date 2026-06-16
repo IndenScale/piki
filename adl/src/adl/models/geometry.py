@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -30,6 +30,113 @@ class Transform(BaseModel):
     translation: Vec3 = Field(default_factory=lambda: Vec3(x=0.0, y=0.0, z=0.0))
     rotation: Vec3 = Field(default_factory=lambda: Vec3(x=0.0, y=0.0, z=0.0))
     scale: Vec3 = Field(default_factory=lambda: Vec3(x=1.0, y=1.0, z=1.0))
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_list_vectors(cls, data: Any) -> Any:
+        """允许用 ``[x, y, z]`` 列表简写初始化 translation / rotation / scale。"""
+        if not isinstance(data, dict):
+            return data
+        for key in ("translation", "rotation", "scale"):
+            value = data.get(key)
+            if isinstance(value, (list, tuple)) and len(value) == 3:
+                data = {**data, key: {"x": value[0], "y": value[1], "z": value[2]}}
+        return data
+
+
+def _rotation_matrix_zyx(rotation: Vec3) -> list[list[float]]:
+    """将 Z-Y-X（Yaw-Pitch-Roll，单位度）欧拉角转换为 3x3 旋转矩阵。"""
+    import math
+
+    yaw = math.radians(rotation.z)
+    pitch = math.radians(rotation.y)
+    roll = math.radians(rotation.x)
+
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    cp, sp = math.cos(pitch), math.sin(pitch)
+    cr, sr = math.cos(roll), math.sin(roll)
+
+    # R = Rz(yaw) @ Ry(pitch) @ Rx(roll)
+    return [
+        [cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr],
+        [sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr],
+        [-sp, cp * sr, cp * cr],
+    ]
+
+
+def _matrix_mult(a: list[list[float]], b: list[list[float]]) -> list[list[float]]:
+    """3x3 矩阵乘法。"""
+    result: list[list[float]] = [[0.0, 0.0, 0.0] for _ in range(3)]
+    for i in range(3):
+        for j in range(3):
+            result[i][j] = sum(a[i][k] * b[k][j] for k in range(3))
+    return result
+
+
+def _matrix_vector_mult(m: list[list[float]], v: Vec3) -> Vec3:
+    """3x3 矩阵乘以三维向量。"""
+    return Vec3(
+        x=m[0][0] * v.x + m[0][1] * v.y + m[0][2] * v.z,
+        y=m[1][0] * v.x + m[1][1] * v.y + m[1][2] * v.z,
+        z=m[2][0] * v.x + m[2][1] * v.y + m[2][2] * v.z,
+    )
+
+
+def _euler_zyx_from_matrix(m: list[list[float]]) -> Vec3:
+    """从旋转矩阵提取 Z-Y-X 欧拉角（单位度）。"""
+    import math
+
+    r31 = m[2][0]
+    # 限制 asin 定义域，避免浮点误差
+    pitch = math.asin(max(-1.0, min(1.0, -r31)))
+
+    if abs(math.cos(pitch)) > 1e-6:
+        roll = math.atan2(m[2][1], m[2][2])
+        yaw = math.atan2(m[1][0], m[0][0])
+    else:
+        # 万向节锁：约定 yaw = 0
+        yaw = 0.0
+        roll = math.atan2(-m[0][1], m[1][1])
+
+    return Vec3(x=math.degrees(roll), y=math.degrees(pitch), z=math.degrees(yaw))
+
+
+def compose_transforms(parent: Transform, child: Transform) -> Transform:
+    """级联两个 Transform：先父变换，再子变换。
+
+    返回 ``parent @ child``，即子坐标经父坐标系变换到全局。
+    """
+    r_parent = _rotation_matrix_zyx(parent.rotation)
+    r_child = _rotation_matrix_zyx(child.rotation)
+    r_composed = _matrix_mult(r_parent, r_child)
+
+    t_composed = _matrix_vector_mult(r_parent, child.translation)
+    t_composed.x += parent.translation.x
+    t_composed.y += parent.translation.y
+    t_composed.z += parent.translation.z
+
+    return Transform(
+        translation=t_composed,
+        rotation=_euler_zyx_from_matrix(r_composed),
+        scale=Vec3(x=1.0, y=1.0, z=1.0),
+    )
+
+
+def transform_from_absolute(
+    x: float | None = None,
+    y: float | None = None,
+    z: float | None = None,
+) -> Transform:
+    """从绝对坐标字段构造 Transform。"""
+    return Transform(
+        translation=Vec3(
+            x=x if x is not None else 0.0,
+            y=y if y is not None else 0.0,
+            z=z if z is not None else 0.0,
+        ),
+        rotation=Vec3(x=0.0, y=0.0, z=0.0),
+        scale=Vec3(x=1.0, y=1.0, z=1.0),
+    )
 
 
 class InlineGeometry(BaseModel):

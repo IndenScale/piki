@@ -18,6 +18,20 @@ from adl.models import (
 )
 from adl.project import Project
 
+_ABS_LAYOUT_FIELDS = frozenset(
+    {
+        "rack_id",
+        "position_u",
+        "pdu_id",
+        "row_id",
+        "bay_index",
+        "grid_id",
+        "position_x_mm",
+        "position_y_mm",
+        "position_z_mm",
+    }
+)
+
 
 class ADLValidator:
     """ADL 声明层验证器。"""
@@ -29,6 +43,7 @@ class ADLValidator:
         """运行所有 ADL 层验证，返回 Diagnostic 列表。"""
         diagnostics: list[Diagnostic] = []
         diagnostics.extend(self._validate_layout_references())
+        diagnostics.extend(self._validate_relative_layout())
         diagnostics.extend(self._validate_foreign_keys())
         diagnostics.extend(self._validate_mate_references())
         diagnostics.extend(self._validate_mate_family_compat())
@@ -84,6 +99,83 @@ class ADLValidator:
                         source="adl.validation",
                     )
                 )
+        return diagnostics
+
+    def _validate_relative_layout(self) -> list[Diagnostic]:
+        """校验 Layout 中相对坐标条目的 ADR-013 约束。
+
+        - ``parent`` 与任意绝对坐标字段互斥。
+        - ``parent`` 指向的实例必须在同一 Layout 中存在。
+        - ``parent`` 不能形成环。
+        """
+        diagnostics: list[Diagnostic] = []
+        layout = self.project.layout
+        if layout is None:
+            return diagnostics
+
+        for entry in layout.entries.values():
+            if entry.parent is None:
+                continue
+
+            if entry.parent == entry.instance:
+                diagnostics.append(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=(f"Layout 条目 '{entry.instance}' 的 parent 不能指向自身。"),
+                        location=Location.from_path(layout.source)
+                        if layout.source
+                        else Location(uri=""),
+                        code="LAYOUT-003",
+                        source="adl.validation",
+                    )
+                )
+
+            absolute_fields = entry.absolute_fields
+            if absolute_fields:
+                diagnostics.append(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Layout 条目 '{entry.instance}' 使用相对坐标时，"
+                            f"不能同时填写绝对坐标字段: {', '.join(sorted(absolute_fields))}。"
+                        ),
+                        location=Location.from_path(layout.source)
+                        if layout.source
+                        else Location(uri=""),
+                        code="LAYOUT-001",
+                        source="adl.validation",
+                    )
+                )
+
+            if entry.parent not in layout.entries:
+                diagnostics.append(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Layout 条目 '{entry.instance}' 的 parent "
+                            f"'{entry.parent}' 在 Layout 中不存在。"
+                        ),
+                        location=Location.from_path(layout.source)
+                        if layout.source
+                        else Location(uri=""),
+                        code="LAYOUT-002",
+                        source="adl.validation",
+                    )
+                )
+
+        for cycle in layout.detect_cycles():
+            diagnostics.append(
+                Diagnostic(
+                    severity=Severity.ERROR,
+                    message=(f"Layout parent 引用存在环: {' -> '.join(cycle)} -> {cycle[0]}。"),
+                    location=Location.from_path(layout.source)
+                    if layout.source
+                    else Location(uri=""),
+                    code="LAYOUT-004",
+                    source="adl.validation",
+                )
+            )
+
         return diagnostics
 
     # ------------------------------------------------------------------

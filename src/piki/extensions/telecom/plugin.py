@@ -19,6 +19,65 @@ from piki.extensions.telecom.types import (
 )
 
 
+class RoutePoint(BaseModel):
+    """线缆/连接途径点（全局毫米坐标）。"""
+
+    x_mm: float = Field(default=0.0)
+    y_mm: float = Field(default=0.0)
+    z_mm: float = Field(default=0.0)
+
+
+class FacilityFamily(BaseModel):
+    """机房基础设施：门、ODF、供电柜、走线架、消防箱等。"""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    facility_type: str = Field(...)  # door | odf | power-cabinet | cable-tray | fire-box | etc.
+    room_id: str = Field(default="")
+    # 物理尺寸（毫米）——允许实例覆盖，因为门/走线架等设施尺寸多样
+    width_mm: float = Field(default=0, ge=0)
+    depth_mm: float = Field(default=0, ge=0)
+    height_mm: float = Field(default=0, ge=0)
+    # 机房平面定位（毫米）
+    floor_x_mm: float = Field(default=0.0)
+    floor_y_mm: float = Field(default=0.0)
+    orientation_deg: float = Field(default=0.0)
+    # 3D 空间定位（毫米）
+    position_x_mm: float = Field(default=0.0)
+    position_y_mm: float = Field(default=0.0)
+    position_z_mm: float = Field(default=0.0)
+    # 轴网锚定：用于走线架/门等设施与排或通道配合
+    row_id: str = Field(default="", description="所锚定的机柜排 ID")
+    aisle_label: str = Field(default="", description="所锚定的通道/ aisle 标签")
+    # 作用域：background 存量不涉及 / context 存量但需接线 / new 本次新增
+    scope: str = Field(default="new")
+    status: str = Field(default="planned")
+    # 标签
+    tags: Tags = Field(default_factory=Tags)
+    # 几何资产（可选）
+    assets: GeometryAssets | None = Field(default=None)
+
+
+class RackRowFamily(BaseModel):
+    """机柜排：机房轴网中的一排机柜基准线。
+
+    一排机柜共享同一 centerline_y_mm，沿 X 方向等距排列。
+    """
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    room_id: str = Field(default="")
+    row_index: int = Field(default=0, ge=0, description="排序号，0-based")
+    orientation_deg: float = Field(default=90.0, description="排正面朝向：90=朝 +X，270=朝 -X")
+    centerline_y_mm: float = Field(default=0.0, description="排中心线在房间 Y 轴坐标")
+    start_x_mm: float = Field(default=0.0, description="排内第一个机柜左下角 X 坐标")
+    rack_count: int = Field(default=0, ge=0, description="排内机柜数量")
+    rack_inline_spacing_mm: float = Field(default=0.0, description="同排机柜间距（毫米）")
+    scope: str = Field(default="new")
+    status: str = Field(default="planned")
+    tags: Tags = Field(default_factory=Tags)
+
+
 class RoomFamily(BaseModel):
     """机房/房间：定义机房平面边界与机柜排列参数。"""
 
@@ -32,6 +91,11 @@ class RoomFamily(BaseModel):
     rack_bay_spacing_mm: float = Field(default=1200, ge=0)  # 列间通道宽度（冷/热通道）
     rack_inline_spacing_mm: float = Field(default=600, ge=0)  # 同列机柜间距
     wall_margin_mm: float = Field(default=1000, ge=0)  # 靠墙最小距离
+    # 轴网参数：当机柜使用 row_id/bay_index 时，用于推导 floor_x_mm/floor_y_mm
+    rack_row_count: int = Field(default=2, ge=1, description="机柜排数")
+    racks_per_row: int = Field(default=4, ge=1, description="每排机柜数量")
+    rack_width_mm: float = Field(default=600.0, description="标准机柜宽度（毫米）")
+    rack_depth_mm: float = Field(default=1000.0, description="标准机柜深度（毫米）")
     # 标签
     tags: Tags = Field(default_factory=Tags)
 
@@ -61,6 +125,13 @@ class RackFamily(BaseModel):
     room_id: str = Field(default="")
     room_column: str = Field(default="")
     room_row: int = Field(default=0, ge=0)
+    # 轴网相对定位：row_id + bay_index 可由 RoomFamily 推导 floor_x/floor_y
+    row_id: str = Field(default="", description="所属机柜排 ID")
+    bay_index: int = Field(default=-1, ge=-1, description="排内机柜序号，0-based")
+    front_face_direction: str = Field(
+        default="front",
+        description="正面朝向：front=朝通道侧，rear=朝墙/背向通道",
+    )
     floor_x_mm: float = Field(default=0.0)  # 机柜左下角 X 坐标
     floor_y_mm: float = Field(default=0.0)  # 机柜左下角 Y 坐标
     orientation_deg: float = Field(default=0.0)  # 机柜正面朝向，0=朝北（+Y）
@@ -68,6 +139,8 @@ class RackFamily(BaseModel):
     position_x_mm: float = Field(default=0.0)
     position_y_mm: float = Field(default=0.0)
     position_z_mm: float = Field(default=0.0)
+    # 作用域：background / context / new
+    scope: str = Field(default="new")
     # 标签（ADR-001）
     tags: Tags = Field(default_factory=Tags)
     # 几何资产（可选）
@@ -80,6 +153,7 @@ class PduFamily(BaseModel):
     rack_id: str = Field(default="")
     phase: str = Field(default="L1")  # 相线，如 L1, L2, L3
     capacity_w: float = Field(..., gt=0)  # 额定功率（W）
+    scope: str = Field(default="new")
     tags: Tags = Field(default_factory=Tags)  # 标签（ADR-001）
     interfaces: list[InterfaceSpec] = Field(
         default_factory=list, description="可连接接口 (ADR-005)"
@@ -91,6 +165,7 @@ class ServerFamily(BaseModel):
     name: str = Field(default="")
     model: str = Field(default="")
     status: str = Field(default="planned")
+    scope: str = Field(default="new")
     interfaces: list[InterfaceSpec] = Field(
         default_factory=list, description="可连接接口 (ADR-005)"
     )
@@ -136,6 +211,7 @@ class TransceiverFamily(BaseModel):
     wavelength_nm: int = Field(default=850, ge=0)
     speed_gbps: float = Field(default=25.0, gt=0)
     status: str = Field(default="planned")
+    scope: str = Field(default="new")
     interfaces: list[InterfaceSpec] = Field(
         default_factory=list, description="host(cage-side) + line(fiber-side)"
     )
@@ -165,6 +241,8 @@ class FiberPatchCordFamily(BaseModel):
         default=30.0, ge=0, json_schema_extra={"piki_non_overridable": True}
     )
     status: str = Field(default="planned")
+    scope: str = Field(default="new")
+    route: list[RoutePoint] = Field(default_factory=list, description="线缆走线路径途径点")
     interfaces: list[InterfaceSpec] = Field(
         default_factory=list, description="end-a + end-b (双向 LC/MPO/SC)"
     )
@@ -179,7 +257,13 @@ class PortFamily(BaseModel):
     port_name: str = Field(..., description="设备内端口标识，如 eth0、Gi1/0/1")
     port_type: str = Field(..., description="接口类型：SFP28、SFP+、RJ45、LC、MPO 等")
     direction: str = Field(default="bidirectional")
+    # 端口在设备上的空间位置（毫米，相对于设备正面左下角）
+    face: str = Field(default="front", description="端口所在面：front | rear")
+    offset_x_mm: float = Field(default=0.0, description="设备宽度方向偏移（左→右）")
+    offset_y_mm: float = Field(default=0.0, description="设备高度方向偏移（下→上）")
+    offset_z_mm: float = Field(default=0.0, description="设备深度方向偏移（前→后）")
     status: str = Field(default="planned")
+    scope: str = Field(default="new")
     tags: Tags = Field(default_factory=Tags)
 
 
@@ -195,6 +279,8 @@ class PortConnectionFamily(BaseModel):
     cable_type: str = Field(default="")
     length_m: float = Field(default=0, ge=0)
     status: str = Field(default="planned")
+    scope: str = Field(default="new")
+    route: list[RoutePoint] = Field(default_factory=list, description="连接走线路径途径点")
     tags: Tags = Field(default_factory=Tags)
 
 
@@ -208,6 +294,8 @@ class TelecomPlugin(Plugin):
 
     def register_types(self, type_registry: TypeRegistry) -> None:
         type_registry.add_family("RoomFamily", RoomFamily)
+        type_registry.add_family("FacilityFamily", FacilityFamily)
+        type_registry.add_family("RackRowFamily", RackRowFamily)
         type_registry.add_family("RackFamily", RackFamily)
         type_registry.add_family("PduFamily", PduFamily)
         type_registry.add_family("ServerFamily", ServerFamily)
@@ -218,6 +306,39 @@ class TelecomPlugin(Plugin):
 
         # 注册 telecom 领域的 Mate 类型 (ADR-006).
         from adl.models import MateConstraint, MateConstraintOperator, MateTypeMeta
+
+        # L1: 机柜排装配（机柜属于某排某个 bay）
+        type_registry.add_mate_type(
+            "rack-in-row",
+            MateTypeMeta(
+                type="rack-in-row",
+                description="机柜安装到机柜排指定 bay",
+                applicable_parent_families={"RackRowFamily"},
+                applicable_child_families={"RackFamily"},
+            ),
+        )
+
+        # L1: 走线架安装到机柜排上方
+        type_registry.add_mate_type(
+            "cable-tray-over-row",
+            MateTypeMeta(
+                type="cable-tray-over-row",
+                description="顶部走线架位于机柜排上方",
+                applicable_parent_families={"RackRowFamily"},
+                applicable_child_families={"FacilityFamily"},
+            ),
+        )
+
+        # L1: 横向走线架跨越通道
+        type_registry.add_mate_type(
+            "cable-tray-cross-aisle",
+            MateTypeMeta(
+                type="cable-tray-cross-aisle",
+                description="横向走线架跨越机房通道连接两排",
+                applicable_parent_families={"RoomFamily"},
+                applicable_child_families={"FacilityFamily"},
+            ),
+        )
 
         # L1: 机柜装配
         type_registry.add_mate_type(
@@ -575,6 +696,11 @@ def check_pdu_phase_balance(ctx):
         powers = list(phases.values())
         avg_power = sum(powers) / len(powers)
         if avg_power <= 0:
+            continue
+
+        # 如果只有一个相带负载，说明该机柜内设备数量不足以构成多相，跳过
+        loaded_phases = sum(1 for p in powers if p > 0)
+        if loaded_phases <= 1:
             continue
 
         max_power = max(powers)
@@ -2076,59 +2202,81 @@ def check_rack_floor_collision(ctx):
 
 
 def check_rack_aisle_spacing(ctx):
-    """检查同一列/相邻列机柜之间的通道宽度满足 RoomFamily 要求。"""
+    """检查同一排机柜间距及排间通道宽度满足 RoomFamily 要求。
+
+    优先使用 row_id/bay_index 轴网语义；若不存在则回退到 room_column/room_row。
+    """
     rooms = {r.id: r for r in ctx.query("rooms")}
     racks = ctx.query("racks").list()
 
-    # 按机房、列分组
-    bays: dict[str, dict[str, list[Any]]] = {}
+    # 按机房、row_id 分组
+    rows: dict[str, dict[str, list[Any]]] = {}
+    fallback_bays: dict[str, dict[str, list[Any]]] = {}
     for rack in racks:
         room_id = getattr(rack.resolved, "room_id", "")
-        col = getattr(rack.resolved, "room_column", "")
-        if not room_id or not col:
+        if not room_id:
             continue
-        bays.setdefault(room_id, {}).setdefault(col, []).append(rack)
+        row_id = getattr(rack.resolved, "row_id", "")
+        if row_id:
+            rows.setdefault(room_id, {}).setdefault(row_id, []).append(rack)
+            continue
+        # 回退：按 room_column 分组（旧数据兼容）
+        col = getattr(rack.resolved, "room_column", "")
+        if col:
+            fallback_bays.setdefault(room_id, {}).setdefault(col, []).append(rack)
 
-    for room_id, cols in bays.items():
+    def _check_rows(room_id: str, row_groups: dict[str, list[Any]]) -> None:
         room = rooms.get(room_id)
         if room is None:
-            continue
+            return
         bay_spacing = getattr(room.resolved, "rack_bay_spacing_mm", 1200)
         inline_spacing = getattr(room.resolved, "rack_inline_spacing_mm", 600)
 
-        # 同列机柜间距
-        for col, rack_list in cols.items():
-            sorted_racks = sorted(rack_list, key=lambda r: getattr(r.resolved, "room_row", 0))
+        row_centers: dict[str, float] = {}
+        for row_id, rack_list in row_groups.items():
+            sorted_racks = sorted(rack_list, key=lambda r: getattr(r.resolved, "bay_index", 0))
+            # 同排机柜沿 X 间距（当前 demo 排均沿 X 方向）
             for i in range(len(sorted_racks) - 1):
                 r1, r2 = sorted_racks[i], sorted_racks[i + 1]
                 ctx.set_current_file(str(r2.source))
-                _, _, _, y1_max = _rack_floor_rect(r1)
-                _, y2_min, _, _ = _rack_floor_rect(r2)
-                gap = y2_min - y1_max
+                x1_min, _, x1_max, _ = _rack_floor_rect(r1)
+                x2_min, _, x2_max, _ = _rack_floor_rect(r2)
+                gap = x2_min - x1_max
                 assert gap >= inline_spacing, (
-                    f"机柜 {r1.id} 与 {r2.id} 同列间距 {gap}mm 小于要求 {inline_spacing}mm"
+                    f"机柜 {r1.id} 与 {r2.id} 同排间距 {gap}mm 小于要求 {inline_spacing}mm"
                 )
+            # 记录排中心 Y 用于排间间距检查
+            ys = [(_rack_floor_rect(r)[1] + _rack_floor_rect(r)[3]) / 2 for r in rack_list]
+            row_centers[row_id] = sum(ys) / len(ys)
 
-        # 相邻列间距（取列内机柜最近距离作为代理）
-        col_ids = sorted(cols.keys())
-        for i in range(len(col_ids) - 1):
-            col_a, col_b = col_ids[i], col_ids[i + 1]
-            racks_a = cols[col_a]
-            racks_b = cols[col_b]
+        # 排间通道宽度（取排中心线间距减去平均深度的一半，近似）
+        sorted_rows = sorted(row_groups.keys())
+        for i in range(len(sorted_rows) - 1):
+            row_a, row_b = sorted_rows[i], sorted_rows[i + 1]
+            racks_a = row_groups[row_a]
+            racks_b = row_groups[row_b]
             min_gap = float("inf")
             for ra in racks_a:
-                _, _, x_a_max, _ = _rack_floor_rect(ra)
+                _, ya_min, _, ya_max = _rack_floor_rect(ra)
                 for rb in racks_b:
-                    x_b_min, _, _, _ = _rack_floor_rect(rb)
-                    gap = x_b_min - x_a_max
+                    _, yb_min, _, yb_max = _rack_floor_rect(rb)
+                    gap = yb_min - ya_max
                     if gap < min_gap:
                         min_gap = gap
             if min_gap < float("inf"):
                 ctx.set_current_file(str(racks_b[0].source))
                 assert min_gap >= bay_spacing, (
-                    f"机房 {room_id} 列 {col_a} 与 {col_b} 之间通道宽度 {min_gap}mm "
+                    f"机房 {room_id} 排 {row_a} 与 {row_b} 之间通道宽度 {min_gap}mm "
                     f"小于要求 {bay_spacing}mm"
                 )
+
+    for room_id, row_groups in rows.items():
+        _check_rows(room_id, row_groups)
+
+    # 旧数据兼容路径
+    for room_id, cols in fallback_bays.items():
+        _check_rows(room_id, cols)
+
     ctx.clear_current_file()
 
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from adl.diagnostics import Location, RelatedInformation
-from adl.models import Layout, LayoutEntry, MateGraph, MateSpec, parse_mate_ref
+from adl.models import Layout, LayoutEntry, MateGraph, MateSpec, Transform, parse_mate_ref
 
 from .query import QuerySet, make_query_set
 from .registry import Registry
@@ -84,6 +84,41 @@ class Context:
     def layout_entry(self, instance_id: str) -> LayoutEntry | None:
         """获取指定 Instance 的 Layout 条目。"""
         return self._registry.get_layout_entry(instance_id)
+
+    def layout_parent(self, instance_id: str) -> str | None:
+        """返回实例在空间装配树中的直接父级（ADR-013）。"""
+        layout = self._registry.layout
+        if layout is None:
+            return None
+        return layout.layout_parent(instance_id)
+
+    def layout_children(self, instance_id: str) -> list[str]:
+        """返回实例在空间装配树中的直接子级（ADR-013）。"""
+        layout = self._registry.layout
+        if layout is None:
+            return []
+        return layout.layout_children(instance_id)
+
+    def layout_ancestors(self, instance_id: str) -> list[str]:
+        """返回从根到该实例的父级路径（ADR-013）。"""
+        layout = self._registry.layout
+        if layout is None:
+            return []
+        return layout.layout_ancestors(instance_id)
+
+    def layout_descendants(self, instance_id: str) -> list[str]:
+        """返回该实例下的所有后代实例（ADR-013）。"""
+        layout = self._registry.layout
+        if layout is None:
+            return []
+        return layout.layout_descendants(instance_id)
+
+    def resolved_transform(self, instance_id: str) -> Transform | None:
+        """返回实例在项目全局坐标系下的解析后位姿（ADR-013）。"""
+        layout = self._registry.layout
+        if layout is None:
+            return None
+        return layout.resolved_transform(instance_id)
 
     # ------------------------------------------------------------------
     # Instance 查找（跨项目，ADR-001）
