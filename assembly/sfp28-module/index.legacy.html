@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SFP28 光模块插入 — ADL 装配体演示</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; background: #1a1a2e; }
+  #canvas { position: absolute; top: 0; left: 0; width: 75%; height: 100%; }
+  #panel {
+    position: absolute; top: 0; right: 0; width: 25%; height: 100%;
+    background: rgba(22, 22, 44, 0.95); color: #c0c0d0; padding: 20px;
+    overflow-y: auto; border-left: 1px solid #333;
+  }
+  #panel h2 { color: #e0e0e0; margin-bottom: 12px; font-size: 18px; }
+  #panel .desc { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.5; }
+  #panel .desc i { color: #ffcc00; font-style: normal; }
+  #panel .group { margin-bottom: 18px; }
+  #panel label { display: block; font-size: 12px; color: #aaa; margin-bottom: 4px; }
+  #panel input[type=range] { width: 100%; accent-color: #6495ED; }
+  #panel .value { font-size: 11px; color: #6495ED; margin-bottom: 10px; }
+  #panel .transform { margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; font-size: 12px; font-family: monospace; }
+  #panel .transform span { color: #6495ED; }
+  #panel hr { border: none; border-top: 1px solid #333; margin: 16px 0; }
+  #panel .preset { display: flex; gap: 6px; }
+  #panel .preset button { flex: 1; padding: 8px 0; border: 1px solid #444; border-radius: 4px; background: #222; color: #ccc; cursor: pointer; font-size: 12px; }
+  #panel .preset button:hover { background: #333; }
+  #panel .preset button.active { background: #2a6; border-color: #3c8; color: #fff; }
+</style>
+</head>
+<body>
+<div id="canvas"></div>
+<div id="panel">
+  <h2>🔌 SFP28 光模块插入</h2>
+  <div class="desc">
+    光模块沿笼子推入交换机。t=0 完全拔出，t=60 完全插入。<br>
+    <i>🟡 金色接头</i> = 模块尾部接口 &nbsp; <i>🟠 橙色环</i> = 笼子开口
+  </div>
+
+  <div class="group">
+    <label>推入距离 (mm) — t=0 拔出，t=60 完全插入</label>
+    <input type="range" id="t" min="0" max="60" value="0" step="0.5">
+    <div class="value" id="t-val">0.0 mm — 拔出</div>
+  </div>
+
+  <div class="preset">
+    <button id="btn-out" class="active">完全拔出</button>
+    <button id="btn-half">半插入</button>
+    <button id="btn-in">完全插入</button>
+  </div>
+
+  <hr>
+  <div class="transform" id="transform-display">
+    光模块全局位姿<br>
+    <span>tz=250.0 — 拔出</span>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(50, 0.75, 10, 5000);
+camera.position.set(400, 150, 500);
+camera.lookAt(0, 42, 220);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+document.getElementById('canvas').appendChild(renderer.domElement);
+
+new OrbitControls(camera, renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0x404060, 1.5));
+const sun = new THREE.DirectionalLight(0xffffff, 2);
+sun.position.set(500, 300, 100);
+scene.add(sun);
+
+// ── Switch chassis ──
+const switchGeo = new THREE.BoxGeometry(440, 44, 500);
+const switchMat = new THREE.MeshStandardMaterial({ color: 0x2a3a4a, roughness: 0.5, metalness: 0.3 });
+const switchMesh = new THREE.Mesh(switchGeo, switchMat);
+switchMesh.position.set(0, 22, 0);
+scene.add(switchMesh);
+
+// Switch front face (z = 250 plane)
+const frontGeo = new THREE.PlaneGeometry(440, 44);
+const frontMat = new THREE.MeshBasicMaterial({ color: 0x1a2a3a, side: THREE.DoubleSide });
+const frontPanel = new THREE.Mesh(frontGeo, frontMat);
+frontPanel.position.set(0, 22, 250);
+scene.add(frontPanel);
+
+// ── SFP28 Cage (socket) at z=200, extending INTO switch ──
+// Cage is inside switch, opening at front panel
+const cageOuter = new THREE.BoxGeometry(16, 11, 50);
+const cageOuterMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.1, metalness: 0.9 });
+const cageMesh = new THREE.Mesh(cageOuter, cageOuterMat);
+cageMesh.position.set(0, 42, 225);  // center at 225, spans 200..250
+scene.add(cageMesh);
+
+// Cage opening ring at z=250 (front panel flush)
+const ringGeo = new THREE.TorusGeometry(6, 1.5, 16, 32);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xff8800 });
+const ring = new THREE.Mesh(ringGeo, ringMat);
+ring.position.set(0, 42, 250);
+scene.add(ring);
+
+// ── Module ──
+const moduleGeo = new THREE.BoxGeometry(28, 18, 70);
+const moduleMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.3, metalness: 0.6 });
+const module = new THREE.Mesh(moduleGeo, moduleMat);
+module.position.set(0, 42, 285);
+scene.add(module);
+
+// Gold connector at tail (z=-35 in local)
+const connGeo = new THREE.BoxGeometry(20, 12, 8);
+const connMat = new THREE.MeshStandardMaterial({ color: 0xddaa00, roughness: 0.2, metalness: 0.9, emissive: 0x221100 });
+const connector = new THREE.Mesh(connGeo, connMat);
+module.add(connector);
+connector.position.set(0, 0, -35);
+
+// Direction arrow on module
+const arrowGeo = new THREE.ConeGeometry(3, 8, 8);
+const arrowMat = new THREE.MeshBasicMaterial({ color: 0x00ccff });
+const arrowMesh = new THREE.Mesh(arrowGeo, arrowMat);
+module.add(arrowMesh);
+arrowMesh.position.set(0, 10, -30);
+arrowMesh.rotation.x = Math.PI;
+
+// ── Solver ──
+// slot_origin at z=250 (front panel face), slot_dir = -1 (into switch)
+// module connector at z=-35 in local (tail end)
+// t=0 → module connector at z=250 → module center at z=250+35=285
+// t=60 → module connector at z=250-60=190 → module center at z=190+35=225
+function updateTransform(tVal) {
+  const t = tVal ?? parseFloat(document.getElementById('t').value);
+  const slotOriginZ = 250;
+  const slotDir = -1;
+  const childOffset = -35;  // connector is at z=-35 in module local
+  const tz = slotOriginZ + t * slotDir - childOffset;  // = 250 - t + 35
+
+  module.position.z = tz;
+
+  const status = t === 0 ? '拔出' : t >= 60 ? '完全插入' : `推入 ${t.toFixed(1)}mm`;
+  document.getElementById('t-val').textContent = `${t.toFixed(1)} mm — ${status}`;
+  document.getElementById('transform-display').innerHTML = `
+    光模块全局位姿<br>
+    <span>tz=${tz.toFixed(1)} mm — ${status}</span>
+  `;
+
+  // Update preset buttons
+  document.querySelectorAll('.preset button').forEach(b => b.classList.remove('active'));
+  if (t === 0) document.getElementById('btn-out').classList.add('active');
+  else if (t >= 60) document.getElementById('btn-in').classList.add('active');
+  else document.getElementById('btn-half').classList.add('active');
+}
+
+document.getElementById('t').addEventListener('input', () => updateTransform());
+document.getElementById('btn-out').addEventListener('click', () => {
+  document.getElementById('t').value = 0; updateTransform(0);
+});
+document.getElementById('btn-half').addEventListener('click', () => {
+  document.getElementById('t').value = 30; updateTransform(30);
+});
+document.getElementById('btn-in').addEventListener('click', () => {
+  document.getElementById('t').value = 60; updateTransform(60);
+});
+
+updateTransform(0);
+
+window.addEventListener('resize', () => {
+  const w = window.innerWidth * 0.75;
+  const h = window.innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+});
+window.dispatchEvent(new Event('resize'));
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>

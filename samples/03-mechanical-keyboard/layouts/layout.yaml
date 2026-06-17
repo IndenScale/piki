@@ -1,24 +1,31 @@
+# 65% 机械键盘装配定位树（ADR-013 相对坐标）
+# CASE-01 作为装配根，所有零件相对于外壳原点定位。
+
 - instance: CASE-01
   position_x_mm: 0
   position_y_mm: 0
   position_z_mm: 0
 
 - instance: PLATE-01
-  position_x_mm: 6
-  position_y_mm: 6
-  position_z_mm: 8
+  parent: CASE-01
+  transform:
+    translation: [6, 6, 8]
+    rotation: [0, 0, 0]
 
 - instance: PCB-01
-  position_x_mm: 6
-  position_y_mm: 6
-  position_z_mm: 10
+  parent: CASE-01
+  transform:
+    translation: [6, 6, 10]
+    rotation: [0, 0, 0]
 
 - instance: BATT-01
-  position_x_mm: 160
-  position_y_mm: 40
-  position_z_mm: 15
+  parent: CASE-01
+  transform:
+    translation: [160, 40, 15]
+    rotation: [0, 0, 0]
 
 - instance: CABLE-01
-  position_x_mm: 160
-  position_y_mm: 0
-  position_z_mm: 0
+  parent: CASE-01
+  transform:
+    translation: [160, 0, 0]
+    rotation: [0, 0, 0]

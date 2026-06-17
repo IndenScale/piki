@@ -84,7 +84,7 @@ enabled = ["telecom", "datacenter"]
 
 **跨插件查询**使用数据集合名而非插件名：`ctx.query("instances", family="RackFamily")`。
 
-内置插件位于 `src/piki/extensions/`：`telecom`、`datacenter`、`keyboard`、`environments`、`manufacturing`。
+内置插件位于 `src/piki/extensions/`：`telecom`、`datacenter`、`keyboard`、`environments`、`manufacturing`、`assembly`。
 
 ## 质量检查分层（ADR-003）
 

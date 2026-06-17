@@ -29,7 +29,6 @@ from adl.geometry.interface_signature import (
     InterfaceSignature,
     SignatureCoupling,
     couple_signatures,
-    get_signature,
 )
 from adl.geometry.models import (
     AssetReference,
@@ -42,6 +41,7 @@ from adl.geometry.models import (
     compose_transforms,
 )
 from adl.geometry.provider import GeometryProvider
+
 # Mate vs Layout 位姿冲突的检测阈值
 _CONFLICT_TRANSLATION_THRESHOLD_MM: float = 0.5
 _CONFLICT_ROTATION_THRESHOLD_DEG: float = 0.1
@@ -100,7 +100,6 @@ class AssemblyBuilder:
     # ------------------------------------------------------------------
 
     def _build_base_entities(self) -> None:
-        from adl.models import get_interfaces_from_resolved
 
         for inst_id, inst in self.project.instances.items():
             if inst.family == "_invalid":
@@ -417,7 +416,6 @@ class AssemblyBuilder:
         """实体 transform 被覆盖后，重新计算其接口全局位姿。"""
         resolved = entity.resolved
         # 从 resolved 重新解析接口
-        from adl.models import get_interfaces_from_resolved
         from adl.models.base import ResolvedInstance
 
         dummy = ResolvedInstance(

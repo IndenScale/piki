@@ -26,6 +26,7 @@ _ABS_LAYOUT_FIELDS = frozenset(
         "row_id",
         "bay_index",
         "grid_id",
+        "grid_position",
         "position_x_mm",
         "position_y_mm",
         "position_z_mm",
@@ -44,6 +45,7 @@ class ADLValidator:
         diagnostics: list[Diagnostic] = []
         diagnostics.extend(self._validate_layout_references())
         diagnostics.extend(self._validate_relative_layout())
+        diagnostics.extend(self._validate_grid_layout())
         diagnostics.extend(self._validate_foreign_keys())
         diagnostics.extend(self._validate_mate_references())
         diagnostics.extend(self._validate_mate_family_compat())
@@ -175,6 +177,114 @@ class ADLValidator:
                     source="adl.validation",
                 )
             )
+
+        return diagnostics
+
+    # ------------------------------------------------------------------
+    # Grid 轴网部署校验
+    # ------------------------------------------------------------------
+
+    def _validate_grid_layout(self) -> list[Diagnostic]:
+        """校验 Layout 中 Grid 轴网引用的合法性。"""
+        diagnostics: list[Diagnostic] = []
+        layout = self.project.layout
+        if layout is None:
+            return diagnostics
+
+        for entry in layout.entries.values():
+            grid_id = entry.grid_id
+            grid_position = entry.grid_position
+            has_row_bay = entry.row_id is not None and entry.bay_index is not None
+
+            if grid_id is None:
+                if grid_position is not None:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity=Severity.ERROR,
+                            message=(
+                                f"Layout 条目 '{entry.instance}' 填写了 grid_position "
+                                f"但未指定 grid_id。"
+                            ),
+                            location=Location.from_path(layout.source)
+                            if layout.source
+                            else Location(uri=""),
+                            code="GRID-003",
+                            source="adl.validation",
+                        )
+                    )
+                continue
+
+            grid = self.project.find_grid(grid_id)
+            if grid is None:
+                diagnostics.append(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Layout 条目 '{entry.instance}' 引用的 Grid "
+                            f"'{grid_id}' 不存在。"
+                        ),
+                        location=Location.from_path(layout.source)
+                        if layout.source
+                        else Location(uri=""),
+                        code="GRID-001",
+                        source="adl.validation",
+                    )
+                )
+                continue
+
+            if grid_position is None and not has_row_bay:
+                diagnostics.append(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Layout 条目 '{entry.instance}' 引用了 Grid '{grid_id}'，"
+                            f"但未提供 grid_position 或 row_id + bay_index。"
+                        ),
+                        location=Location.from_path(layout.source)
+                        if layout.source
+                        else Location(uri=""),
+                        code="GRID-004",
+                        source="adl.validation",
+                    )
+                )
+                continue
+
+            effective_position = grid_position
+            if effective_position is None and has_row_bay:
+                effective_position = (entry.row_id, str(entry.bay_index))
+
+            if effective_position is not None:
+                axis_a_id, axis_b_id = effective_position
+                if not grid.has_line(0, axis_a_id):
+                    diagnostics.append(
+                        Diagnostic(
+                            severity=Severity.ERROR,
+                            message=(
+                                f"Layout 条目 '{entry.instance}' 的 grid_position "
+                                f"'{axis_a_id}' 不在 Grid '{grid_id}' 的第一组轴线中。"
+                            ),
+                            location=Location.from_path(layout.source)
+                            if layout.source
+                            else Location(uri=""),
+                            code="GRID-002",
+                            source="adl.validation",
+                        )
+                    )
+                if not grid.has_line(1, axis_b_id):
+                    diagnostics.append(
+                        Diagnostic(
+                            severity=Severity.ERROR,
+                            message=(
+                                f"Layout 条目 '{entry.instance}' 的 grid_position "
+                                f"'{axis_b_id}' 不在 Grid '{grid_id}' 的第二组轴线中。"
+                            ),
+                            location=Location.from_path(layout.source)
+                            if layout.source
+                            else Location(uri=""),
+                            code="GRID-002",
+                            source="adl.validation",
+                        )
+                    )
 
         return diagnostics
 

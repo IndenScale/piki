@@ -1,0 +1,21 @@
+model: generic-sfp28-module
+family: AssemblyPartFamily
+
+name: 光模块
+part_type: sfp28-module
+
+width_mm: 28
+height_mm: 18
+depth_mm: 70
+
+color: "#888888"
+opacity: 1.0
+
+interfaces:
+  - id: tail
+    interface_type: SFP28-module
+    local_transform:
+      translation: [0, 0, -35]
+    mating_kind: slot
+    mating_params:
+      slot_dir: [0, 0, -1]

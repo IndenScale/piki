@@ -1,0 +1,21 @@
+model: fc-plug
+family: AssemblyPartFamily
+
+name: 插头
+part_type: plug
+
+width_mm: 10
+height_mm: 10
+depth_mm: 50
+
+color: "#999999"
+opacity: 1.0
+
+interfaces:
+  - id: tip
+    interface_type: generic-slot
+    local_transform:
+      translation: [0, 0, 12]
+    mating_kind: slot
+    mating_params:
+      slot_dir: [0, 0, -1]

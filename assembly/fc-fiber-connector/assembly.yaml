@@ -1,0 +1,46 @@
+# FC 光纤连接器 —— 两阶段装配典型示例
+#
+# 两阶段：
+#   1. 自由阶段：插头可以轴向移动，旋转锁死
+#   2. 锁紧阶段：插入到底后，旋转解锁，可拧紧
+#
+# 自由度：
+#   - 插入深度 t (0-15mm)：始终活跃
+#   - 旋转角度 θ (0-30°)：仅在 "inserted" 状态活跃
+
+name: FC 光纤连接器
+description: |
+  FC 光纤连接器采用两阶段装配。
+  插入到底后旋转锁紧螺母固定。
+  旋转自由度仅在完全插入或完全拔出时解锁。
+
+entities:
+  - id: adapter
+    label: 适配器（母座）
+    bbox: { hw: 6, hh: 6, hd: 20 }
+    color: "#556677"
+
+  - id: plug
+    label: 插头
+    bbox: { hw: 5, hh: 5, hd: 25 }
+    color: "#999999"
+
+mate:
+  type: slot
+  parent_slot_origin: [0, 0, 30]
+  parent_slot_dir: [0, 0, -1]
+  child_interface_offset: [0, 0, 12]
+  stages:
+    - { name: free, required_state: null, activates: ["插入深度"], deactivates: ["旋转角度"] }
+    - { name: locked, required_state: "inserted", activates: ["旋转角度"], deactivates: [] }
+  params:
+    t:
+      label: "插入深度"
+      min: 0
+      max: 15
+      default: 0
+    theta:
+      label: "旋转角度"
+      min: 0
+      max: 30
+      default: 0

@@ -5,7 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from adl.diagnostics import Severity
-from adl.models import GeometryAssets, InterfaceSpec, Tags, resolve_interface_ref
+from adl.geometry import GeometryAssets, KinematicEnvelope, LoadCapacity, Space, Transform, Vec3
+from adl.models import (
+    InterfaceSpec,
+    Tags,
+    resolve_interface_ref,
+)
 from adl.types import TypeRegistry
 from pydantic import BaseModel, Field
 
@@ -28,11 +33,13 @@ class RoutePoint(BaseModel):
 
 
 class FacilityFamily(BaseModel):
-    """机房基础设施：门、ODF、供电柜、走线架、消防箱等。"""
+    """机房基础设施：门、ODF、供电柜、走线架、消防箱、抬高地板、斜坡等。"""
 
     id: str = Field(...)
     name: str = Field(default="")
-    facility_type: str = Field(...)  # door | odf | power-cabinet | cable-tray | fire-box | etc.
+    facility_type: str = Field(
+        ...
+    )  # door | odf | power-cabinet | cable-tray | fire-box | raised-floor | floor-grid | ramp | etc.
     room_id: str = Field(default="")
     # 物理尺寸（毫米）——允许实例覆盖，因为门/走线架等设施尺寸多样
     width_mm: float = Field(default=0, ge=0)
@@ -49,6 +56,15 @@ class FacilityFamily(BaseModel):
     # 轴网锚定：用于走线架/门等设施与排或通道配合
     row_id: str = Field(default="", description="所锚定的机柜排 ID")
     aisle_label: str = Field(default="", description="所锚定的通道/ aisle 标签")
+    # ADR-014: 运动包络（门/盖板等）
+    kinematics: KinematicEnvelope | None = Field(default=None)
+    # ADR-014: 承重能力（地板/货架/斜坡等）
+    load_capacity: LoadCapacity | None = Field(default=None)
+    # ADR-014: 抬高地板网格接口（仅 facility_type == raised-floor 时生效）
+    panel_width_mm: float = Field(default=0, ge=0, description="地板面板宽度（毫米）")
+    panel_depth_mm: float = Field(default=0, ge=0, description="地板面板深度（毫米）")
+    grid_origin_x_mm: float = Field(default=0.0, description="网格原点 X（毫米）")
+    grid_origin_y_mm: float = Field(default=0.0, description="网格原点 Y（毫米）")
     # 作用域：background 存量不涉及 / context 存量但需接线 / new 本次新增
     scope: str = Field(default="new")
     status: str = Field(default="planned")
@@ -56,6 +72,23 @@ class FacilityFamily(BaseModel):
     tags: Tags = Field(default_factory=Tags)
     # 几何资产（可选）
     assets: GeometryAssets | None = Field(default=None)
+
+
+class SpaceFamily(BaseModel):
+    """无形空间区域：车辆动线、门开合扫掠区、除尘地垫、维护净空区等。"""
+
+    id: str = Field(...)
+    name: str = Field(default="")
+    space_type: str = Field(
+        ...
+    )  # vehicle-path | clearance-zone | sticky-mat | plenum-zone | access-aisle
+    room_id: str = Field(default="")
+    shape: Space = Field(...)
+    # 作用域：background / context / new
+    scope: str = Field(default="background")
+    status: str = Field(default="planned")
+    # 标签
+    tags: Tags = Field(default_factory=Tags)
 
 
 class RackRowFamily(BaseModel):
@@ -89,6 +122,9 @@ class RoomFamily(BaseModel):
     height_mm: float = Field(default=3000, gt=0)  # 净高
     # 机柜排列参数
     rack_bay_spacing_mm: float = Field(default=1200, ge=0)  # 列间通道宽度（冷/热通道）
+    front_wall_x_mm: float = Field(default=0.0, description="前墙在全局X轴的坐标（毫米）")
+    floor_height_mm: float = Field(default=400, ge=0, description="抬高地板高度（毫米）")
+    tile_size_mm: float = Field(default=600, ge=0, description="防静电地板砖尺寸（毫米）")
     rack_inline_spacing_mm: float = Field(default=600, ge=0)  # 同列机柜间距
     wall_margin_mm: float = Field(default=1000, ge=0)  # 靠墙最小距离
     # 轴网参数：当机柜使用 row_id/bay_index 时，用于推导 floor_x_mm/floor_y_mm
@@ -109,7 +145,8 @@ class RackFamily(BaseModel):
     # 物理尺寸（毫米），用于 3D 碰撞检测和物理尺寸匹配
     depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
-    # 机柜承重与散热能力
+    # 机柜自重、承重与散热能力
+    weight_kg: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     max_load_kg: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
     cooling_capacity_w: float = Field(
         default=0, ge=0, json_schema_extra={"piki_non_overridable": True}
@@ -295,6 +332,7 @@ class TelecomPlugin(Plugin):
     def register_types(self, type_registry: TypeRegistry) -> None:
         type_registry.add_family("RoomFamily", RoomFamily)
         type_registry.add_family("FacilityFamily", FacilityFamily)
+        type_registry.add_family("SpaceFamily", SpaceFamily)
         type_registry.add_family("RackRowFamily", RackRowFamily)
         type_registry.add_family("RackFamily", RackFamily)
         type_registry.add_family("PduFamily", PduFamily)
@@ -443,6 +481,55 @@ class TelecomPlugin(Plugin):
             ),
         )
 
+        # ADR-014: 空间约束 Mate 类型
+        type_registry.add_mate_type(
+            "must-clear",
+            MateTypeMeta(
+                type="must-clear",
+                description="child 的运动包络或几何体不得与 parent 相交",
+                applicable_parent_families={"FacilityFamily", "RackFamily", "ServerFamily", "SpaceFamily"},
+                applicable_child_families={"FacilityFamily", "SpaceFamily"},
+            ),
+        )
+        type_registry.add_mate_type(
+            "must-be-inside",
+            MateTypeMeta(
+                type="must-be-inside",
+                description="child 必须位于 parent 的空间或几何范围内",
+                applicable_parent_families={"RoomFamily", "SpaceFamily", "FacilityFamily"},
+                applicable_child_families={"FacilityFamily", "SpaceFamily", "RackFamily"},
+            ),
+        )
+        type_registry.add_mate_type(
+            "minimum-distance",
+            MateTypeMeta(
+                type="minimum-distance",
+                description="child 与 parent 之间保持最小净距",
+                applicable_parent_families={"FacilityFamily", "RackFamily", "SpaceFamily"},
+                applicable_child_families={"FacilityFamily", "SpaceFamily"},
+            ),
+        )
+
+        # ADR-014: 地板装配关系
+        type_registry.add_mate_type(
+            "placed-on",
+            MateTypeMeta(
+                type="placed-on",
+                description="child 放置在 parent 地板/平台顶面，并对齐网格",
+                applicable_parent_families={"FacilityFamily"},
+                applicable_child_families={"RackFamily", "FacilityFamily"},
+            ),
+        )
+        type_registry.add_mate_type(
+            "connects-to",
+            MateTypeMeta(
+                type="connects-to",
+                description="child 与 parent 在几何上相接（如坡道与地板）",
+                applicable_parent_families={"FacilityFamily"},
+                applicable_child_families={"FacilityFamily"},
+            ),
+        )
+
     def register_rules(self, checker: Checker) -> None:
         checker.add_rule(
             "TELECOM-POWER-001",
@@ -584,6 +671,56 @@ class TelecomPlugin(Plugin):
             priority=3,
             severity=Severity.WARNING,
         )
+        # ADR-014: 机房基础设施与可达性分析规则
+        checker.add_rule(
+            "TELECOM-ACCESS-001",
+            "门开合扫掠区碰撞检查",
+            check_door_swing_clearance,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-ACCESS-002",
+            "车辆路径可达性检查",
+            check_vehicle_path_accessibility,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-LOAD-001",
+            "抬高地板均布载荷检查",
+            check_floor_loading,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-LOAD-002",
+            "机柜局部集中载荷检查",
+            check_concentrated_floor_loading,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-RAMP-001",
+            "物流坡道与抬高地板高度配合检查",
+            check_ramp_floor_fit,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-RAMP-002",
+            "物流坡道与抬高地板相接检查",
+            check_ramp_connects_to_floor,
+            priority=5,
+            severity=Severity.ERROR,
+        )
+        checker.add_rule(
+            "TELECOM-FLOOR-005",
+            "机柜/设施必须装配到抬高地板并网格对齐",
+            check_placed_on_floor_grid,
+            priority=5,
+            severity=Severity.ERROR,
+        )
         checker.add_rule(
             "CATALOG-LIFECYCLE-001",
             "禁止非既有工程使用 EOL 器件",
@@ -696,11 +833,6 @@ def check_pdu_phase_balance(ctx):
         powers = list(phases.values())
         avg_power = sum(powers) / len(powers)
         if avg_power <= 0:
-            continue
-
-        # 如果只有一个相带负载，说明该机柜内设备数量不足以构成多相，跳过
-        loaded_phases = sum(1 for p in powers if p > 0)
-        if loaded_phases <= 1:
             continue
 
         max_power = max(powers)
@@ -2413,3 +2545,472 @@ def generate_floor_plan(ctx, config) -> GeneratorResult:
     svg_str = dom.toprettyxml(indent="  ")
     _, file_path = _resolve_output_path(config, "floor-plan.svg")
     return _write_and_return("floor-plan", "机房平面图", svg_str, file_path, "image/svg+xml")
+
+
+# ---------------------------------------------------------------------------
+# ADR-014: 机房基础设施与可达性分析 DRC 规则
+# ---------------------------------------------------------------------------
+
+
+def _inst_global_transform(ctx, inst: Any) -> Transform:
+    """返回实例在项目全局坐标系下的 Transform，优先使用 Layout 级联结果。"""
+    transform = ctx.resolved_transform(inst.id)
+    if transform is not None:
+        return transform
+    resolved = inst.resolved
+    x = getattr(resolved, "floor_x_mm", None) or getattr(resolved, "position_x_mm", 0.0)
+    y = getattr(resolved, "floor_y_mm", None) or getattr(resolved, "position_y_mm", 0.0)
+    z = getattr(resolved, "position_z_mm", 0.0)
+    return Transform(translation=Vec3(x=float(x), y=float(y), z=float(z)))
+
+
+def _inst_size_mm(inst: Any) -> tuple[float, float, float] | None:
+    """从 instance 解析尺寸 (width, height, depth)，单位毫米。"""
+    resolved = inst.resolved
+    width = getattr(resolved, "width_mm", 0.0) or 0.0
+    depth = getattr(resolved, "depth_mm", 0.0) or 0.0
+    length = getattr(resolved, "length_mm", 0.0) or 0.0
+    height = getattr(resolved, "height_mm", 0.0) or 0.0
+    # 机柜高度从 U 位推导
+    if height <= 0 and getattr(resolved, "total_u", None):
+        height = float(resolved.total_u) * 44.45
+    depth = depth if depth > 0 else length
+    if width <= 0 or height <= 0 or depth <= 0:
+        return None
+    return float(width), float(height), float(depth)
+
+
+def _build_aabb_mm(transform: Transform, width: float, height: float, depth: float) -> Any:
+    """用毫米为单位从 transform 和尺寸构建 AABB。
+
+    约定：width 沿局部 y，depth 沿局部 x，height 沿局部 z，
+    因此 AABB 尺寸为 (x=depth, y=width, z=height)。
+    """
+    from piki.ext.geometry import AABB
+
+    size = Vec3(x=depth, y=width, z=height)
+    return AABB.from_box(size, transform)
+
+
+def check_door_swing_clearance(ctx):
+    """TELECOM-ACCESS-001: 门开合扫掠体不与周围实例碰撞。
+
+    第一阶段采用 AABB 近似：以门为中心，门宽/门深较大值的 2 倍作为扫掠包络。
+    """
+    from piki.ext.geometry import find_collisions
+
+    doors = [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "door"
+        and getattr(f.resolved, "kinematics", None) is not None
+    ]
+    obstacles = list(ctx.query("racks")) + [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "")
+        not in ("door", "ramp", "raised-floor", "floor-grid", "door-landing")
+    ]
+
+    for door in doors:
+        door_transform = _inst_global_transform(ctx, door)
+        door_size = _inst_size_mm(door)
+        if door_size is None:
+            continue
+        width, height, depth = door_size
+        # 扫掠包络近似：以门中心为原点，覆盖门扇最大扫掠范围
+        sweep_span = max(width, depth) * 2
+        sweep_aabb = _build_aabb_mm(door_transform, sweep_span, height, sweep_span)
+
+        items = [(f"SWEEP-{door.id}", sweep_aabb)]
+        for obs in obstacles:
+            obs_transform = _inst_global_transform(ctx, obs)
+            obs_size = _inst_size_mm(obs)
+            if obs_size is None:
+                continue
+            items.append((obs.id, _build_aabb_mm(obs_transform, *obs_size)))
+
+        collisions = find_collisions(items)
+        for id1, id2 in collisions:
+            if id1.startswith("SWEEP-"):
+                ctx.set_current_file(str(door.source))
+                assert False, f"门 {door.id} 开合扫掠区与 {id2} 碰撞"
+    ctx.clear_current_file()
+
+
+def check_vehicle_path_accessibility(ctx):
+    """TELECOM-ACCESS-002: 车辆路径宽度足够，转弯包络不与机柜/设施碰撞。
+
+    第一阶段把 corridor 每段中心线扩展为包络 AABB，检查与障碍物是否相交。
+    """
+    from piki.ext.geometry import AABB
+
+    paths = [
+        s
+        for s in ctx.query("spaces")
+        if getattr(s.resolved, "space_type", "") == "vehicle-path"
+    ]
+    obstacles = list(ctx.query("racks")) + [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "")
+        not in ("ramp", "raised-floor", "floor-grid", "door", "door-landing")
+    ]
+
+    for path in paths:
+        shape = getattr(path.resolved, "shape", None)
+        if shape is None or shape.type != "corridor":
+            continue
+        centerline = shape.centerline
+        width = shape.corridor_width_mm
+        height = shape.corridor_height_mm
+        if not centerline or width is None or height is None:
+            continue
+
+        # 构建障碍物 AABB 列表（只建一次）
+        obstacle_items: list[tuple[str, Any]] = []
+        for obs in obstacles:
+            obs_transform = _inst_global_transform(ctx, obs)
+            obs_size = _inst_size_mm(obs)
+            if obs_size is None:
+                continue
+            obstacle_items.append((obs.id, _build_aabb_mm(obs_transform, *obs_size)))
+
+        half_w = width / 2.0
+        half_h = height / 2.0
+        for i in range(len(centerline) - 1):
+            p1 = centerline[i]
+            p2 = centerline[i + 1]
+            seg_aabb = AABB(
+                min=Vec3(
+                    x=min(p1.x, p2.x) - half_w,
+                    y=min(p1.y, p2.y) - half_w,
+                    z=min(p1.z, p2.z) - half_h,
+                ),
+                max=Vec3(
+                    x=max(p1.x, p2.x) + half_w,
+                    y=max(p1.y, p2.y) + half_w,
+                    z=max(p1.z, p2.z) + half_h,
+                ),
+            )
+
+            for obs_id, obs_aabb in obstacle_items:
+                if seg_aabb.intersects(obs_aabb):
+                    ctx.set_current_file(str(path.source))
+                    assert False, f"车辆路径 {path.id} 第 {i} 段与 {obs_id} 碰撞或空间不足"
+    ctx.clear_current_file()
+
+
+def check_floor_loading(ctx):
+    """TELECOM-LOAD-001: 抬高地板均布承重 sufficient。"""
+    floors = [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "raised-floor"
+    ]
+    racks = list(ctx.query("racks"))
+
+    for floor in floors:
+        lc = getattr(floor.resolved, "load_capacity", None)
+        if lc is None:
+            continue
+        floor_size = _inst_size_mm(floor)
+        if floor_size is None:
+            continue
+        floor_width, _, floor_depth = floor_size
+        floor_area_m2 = (floor_width / 1000.0) * (floor_depth / 1000.0)
+        uniform_limit = (lc.uniform_load_kg_m2 or 0.0) * (lc.dynamic_factor or 1.0)
+        if uniform_limit <= 0:
+            continue
+
+        total_weight = 0.0
+        for rack in racks:
+            rack_weight = getattr(rack.resolved, "weight_kg", 0.0) or 0.0
+            devices = ctx.query("devices", rack_id=rack.id)
+            device_weight = sum(
+                getattr(d.resolved, "weight_kg", 0.0) or 0.0 for d in devices
+            )
+            total_weight += rack_weight + device_weight
+
+        load_m2 = total_weight / floor_area_m2 if floor_area_m2 > 0 else 0.0
+        if load_m2 > uniform_limit:
+            ctx.set_current_file(str(floor.source))
+            assert False, (
+                f"抬高地板 {floor.id} 均布载荷 {load_m2:.1f}kg/m² "
+                f"超过限制 {uniform_limit:.1f}kg/m²"
+            )
+    ctx.clear_current_file()
+
+
+def check_concentrated_floor_loading(ctx):
+    """TELECOM-LOAD-002: 单台机柜局部集中载荷检查。"""
+    floors = [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "raised-floor"
+    ]
+    racks = list(ctx.query("racks"))
+
+    for floor in floors:
+        lc = getattr(floor.resolved, "load_capacity", None)
+        if lc is None:
+            continue
+        max_conc = lc.max_concentrated_load_kg * lc.dynamic_factor
+        if max_conc <= 0:
+            continue
+        for rack in racks:
+            rack_weight = getattr(rack.resolved, "weight_kg", 0.0) or 0.0
+            devices = ctx.query("devices", rack_id=rack.id)
+            total = rack_weight + sum(
+                getattr(d.resolved, "weight_kg", 0.0) or 0.0 for d in devices
+            )
+            if total > max_conc:
+                ctx.set_current_file(str(rack.source))
+                assert False, (
+                    f"机柜 {rack.id} 总重 {total:.1f}kg "
+                    f"超过地板局部集中载荷限制 {max_conc:.1f}kg"
+                )
+    ctx.clear_current_file()
+
+
+def check_ramp_floor_fit(ctx):
+    """TELECOM-FLOOR-001: 物流坡道与抬高地板高度配合，坡度合规。"""
+    ramps = [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "ramp"
+    ]
+    floors = [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "raised-floor"
+    ]
+
+    for ramp in ramps:
+        ramp_height = getattr(ramp.resolved, "height_mm", 0.0) or 0.0
+        ramp_depth = getattr(ramp.resolved, "depth_mm", 0.0) or 0.0
+        if ramp_depth <= 0:
+            continue
+        slope = ramp_height / ramp_depth
+        if slope > 0.15:
+            ctx.set_current_file(str(ramp.source))
+            assert False, f"物流坡道 {ramp.id} 坡度 {slope:.1%} 超过 15% 限制"
+
+        for floor in floors:
+            floor_height = getattr(floor.resolved, "height_mm", 0.0) or 0.0
+            if abs(ramp_height - floor_height) > 10.0:
+                ctx.set_current_file(str(ramp.source))
+                assert False, (
+                    f"坡道 {ramp.id} 顶端高度 {ramp_height:.0f}mm "
+                    f"与抬高地板 {floor.id} 高度 {floor_height:.0f}mm 不匹配"
+                )
+    ctx.clear_current_file()
+
+
+def _aabb_mm(ctx, inst):
+    """返回 instance 在全局坐标系下的 AABB（毫米）。"""
+    size = _inst_size_mm(inst)
+    if size is None:
+        return None
+    transform = _inst_global_transform(ctx, inst)
+    return _build_aabb_mm(transform, *size)
+
+
+def _rack_footprint_aabb(ctx, rack):
+    """返回机柜在机房平面上的真实 footprint AABB（考虑朝向，毫米）。"""
+    import math
+
+    from piki.ext.geometry import AABB
+
+    transform = _inst_global_transform(ctx, rack)
+    resolved = rack.resolved
+    width = float(getattr(resolved, "width_mm", 0) or 0)
+    depth = float(getattr(resolved, "depth_mm", 0) or 0)
+    orientation = float(getattr(resolved, "orientation_deg", 0) or 0)
+    rad = math.radians(orientation)
+    cos_a = abs(math.cos(rad))
+    sin_a = abs(math.sin(rad))
+    # 旋转后的全局半长（忽略 z）
+    half_x = depth / 2.0 * cos_a + width / 2.0 * sin_a
+    half_y = depth / 2.0 * sin_a + width / 2.0 * cos_a
+    return AABB(
+        min=Vec3(
+            x=transform.translation.x - half_x,
+            y=transform.translation.y - half_y,
+            z=transform.translation.z,
+        ),
+        max=Vec3(
+            x=transform.translation.x + half_x,
+            y=transform.translation.y + half_y,
+            z=transform.translation.z,
+        ),
+    )
+
+
+def _floor_top_z(floor_aabb):
+    """地板顶面高度（毫米）。"""
+    return floor_aabb.max.z
+
+
+def check_placed_on_floor_grid(ctx):
+    """TELECOM-FLOOR-005: 机柜/设施必须 placed-on 抬高地板，且底面与地板顶面平齐、 footprint 在地板范围内并对齐面板网格。"""
+    floors = {
+        f.id: f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "raised-floor"
+    }
+    if not floors:
+        return
+
+    TOL = 1.0  # 毫米
+
+    floor_aabbs = {}
+    floor_grids = {}
+    for fid, floor in floors.items():
+        aabb = _aabb_mm(ctx, floor)
+        if aabb is None:
+            continue
+        floor_aabbs[fid] = aabb
+        resolved = floor.resolved
+        floor_grids[fid] = (
+            float(resolved.panel_width_mm or 0) or 600.0,
+            float(resolved.panel_depth_mm or 0) or 600.0,
+            float(resolved.grid_origin_x_mm or 0),
+            float(resolved.grid_origin_y_mm or 0),
+        )
+
+    placed_children = set()
+    for floor_id, floor in floors.items():
+        floor_aabb = floor_aabbs.get(floor_id)
+        if floor_aabb is None:
+            continue
+        panel_w, panel_d, origin_x, origin_y = floor_grids[floor_id]
+        top_z = _floor_top_z(floor_aabb)
+
+        for mate in ctx.mated_children(floor_id):
+            if mate.type != "placed-on":
+                continue
+            child = ctx.mate_child_instance(mate)
+            if child is None:
+                continue
+            placed_children.add(child.id)
+            if child.family == "RackFamily":
+                child_aabb = _rack_footprint_aabb(ctx, child)
+                child_size = _inst_size_mm(child)
+                child_height = child_size[1] if child_size else 0.0
+                child_bottom_z = child_aabb.min.z - child_height / 2.0
+            else:
+                child_aabb = _aabb_mm(ctx, child)
+                child_bottom_z = child_aabb.min.z
+            if child_aabb is None:
+                continue
+
+            # 底面与地板顶面平齐
+            if abs(child_bottom_z - top_z) > TOL:
+                ctx.set_current_file(str(child.source))
+                assert False, (
+                    f"{child.id} 底面高度 {child_aabb.min.z:.0f}mm "
+                    f"与抬高地板 {floor_id} 顶面 {top_z:.0f}mm 未对齐"
+                )
+
+            # footprint 在地板范围内
+            if (
+                child_aabb.min.x < floor_aabb.min.x - TOL
+                or child_aabb.max.x > floor_aabb.max.x + TOL
+                or child_aabb.min.y < floor_aabb.min.y - TOL
+                or child_aabb.max.y > floor_aabb.max.y + TOL
+            ):
+                ctx.set_current_file(str(child.source))
+                assert False, f"{child.id}  footprint 超出抬高地板 {floor_id} 范围"
+
+            # 机柜必须与面板网格对齐；其他设施只要落在地板范围内即可
+            if child.family == "RackFamily":
+                dx = (child_aabb.min.x - origin_x) % panel_w
+                dy = (child_aabb.min.y - origin_y) % panel_d
+                if min(dx, panel_w - dx) > TOL and dx > TOL:
+                    ctx.set_current_file(str(child.source))
+                    assert False, (
+                        f"{child.id} X 向未对齐地板网格 "
+                        f"(panel={panel_w}mm, origin={origin_x}mm)"
+                    )
+                if min(dy, panel_d - dy) > TOL and dy > TOL:
+                    ctx.set_current_file(str(child.source))
+                    assert False, (
+                        f"{child.id} Y 向未对齐地板网格 "
+                        f"(panel={panel_d}mm, origin={origin_y}mm)"
+                    )
+
+    # 机房内每个机柜都必须 placed-on 地板
+    for rack in ctx.query("racks"):
+        if rack.id not in placed_children:
+            ctx.set_current_file(str(rack.source))
+            assert False, f"机柜 {rack.id} 未通过 placed-on 装配到抬高地板"
+
+    ctx.clear_current_file()
+
+
+def check_ramp_connects_to_floor(ctx):
+    """TELECOM-RAMP-002: 坡道必须通过 connects-to 与抬高地板相接，且顶端与地板前缘在几何上连续。"""
+    floors = {
+        f.id: f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "raised-floor"
+    }
+    ramps = [
+        f
+        for f in ctx.query("facilities")
+        if getattr(f.resolved, "facility_type", "") == "ramp"
+    ]
+    if not floors or not ramps:
+        return
+
+    TOL = 5.0
+    connected_ramps = set()
+
+    for floor_id, floor in floors.items():
+        floor_aabb = _aabb_mm(ctx, floor)
+        if floor_aabb is None:
+            continue
+        top_z = _floor_top_z(floor_aabb)
+
+        for mate in ctx.mated_children(floor_id):
+            if mate.type != "connects-to":
+                continue
+            child = ctx.mate_child_instance(mate)
+            if child is None or getattr(child.resolved, "facility_type", "") != "ramp":
+                continue
+            connected_ramps.add(child.id)
+            ramp_aabb = _aabb_mm(ctx, child)
+            if ramp_aabb is None:
+                continue
+
+            # 顶端高度一致
+            if abs(ramp_aabb.max.z - top_z) > TOL:
+                ctx.set_current_file(str(child.source))
+                assert False, (
+                    f"坡道 {child.id} 顶端高度 {ramp_aabb.max.z:.0f}mm "
+                    f"与地板 {floor_id} 顶面 {top_z:.0f}mm 不连续"
+                )
+
+            # 坡道与地板在 X/Y 至少有一个方向相接且另一方向有重叠
+            touches_x = abs(ramp_aabb.max.x - floor_aabb.min.x) <= TOL or abs(
+                ramp_aabb.min.x - floor_aabb.max.x
+            ) <= TOL
+            touches_y = abs(ramp_aabb.max.y - floor_aabb.min.y) <= TOL or abs(
+                ramp_aabb.min.y - floor_aabb.max.y
+            ) <= TOL
+            overlaps_y = ramp_aabb.min.y <= floor_aabb.max.y and ramp_aabb.max.y >= floor_aabb.min.y
+            overlaps_x = ramp_aabb.min.x <= floor_aabb.max.x and ramp_aabb.max.x >= floor_aabb.min.x
+
+            if not ((touches_x and overlaps_y) or (touches_y and overlaps_x)):
+                ctx.set_current_file(str(child.source))
+                assert False, (
+                    f"坡道 {child.id} 与地板 {floor_id} 在平面未相接"
+                )
+
+    for ramp in ramps:
+        if ramp.id not in connected_ramps:
+            ctx.set_current_file(str(ramp.source))
+            assert False, f"坡道 {ramp.id} 未通过 connects-to 装配到抬高地板"
+
+    ctx.clear_current_file()

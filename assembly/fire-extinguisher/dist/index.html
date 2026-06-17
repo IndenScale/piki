@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADL Assembly Viewer</title>
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+<div id="loading">加载场景数据…</div>
+<div id="canvas"></div>
+<div id="panel">
+  <h2 id="title">装配体演示</h2>
+  <div class="desc" id="desc"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="viewer.js"></script>
+</body>
+</html>

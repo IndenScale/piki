@@ -171,6 +171,13 @@ piki generate bom-csv
 # 输出带 manufacturer / MPN / lifecycle 的采购 BOM（ADR-011）
 piki generate procurement-bom
 
+# 装配体演示：生成 JSON + USD + 浏览器 viewer
+piki generate assembly-viewer
+
+# 只生成装配体 JSON 或 USD
+piki generate assembly-json
+piki generate assembly-usd
+
 # 指定输出路径
 piki generate bom-csv --output ./bom.csv
 

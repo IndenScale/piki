@@ -1,0 +1,10 @@
+type: slot
+parent: SWITCH-01/cage-1
+child: SFP28-01/tail
+at:
+  t:
+    label: "推入距离 (mm)"
+    min: 0
+    max: 60
+    default: 30
+    step: 0.5

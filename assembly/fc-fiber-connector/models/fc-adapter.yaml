@@ -1,0 +1,21 @@
+model: fc-adapter
+family: AssemblyPartFamily
+
+name: 适配器（母座）
+part_type: adapter
+
+width_mm: 12
+height_mm: 12
+depth_mm: 40
+
+color: "#556677"
+opacity: 1.0
+
+interfaces:
+  - id: socket
+    interface_type: generic-slot
+    local_transform:
+      translation: [0, 0, 30]
+    mating_kind: slot
+    mating_params:
+      slot_dir: [0, 0, -1]

@@ -8,6 +8,10 @@
 - Assembly
 - Catalog
 - Tags
+
+注意：几何相关类型（Transform、BBox、GeometryAssets 等）已从本包迁移到
+``adl.geometry``。为保持向后兼容，它们仍可通过 ``adl.models`` 访问，但
+不建议在新代码中使用。
 """
 
 from .assembly import AssemblyFamily
@@ -25,7 +29,18 @@ from .catalog import (
     ServiceMethodCatalogFamily,
     merge_service_methods,
 )
-from .geometry import GeometryAssets, Transform
+
+# 几何类型已迁移到 adl.geometry；此处保留兼容导入。
+from .geometry import (  # noqa: F401
+    BBox,
+    GeometryAssets,
+    KinematicEnvelope,
+    LoadCapacity,
+    Space,
+    Transform,
+    bbox_from_resolved,
+)
+from .grid import Grid, GridAxis
 from .interface import (
     FootprintSpec,
     InterfaceSpec,
@@ -61,7 +76,13 @@ __all__ = [
     "ComponentCatalogFamily",
     "ServiceMethodCatalogFamily",
     "merge_service_methods",
+    # 几何类型已迁移到 adl.geometry；以下保留兼容导出。
     "GeometryAssets",
+    "KinematicEnvelope",
+    "LoadCapacity",
+    "Space",
+    "Grid",
+    "GridAxis",
     "InterfaceSpec",
     "FootprintSpec",
     "resolve_interface_ref",
@@ -81,5 +102,8 @@ __all__ = [
     "Layout",
     "LayoutEntry",
     "Tags",
+    # 几何类型已迁移到 adl.geometry；以下保留兼容导出。
+    "BBox",
+    "bbox_from_resolved",
     "Transform",
 ]

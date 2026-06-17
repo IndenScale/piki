@@ -26,7 +26,7 @@
 4. **[Text-Native & Agent-Oriented](concepts/04-text-native-and-agent-oriented.md)** — piki 的人机协同设计哲学
 5. **[piki 的生态位](concepts/05-ecosystem-positioning.md)** — 敌、友与中间力量
 6. **[设计知识成熟曲线](concepts/06-knowledge-maturation.md)** — 从仿真到规则到 Mating 的设计知识演进
-7. **[示例项目](../samples/)** — 2 个精选示例：设备扩容 + 数据中心建设
+7. **[示例项目](../samples/)** — 3 个精选示例：设备扩容 + 数据中心建设 + 机械键盘
 
 ### 🧩 扩展 piki
 

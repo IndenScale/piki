@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from adl.models import LayoutEntry, Transform
-from adl.models.geometry import Vec3, compose_transforms
+from adl.geometry import Transform, Vec3, compose_transforms
+from adl.models import LayoutEntry
 from adl.parsing import load_layout_file
 from adl.project import Project
 from adl.validation import ADLValidator

@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "name": "fire-extinguisher",
+  "description": "",
+  "entities": [
+    {
+      "id": "EXT-01",
+      "label": "灭火器",
+      "family": "AssemblyPartFamily",
+      "transform": {
+        "translation": [
+          2000.0,
+          350.0,
+          1500.0
+        ],
+        "rotation": [
+          0.0,
+          44.99999999999999,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "geometry": {
+        "type": "cylinder",
+        "size": null,
+        "radius": 50.0,
+        "height": 500.0,
+        "transform": {
+          "translation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "rotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        }
+      },
+      "material": {
+        "color": "#CC0000",
+        "wireframe": false,
+        "opacity": 1.0,
+        "roughness": 0.5,
+        "metalness": 0.0
+      },
+      "interfaces": [
+        {
+          "id": "bottom",
+          "interface_type": "generic-face",
+          "active_type": null,
+          "direction": "bidirectional",
+          "description": "",
+          "specs": {},
+          "mating_kind": "face",
+          "mating_params": {
+            "face": "bottom"
+          },
+          "transform": {
+            "translation": [
+              2000.0,
+              100.0,
+              1500.0
+            ],
+            "rotation": [
+              0.0,
+              44.99999999999999,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "local_transform": {
+            "translation": [
+              0.0,
+              -250.0,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "GROUND-01",
+      "label": "地面",
+      "family": "AssemblyPartFamily",
+      "transform": {
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "geometry": {
+        "type": "box",
+        "size": {
+          "x": 10000.0,
+          "y": 200.0,
+          "z": 10000.0
+        },
+        "radius": null,
+        "height": null,
+        "transform": {
+          "translation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "rotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+          }
+        }
+      },
+      "material": {
+        "color": "#8B7355",
+        "wireframe": true,
+        "opacity": 0.4,
+        "roughness": 0.5,
+        "metalness": 0.0
+      },
+      "interfaces": [
+        {
+          "id": "top",
+          "interface_type": "generic-face",
+          "active_type": null,
+          "direction": "bidirectional",
+          "description": "",
+          "specs": {},
+          "mating_kind": "face",
+          "mating_params": {
+            "face": "top"
+          },
+          "transform": {
+            "translation": [
+              0.0,
+              100.0,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              -0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          },
+          "local_transform": {
+            "translation": [
+              0.0,
+              100.0,
+              0.0
+            ],
+            "rotation": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "id": "face-on-face:GROUND-01/top->EXT-01/bottom:u",
+      "type": "slider",
+      "target": "GROUND-01/top→EXT-01/bottom",
+      "param": "u",
+      "label": "X 位置 (mm)",
+      "min": -5000.0,
+      "max": 5000.0,
+      "default": 2000.0,
+      "step": 10.0,
+      "states": [],
+      "current_state": ""
+    },
+    {
+      "id": "face-on-face:GROUND-01/top->EXT-01/bottom:v",
+      "type": "slider",
+      "target": "GROUND-01/top→EXT-01/bottom",
+      "param": "v",
+      "label": "Z 位置 (mm)",
+      "min": -5000.0,
+      "max": 5000.0,
+      "default": 1500.0,
+      "step": 10.0,
+      "states": [],
+      "current_state": ""
+    },
+    {
+      "id": "face-on-face:GROUND-01/top->EXT-01/bottom:theta_deg",
+      "type": "slider",
+      "target": "GROUND-01/top→EXT-01/bottom",
+      "param": "theta_deg",
+      "label": "旋转 (°)",
+      "min": 0.0,
+      "max": 360.0,
+      "default": 45.0,
+      "step": 1.0,
+      "states": [],
+      "current_state": ""
+    },
+    {
+      "id": "face-on-face:GROUND-01/top->EXT-01/bottom:distance",
+      "type": "slider",
+      "target": "GROUND-01/top→EXT-01/bottom",
+      "param": "distance",
+      "label": "离地高度 (mm)",
+      "min": 0.0,
+      "max": 500.0,
+      "default": 0.0,
+      "step": 1.0,
+      "states": [],
+      "current_state": ""
+    }
+  ],
+  "collisions": [],
+  "diagnostics": []
+}

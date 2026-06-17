@@ -15,6 +15,7 @@
 | [006](data-model/006-mating-graph.md) | Mating Graph：部件耦合关系建模 | ✅ 已实现 |
 | [010](data-model/010-brownfield-reference-instance.md) | 多上下文建模：既有/保密/标段/自然环境 | 🔍 提案中 |
 | [013](data-model/013-relative-coordinate-layout.md) | 层级相对坐标布局 | ✅ 已实现 |
+| [014](data-model/014-facility-infrastructure-and-accessibility.md) | 机房基础设施与可达性分析 | 🚧 实现中 |
 
 ## 引擎与插件
 

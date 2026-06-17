@@ -1,45 +1,98 @@
-# 配电单元相位配置
-- instance: BAT-BANK-A
-  phase: three-phase
-- instance: BAT-BANK-B
-  phase: three-phase
-- instance: HVDC-BACKUP
-  phase: three-phase
-- instance: HVDC-MAIN
-  phase: three-phase
+# 模块化数据中心方舱布局（ADR-013 相对坐标）
+# 方舱作为全局根，舱内设备相对于各自方舱原点定位，便于子装配体复用。
 
-# AI-LIQUID-01 液冷方舱设备布局
+# 智算液冷方舱
+- instance: AI-LIQUID-01
+  position_x_mm: 0
+  position_y_mm: 0
+  position_z_mm: 0
+
 - instance: COOL-A01-01
-  position_x_mm: 200
-  position_y_mm: 1000
-  position_z_mm: 0
+  parent: AI-LIQUID-01
+  transform:
+    translation: [200, 1000, 0]
+    rotation: [0, 0, 0]
+
 - instance: GPU-A01-01
-  position_x_mm: 1000
-  position_y_mm: 44
-  position_z_mm: 0
+  parent: AI-LIQUID-01
+  transform:
+    translation: [1000, 44, 0]
+    rotation: [0, 0, 0]
+
 - instance: GPU-A01-02
-  position_x_mm: 1800
-  position_y_mm: 44
-  position_z_mm: 0
+  parent: AI-LIQUID-01
+  transform:
+    translation: [1800, 44, 0]
+    rotation: [0, 0, 0]
+
 - instance: GPU-A01-03
-  position_x_mm: 2600
-  position_y_mm: 44
-  position_z_mm: 0
+  parent: AI-LIQUID-01
+  transform:
+    translation: [2600, 44, 0]
+    rotation: [0, 0, 0]
+
 - instance: GPU-A01-04
-  position_x_mm: 3400
-  position_y_mm: 44
+  parent: AI-LIQUID-01
+  transform:
+    translation: [3400, 44, 0]
+    rotation: [0, 0, 0]
+
+# 通算风冷方舱
+- instance: GEN-AIR-01
+  position_x_mm: 5000
+  position_y_mm: 0
   position_z_mm: 0
 
-# GEN-AIR-01 风冷方舱设备布局
 - instance: CPU-G01-01
-  position_x_mm: 500
-  position_y_mm: 22
-  position_z_mm: 0
+  parent: GEN-AIR-01
+  transform:
+    translation: [500, 22, 0]
+    rotation: [0, 0, 0]
+
 - instance: CPU-G01-02
-  position_x_mm: 1200
-  position_y_mm: 22
-  position_z_mm: 0
+  parent: GEN-AIR-01
+  transform:
+    translation: [1200, 22, 0]
+    rotation: [0, 0, 0]
+
 - instance: STOR-G01-01
-  position_x_mm: 1900
-  position_y_mm: 22
+  parent: GEN-AIR-01
+  transform:
+    translation: [1900, 22, 0]
+    rotation: [0, 0, 0]
+
+# 配电方舱
+- instance: POWER-01
+  position_x_mm: 0
+  position_y_mm: 4000
   position_z_mm: 0
+
+- instance: HVDC-MAIN
+  parent: POWER-01
+  transform:
+    translation: [500, 500, 0]
+    rotation: [0, 0, 0]
+
+- instance: HVDC-BACKUP
+  parent: POWER-01
+  transform:
+    translation: [1500, 500, 0]
+    rotation: [0, 0, 0]
+
+# 储能方舱
+- instance: BAT-01
+  position_x_mm: 5000
+  position_y_mm: 4000
+  position_z_mm: 0
+
+- instance: BAT-BANK-A
+  parent: BAT-01
+  transform:
+    translation: [500, 500, 0]
+    rotation: [0, 0, 0]
+
+- instance: BAT-BANK-B
+  parent: BAT-01
+  transform:
+    translation: [1500, 500, 0]
+    rotation: [0, 0, 0]

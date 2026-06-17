@@ -1,0 +1,12 @@
+[project]
+name = "sfp28-module"
+description = "SFP28 光模块插入交换机 —— 槽配合演示"
+
+[plugins]
+enabled = ["assembly"]
+
+[generators]
+enabled = ["assembly-viewer"]
+
+[generators.dist]
+root = "dist"

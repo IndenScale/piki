@@ -3,7 +3,9 @@
 ADR-001 将 Instance（设备身份）与 Layout（部署位置）分离。
 Layout 文件描述"这台设备部署在哪、怎么接"，不描述设备自身属性。
 
-ADR-005 将连接关系提升为独立 Instance，从 Layout 中移除。
+ADR-013 相对坐标：Layout 只保留声明式放置关系（parent/transform 链、
+rack_id/position_u、grid 坐标、绝对坐标）。全局位姿与包围盒计算属于
+几何后端 ``adl.geometry``，在目标输出阶段按需注入。
 """
 
 from __future__ import annotations
@@ -12,40 +14,37 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from adl.models.geometry import Transform, compose_transforms, transform_from_absolute
+from adl.geometry import Transform, Vec3, compose_transforms, transform_from_absolute
+from adl.models.grid import Grid
+
+_U_MM = 44.45
 
 
 @dataclass
 class LayoutEntry:
     """Layout 中的单条部署记录。"""
 
-    instance: str  # Instance ID 引用
-    # 机柜式部署（数据中心）
+    instance: str
     rack_id: str | None = None
     position_u: int | None = None
     pdu_id: str | None = None
-    # 机房轴网部署（电信机房排/列）
     row_id: str | None = None
     bay_index: int | None = None
-    # 自由空间部署（暖通、消防、结构设备）
     grid_id: str | None = None
+    grid_position: tuple[str, str] | None = None
     position_x_mm: float | None = None
     position_y_mm: float | None = None
     position_z_mm: float | None = None
-    # 层级相对坐标（ADR-013）
     parent: str | None = None
     transform: Transform | None = None
-    # 额外部署参数
     extra: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_relative(self) -> bool:
-        """当前条目是否使用相对坐标模式。"""
         return self.parent is not None
 
     @property
     def absolute_fields(self) -> dict[str, Any]:
-        """返回当前条目中所有已填写的绝对坐标字段。"""
         return {
             k: v
             for k, v in {
@@ -55,6 +54,7 @@ class LayoutEntry:
                 "row_id": self.row_id,
                 "bay_index": self.bay_index,
                 "grid_id": self.grid_id,
+                "grid_position": self.grid_position,
                 "position_x_mm": self.position_x_mm,
                 "position_y_mm": self.position_y_mm,
                 "position_z_mm": self.position_z_mm,
@@ -63,7 +63,6 @@ class LayoutEntry:
         }
 
     def to_flat(self) -> dict[str, Any]:
-        """将 LayoutEntry 转为扁平 dict，用于合并到 resolved。"""
         flat: dict[str, Any] = {}
         if self.rack_id is not None:
             flat["rack_id"] = self.rack_id
@@ -77,6 +76,8 @@ class LayoutEntry:
             flat["bay_index"] = self.bay_index
         if self.grid_id is not None:
             flat["grid_id"] = self.grid_id
+        if self.grid_position is not None:
+            flat["grid_position"] = list(self.grid_position)
         if self.position_x_mm is not None:
             flat["position_x_mm"] = self.position_x_mm
         if self.position_y_mm is not None:
@@ -93,114 +94,151 @@ class LayoutEntry:
 
 @dataclass
 class Layout:
-    """一个项目/子项目的完整 Layout。
-
-    按照 ADR-001，每个子项目只有一个 Layout 文件。
-    """
+    """一个项目/子项目的完整 Layout。"""
 
     name: str
     entries: dict[str, LayoutEntry] = field(default_factory=dict)
     source: Path | None = None
     sections: dict[str, list[LayoutEntry]] = field(default_factory=dict)
+    grids: dict[str, Grid] = field(default_factory=dict)
+    _transform_cache: dict[str, Transform | None] = field(default_factory=dict, repr=False)
 
     def get(self, instance_id: str) -> LayoutEntry | None:
-        """按 Instance ID 查找布局条目。"""
         return self.entries.get(instance_id)
 
     def instances_in(self, rack_id: str) -> list[LayoutEntry]:
-        """查询指定机柜内的所有部署。"""
         return [e for e in self.entries.values() if e.rack_id == rack_id]
 
     def at(self, rack_id: str, position_u: int) -> LayoutEntry | None:
-        """查询指定机柜指定 U 位的部署。"""
         for e in self.entries.values():
             if e.rack_id == rack_id and e.position_u == position_u:
                 return e
         return None
 
     def connected_to(self, pdu_id: str) -> list[LayoutEntry]:
-        """查询接入指定 PDU 的所有设备。"""
         return [e for e in self.entries.values() if e.pdu_id == pdu_id]
 
     def free_positions(self, rack_id: str) -> set[int]:
-        """查询指定机柜的空闲 U 位（需要外部传入 total_u）。"""
         return {
             e.position_u
             for e in self.entries.values()
             if e.rack_id == rack_id and e.position_u is not None
         }
 
-    # ------------------------------------------------------------------
-    # 层级相对坐标（ADR-013）
-    # ------------------------------------------------------------------
-
     def layout_parent(self, instance_id: str) -> str | None:
-        """返回实例在空间装配树中的直接父级。"""
         entry = self.entries.get(instance_id)
-        return entry.parent if entry is not None else None
+        return entry.parent if entry else None
 
     def layout_children(self, instance_id: str) -> list[str]:
-        """返回实例在空间装配树中的直接子级。"""
+        """返回直接以 ``instance_id`` 为 parent 的实例 ID 列表。"""
         return [e.instance for e in self.entries.values() if e.parent == instance_id]
 
     def layout_ancestors(self, instance_id: str) -> list[str]:
-        """返回从根到该实例的父级路径（不含自身）。"""
-        result: list[str] = []
-        visited: set[str] = set()
+        """返回从直接父级到根的路径（不含自身）。"""
+        path: list[str] = []
         current = self.layout_parent(instance_id)
         while current is not None:
-            if current in visited:
-                break
-            visited.add(current)
-            result.append(current)
+            path.append(current)
             current = self.layout_parent(current)
-        return result
+        return path
 
     def layout_descendants(self, instance_id: str) -> list[str]:
-        """返回该实例下的所有后代实例（递归，不含自身）。"""
+        """返回 ``instance_id`` 下的所有后代实例 ID（递归）。"""
         result: list[str] = []
-        visited: set[str] = set()
-
-        def dfs(current: str) -> None:
-            for child_id in self.layout_children(current):
-                if child_id in visited:
-                    continue
-                visited.add(child_id)
-                result.append(child_id)
-                dfs(child_id)
-
-        dfs(instance_id)
+        stack = [instance_id]
+        while stack:
+            current = stack.pop()
+            for child in self.layout_children(current):
+                result.append(child)
+                stack.append(child)
         return result
 
-    def resolved_transform(self, instance_id: str) -> Transform | None:
-        """返回实例在项目全局坐标系下的解析后位姿。
+    def placement_of(self, instance_id: str) -> LayoutEntry | None:
+        """返回实例的声明式放置条目。
 
-        对绝对坐标条目，返回由其 ``position_x/y/z_mm`` 构成的 Transform；
-        对相对坐标条目，递归级联父级全局位姿与子级局部 transform。
+        这是 Layout 的核心 API：只返回"声明了什么"，不做几何计算。
         """
+        return self.entries.get(instance_id)
+
+    # ═══════════════════════════════════════════════════════════
+    # 轻量位姿解析（仅基于声明字段，无 BBox / Mate 几何约束）
+    # ═══════════════════════════════════════════════════════════
+
+    def resolved_transform(
+        self,
+        instance_id: str,
+        *,
+        resolve_u: bool = True,
+    ) -> Transform | None:
+        """解析 Layout 声明链得到的全局 Transform。
+
+        这是一个轻量、纯声明式的实现：
+        - parent 链通过 ``entry.transform`` 级联
+        - rack + position_u 退化为 ``(position_u - 1) * 44.45`` 的 Z 向平移
+        - 绝对坐标 / grid 坐标直接映射
+
+        注意：本方法**不包含** Mate 约束求解和 BBox 面片计算。
+        若需要完整几何（含机柜深度对齐、Mate 覆盖等），请使用
+        ``adl.geometry.GeometryProvider``。
+        """
+        if instance_id in self._transform_cache:
+            return self._transform_cache[instance_id]
+
         entry = self.entries.get(instance_id)
         if entry is None:
+            self._transform_cache[instance_id] = None
             return None
 
-        if entry.parent is None:
-            return transform_from_absolute(
-                entry.position_x_mm,
-                entry.position_y_mm,
-                entry.position_z_mm,
-            )
+        if entry.parent is not None:
+            parent_tf = self.resolved_transform(entry.parent, resolve_u=resolve_u)
+            if parent_tf is None:
+                return None
+            local_tf = entry.transform or Transform()
+            result = compose_transforms(parent_tf, local_tf)
+            self._transform_cache[instance_id] = result
+            return result
 
-        parent_transform = self.resolved_transform(entry.parent)
-        if parent_transform is None:
+        if entry.rack_id is not None:
+            rack_tf = self.resolved_transform(entry.rack_id, resolve_u=resolve_u)
+            if rack_tf is None:
+                return None
+            z = (entry.position_u or 1) * _U_MM if resolve_u else 0.0
+            local_tf = Transform(translation=Vec3(x=0.0, y=0.0, z=z))
+            result = compose_transforms(rack_tf, local_tf)
+            self._transform_cache[instance_id] = result
+            return result
+
+        x = entry.position_x_mm
+        y = entry.position_y_mm
+        z = entry.position_z_mm
+
+        grid_point = self._resolve_grid_position(entry)
+        if grid_point is not None:
+            x = grid_point.x if x is None else x
+            y = grid_point.y if y is None else y
+            z = grid_point.z if z is None else z
+
+        result = transform_from_absolute(x, y, z)
+        self._transform_cache[instance_id] = result
+        return result
+
+    def _resolve_grid_position(self, entry: LayoutEntry) -> Vec3 | None:
+        grid_id = entry.grid_id
+        if grid_id is None:
             return None
-
-        local_transform = entry.transform or Transform()
-        return compose_transforms(parent_transform, local_transform)
+        grid = self.grids.get(grid_id)
+        if grid is None:
+            return None
+        grid_position = entry.grid_position
+        if grid_position is None and entry.row_id is not None and entry.bay_index is not None:
+            grid_position = (entry.row_id, str(entry.bay_index))
+        if grid_position is None:
+            return None
+        return grid.resolve(grid_position[0], grid_position[1])
 
     def detect_cycles(self) -> list[list[str]]:
-        """检测 ``parent`` 引用中存在的环，返回所有环上的实例 ID 列表。"""
         cycles: list[list[str]] = []
         visited: set[str] = set()
-
         for instance_id in self.entries:
             if instance_id in visited:
                 continue
@@ -217,5 +255,4 @@ class Layout:
                 visited.add(current)
                 entry = self.entries.get(current)
                 current = entry.parent if entry is not None else None
-
         return cycles

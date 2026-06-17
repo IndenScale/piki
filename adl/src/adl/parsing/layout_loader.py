@@ -84,6 +84,7 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         "row_id",
         "bay_index",
         "grid_id",
+        "grid_position",
         "position_x_mm",
         "position_y_mm",
         "position_z_mm",
@@ -93,6 +94,7 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
     extra = {k: v for k, v in item.items() if k not in known}
 
     transform = _parse_transform(item.get("transform"))
+    grid_position = _parse_grid_position(item.get("grid_position"))
 
     return LayoutEntry(
         instance=str(instance_id),
@@ -102,6 +104,7 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         row_id=item.get("row_id"),
         bay_index=item.get("bay_index"),
         grid_id=item.get("grid_id"),
+        grid_position=grid_position,
         position_x_mm=item.get("position_x_mm"),
         position_y_mm=item.get("position_y_mm"),
         position_z_mm=item.get("position_z_mm"),
@@ -109,6 +112,15 @@ def _parse_entry(item: dict[str, Any]) -> LayoutEntry | None:
         transform=transform,
         extra=extra,
     )
+
+
+def _parse_grid_position(data: Any) -> tuple[str, str] | None:
+    """从 YAML 值解析 grid_position，支持 [A, \"3\"] 列表。"""
+    if data is None:
+        return None
+    if isinstance(data, (list, tuple)) and len(data) == 2:
+        return (str(data[0]), str(data[1]))
+    return None
 
 
 def _parse_transform(data: Any) -> Transform | None:

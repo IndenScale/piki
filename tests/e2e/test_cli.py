@@ -113,8 +113,8 @@ def test_json_format(demo_project: Path) -> None:
     assert data["error_count"] == 0
     # ADL 层通用检查（引用完整性、Mate 约束、FQID 等）已迁移到 diagnostics；
     # results 中仅保留需要插件类型知识的内置检查 + 插件规则：
-    # INTERFACE-COMPAT-001 + INTERFACE-CABLE-001 + 21 个 telecom 规则
-    assert len(data["results"]) == 23
+    # INTERFACE-COMPAT-001 + INTERFACE-CABLE-001 + 28 个 telecom 规则
+    assert len(data["results"]) == 30
 
 
 def test_init_refuses_overwrite(tmp_path: Path) -> None:

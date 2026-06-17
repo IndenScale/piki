@@ -19,10 +19,10 @@ from pathlib import Path
 from typing import Any
 
 from adl.diagnostics import Severity
+from adl.geometry import GeometryAssets
 from adl.models import (
     AssemblyFamily,
     FootprintSpec,
-    GeometryAssets,
     InterfaceSpec,
     MateTypeMeta,
     Tags,

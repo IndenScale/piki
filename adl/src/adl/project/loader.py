@@ -24,7 +24,7 @@ from adl.models import (
     get_non_overridable_fields,
     merge_service_methods,
 )
-from adl.parsing import find_layout_file, load_layout_file, load_mates, load_yaml
+from adl.parsing import find_layout_file, load_grids, load_layout_file, load_mates, load_yaml
 from adl.types import TypeRegistry
 
 from .project import Project
@@ -106,7 +106,7 @@ class ProjectLoader:
         )
         self._load_externals(project)
 
-        # 加载顺序很重要：Model -> Catalog -> Layout -> Instance -> Mate
+        # 加载顺序很重要：Model -> Catalog -> Layout -> Grid -> Instance -> Mate
         self.load_models_into(project, [self.root / "models"] + self.extra_model_dirs)
         self.load_catalogs_into(
             project,
@@ -115,6 +115,7 @@ class ProjectLoader:
             + [(extra_dir, "public") for extra_dir in self.extra_catalog_dirs],
         )
         self.load_layout_into(project, self.root)
+        self.load_grids_into(project, self.root)
         self._load_instances(project)
         self.load_mates_into(project, self.root)
 
@@ -231,6 +232,13 @@ class ProjectLoader:
         if path is None:
             return
         project.layout = load_layout_file(path, name=root.name)
+
+    def load_grids_into(self, project: Project, root: Path) -> None:
+        """加载 Grid 资源到已有 ``Project`` 对象，并注入 Layout。"""
+        grids = load_grids(root)
+        project.grids.update(grids)
+        if project.layout is not None:
+            project.layout.grids.update(grids)
 
     def _load_layout(self, project: Project) -> None:
         """加载项目 Layout 文件。"""
@@ -375,7 +383,10 @@ class ProjectLoader:
                     )
                     del overrides[field_name]
 
-        merged = _flatten({**model_defaults, **overrides}, preserve_keys={"assets", "tags"})
+        merged = _flatten(
+            {**model_defaults, **overrides},
+            preserve_keys={"assets", "tags", "shape", "kinematics", "load_capacity"},
+        )
         merged["id"] = instance.id
 
         # Schema 校验
@@ -403,7 +414,10 @@ class ProjectLoader:
                 _validation_error=str(exc),
             )
 
-        resolved_dict = _flatten(validated.model_dump(), preserve_keys={"assets", "tags"})
+        resolved_dict = _flatten(
+            validated.model_dump(),
+            preserve_keys={"assets", "tags", "shape", "kinematics", "load_capacity"},
+        )
 
         # Layout 合并
         if project.layout is not None:
@@ -608,9 +622,55 @@ class ProjectLoader:
     # ------------------------------------------------------------------
 
     def _load_externals(self, project: Project) -> None:
-        """从配置加载外部项目注册。"""
+        """从配置加载外部项目注册，并将其 instances/models/layout/mates 合并到主项目。"""
         externals_config = self.config.get("external", {})
-        if isinstance(externals_config, dict):
-            for alias, path_str in externals_config.items():
-                if isinstance(path_str, str):
-                    project.externals[alias] = Path(path_str)
+        if not isinstance(externals_config, dict):
+            return
+        for alias, path_str in externals_config.items():
+            if not isinstance(path_str, str):
+                continue
+            ext_path = (self.root / Path(path_str)).resolve()
+            if not ext_path.exists():
+                logger.warning("External project not found: %s -> %s", alias, ext_path)
+                continue
+            project.externals[alias] = ext_path
+            try:
+                ext_config = self._load_config(ext_path)
+                ext_loader = ProjectLoader(
+                    root=ext_path,
+                    type_registry=self.type_registry,
+                    config=ext_config,
+                    parent=None,
+                    extra_model_dirs=self.extra_model_dirs,
+                    extra_catalog_dirs=self.extra_catalog_dirs,
+                )
+                ext_project = ext_loader.load()
+                # Merge instances: prefix with alias/ to avoid ID conflicts
+                for iid, inst in ext_project.instances.items():
+                    fqid = f"{alias}/{iid}"
+                    project.instances[fqid] = inst
+                    # Also register simple ID for convenience (external is read-only)
+                    if iid not in project.instances:
+                        project.instances[iid] = inst
+                # Merge models
+                for mid, model in ext_project.models.items():
+                    if mid not in project.models:
+                        project.models[mid] = model
+                # Merge mates
+                ext_mates = list(ext_project.mates)
+                logger.info("External %s has %d mates", alias, len(ext_mates))
+                for mate in ext_mates:
+                    try:
+                        project.mates.append(mate)
+                        project.mate_graph.add(mate)
+                    except Exception as exc:
+                        logger.warning("Failed to merge mate %s: %s", mate.type, exc)
+                # Merge layouts — entries prefixed with alias/
+                if ext_project.layout:
+                    for eid, entry in ext_project.layout.entries.items():
+                        fqid = f"{alias}/{eid}"
+                        if fqid not in project.layout.entries:
+                            project.layout.entries[fqid] = entry
+                logger.info("Loaded external project '%s' from %s (%d instances)", alias, ext_path, len(ext_project.instances))
+            except Exception as exc:
+                logger.warning("Failed to load external project %s: %s", alias, exc)

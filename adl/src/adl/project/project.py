@@ -12,6 +12,7 @@ from typing import Any
 
 from adl.diagnostics import Diagnostic
 from adl.models import CatalogEntry, Layout, MateGraph, MateSpec, Model, ResolvedInstance
+from adl.models.grid import Grid
 from adl.types import TypeRegistry
 
 
@@ -31,6 +32,7 @@ class Project:
     mates: list[MateSpec] = field(default_factory=list)
     mate_graph: MateGraph = field(default_factory=MateGraph)
     catalogs: dict[str, CatalogEntry] = field(default_factory=dict)
+    grids: dict[str, Grid] = field(default_factory=dict)
     diagnostics: list[Diagnostic] = field(default_factory=list)
 
     # 嵌套项目
@@ -69,6 +71,16 @@ class Project:
             entry = current.catalogs.get(catalog_id)
             if entry is not None:
                 return entry
+            current = current.parent
+        return None
+
+    def find_grid(self, grid_id: str) -> Grid | None:
+        """在当前项目及祖先项目中按 ID 查找 Grid。"""
+        current: Project | None = self
+        while current is not None:
+            grid = current.grids.get(grid_id)
+            if grid is not None:
+                return grid
             current = current.parent
         return None
 

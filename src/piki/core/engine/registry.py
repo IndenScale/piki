@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from adl.diagnostics import Diagnostic
+from adl.geometry import GeometryProvider
 from adl.models import CatalogEntry, MateGraph, MateSpec, MateTypeMeta, Model, ResolvedInstance
 from adl.project import Project, ProjectLoader
 from adl.types import TypeRegistry
@@ -24,6 +25,7 @@ class Registry:
     def __init__(self, project: Project | None = None) -> None:
         self._project = project
         self._extra_diagnostics: list[Diagnostic] = []
+        self._geometry_provider: GeometryProvider | None = None
 
     # ------------------------------------------------------------------
     # 数据加载（新入口）
@@ -48,12 +50,30 @@ class Registry:
             extra_catalog_dirs=extra_catalog_dirs or [],
         )
         self._project = loader.load()
+        self._geometry_provider = None
         return self._project
 
     @property
     def project(self) -> Project:
         """底层 ADL Project 对象（不存在时自动创建）。"""
         return self._ensure_project()
+
+    @property
+    def geometry_provider(self) -> GeometryProvider | None:
+        """按需创建的几何 Provider。
+
+        ADL 核心不计算几何；piki 运行时仅在需要时通过本 Provider
+        把声明式 Layout + Mate 解析为 Transform / BBox / 碰撞检测。
+        """
+        if self._project is None:
+            return None
+        if self._geometry_provider is None:
+            self._geometry_provider = GeometryProvider(self._project)
+        return self._geometry_provider
+
+    def reset_geometry_provider(self) -> None:
+        """Project 数据变化后重置几何缓存。"""
+        self._geometry_provider = None
 
     # ------------------------------------------------------------------
     # Lazy project creation (for tests and backward compatibility)
@@ -246,6 +266,7 @@ class Registry:
         name = collection_name or Path(collection_dir).name
         loaded = loader.load_collection_into(project, Path(collection_dir), name)
         project.collections[name] = loaded
+        self._geometry_provider = None
         return name
 
     def list_collections(self) -> list[str]:
@@ -263,6 +284,7 @@ class Registry:
         project = self._ensure_project()
         loader = self._project_loader(root=project_root)
         loader.load_layout_into(project, Path(project_root))
+        self._geometry_provider = None
         return project.layout
 
     @property
@@ -318,6 +340,7 @@ class Registry:
         project = self._ensure_project()
         loader = self._project_loader(root=root)
         loader.load_mates_into(project, Path(root))
+        self._geometry_provider = None
 
     def validate_mates(self) -> list[Diagnostic]:
         """遗留方法：ADL 层 Mate 验证已迁移到 ``adl.validation.ADLValidator``。"""

@@ -1,0 +1,22 @@
+model: ground
+family: AssemblyPartFamily
+
+name: 地面
+part_type: ground
+
+width_mm: 10000
+height_mm: 200
+depth_mm: 10000
+
+color: "#8B7355"
+wireframe: true
+opacity: 0.4
+
+interfaces:
+  - id: top
+    interface_type: generic-face
+    local_transform:
+      translation: [0, 100, 0]
+    mating_kind: face
+    mating_params:
+      face: top

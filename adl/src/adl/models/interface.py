@@ -8,7 +8,10 @@ from __future__ import annotations
 import warnings
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from adl.compiler.mating_kinds import MatingKind, get_default_mating_kind, get_default_mating_params
+from adl.geometry import InterfaceSignature, Transform, get_signature
 
 # ---------------------------------------------------------------------------
 # 全局接口类型注册表
@@ -61,6 +64,26 @@ class InterfaceSpec(BaseModel):
     # 接口自身的规格参数（自由扩展，由领域插件定义约束）
     specs: dict[str, Any] = Field(default_factory=dict, description="规格键值对")
 
+    # ═══ ADL-003：接口优先配合 ═══
+    local_transform: Transform = Field(
+        default_factory=Transform,
+        description="接口在 Instance 局部坐标系中的位姿 (mm)。配合求解器用。",
+    )
+    mating_kind: MatingKind = Field(
+        default=MatingKind.NONE,
+        description="配合类型：face | axis | point | slot | rail | none",
+    )
+    mating_params: dict[str, Any] = Field(
+        default_factory=dict,
+        description="配合参数：{normal: [x,y,z], tolerance_mm: 0.5}",
+    )
+
+    # ═══ ADL-004：接口运动自由度签名 ═══
+    signature: InterfaceSignature | None = Field(
+        default=None,
+        description="接口的运动自由度签名。不填则从 interface_type 注册表自动获取。",
+    )
+
     @field_validator("interface_type")
     @classmethod
     def validate_known_type(cls, v: str) -> str:
@@ -79,6 +102,23 @@ class InterfaceSpec(BaseModel):
                 stacklevel=2,
             )
         return v
+
+    @model_validator(mode="after")
+    def _fill_mating_defaults(self):
+        """从接口类型注册表填充 mating_kind、mating_params 和 signature 默认值。"""
+        if self.mating_kind == MatingKind.NONE:
+            default_kind = get_default_mating_kind(self.interface_type)
+            if default_kind != MatingKind.NONE:
+                object.__setattr__(self, 'mating_kind', default_kind)
+        if not self.mating_params:
+            default_params = get_default_mating_params(self.interface_type)
+            if default_params:
+                object.__setattr__(self, 'mating_params', default_params)
+        if self.signature is None:
+            default_sig = get_signature(self.interface_type)
+            if default_sig is not None:
+                object.__setattr__(self, 'signature', default_sig)
+        return self
 
 
 class FootprintSpec(BaseModel):

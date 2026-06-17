@@ -1,0 +1,37 @@
+# 灭火器地面放置 —— 面面配合典型示例
+#
+# 几何关系：
+#   - 地面顶面（基准面）：10m × 10m，中心在原点，顶面在 y=100mm
+#   - 灭火器底面（配合面）：Ø100mm 圆柱，底面在 y=-250mm（中心在原点）
+#   - 配合参数：(u, v, θ, d) = 基准面上位置 + 绕法向旋转 + 离地距离
+#
+# 自由度数：4（基准面上二维位置 + 旋转 + 高度）
+
+name: 灭火器地面放置
+description: |
+  灭火器放置在 10m × 10m 的地面上。
+  通过面面配合求解器计算灭火器的全局位姿。
+  四个滑块控制：地面上的 X 位置、Z 位置、绕 Y 轴旋转、离地高度。
+
+entities:
+  - id: ground
+    label: 地面
+    bbox: { hw: 5000, hh: 100, hd: 5000 }
+    color: "#8B7355"
+    wireframe: true
+
+  - id: extinguisher
+    label: 灭火器
+    bbox: { hw: 50, hh: 250, hd: 50 }
+    color: "#CC0000"
+    wireframe: false
+
+mate:
+  type: face-on-face
+  parent_face: ground.top
+  child_face: extinguisher.bottom
+  params:
+    u: { label: "X 位置 (mm)", min: -5000, max: 5000, default: 2000 }
+    v: { label: "Z 位置 (mm)", min: -5000, max: 5000, default: 1500 }
+    theta_deg: { label: "旋转 (°)", min: 0, max: 360, default: 45 }
+    distance: { label: "离地高度 (mm)", min: 0, max: 500, default: 0 }

@@ -35,15 +35,18 @@ Layout 是一个 YAML 列表，每个元素是一个部署条目。
 
 ### 常用部署字段
 
-| 字段            | 类型    | 说明                        | 适用场景     |
-| --------------- | ------- | --------------------------- | ------------ |
-| `rack_id`       | `str`   | 机柜 ID                     | 机柜式部署   |
-| `position_u`    | `int`   | U 位起始位置（从下往上数）  | 机柜式部署   |
-| `pdu_id`        | `str`   | 接入的 PDU ID               | 机柜式部署   |
-| `grid_id`       | `str`   | 网格坐标（如 `A-3`、`B-5`） | 自由空间部署 |
-| `position_x_mm` | `float` | X 坐标（mm）                | 自由空间部署 |
-| `position_y_mm` | `float` | Y 坐标（mm）                | 自由空间部署 |
-| `position_z_mm` | `float` | Z 坐标（mm）                | 自由空间部署 |
+| 字段            | 类型          | 说明                                 | 适用场景     |
+| --------------- | ------------- | ------------------------------------ | ------------ |
+| `rack_id`       | `str`         | 机柜 ID                              | 机柜式部署   |
+| `position_u`    | `int`         | U 位起始位置（从下往上数）           | 机柜式部署   |
+| `pdu_id`        | `str`         | 接入的 PDU ID                        | 机柜式部署   |
+| `grid_id`       | `str`         | 轴网 ID                              | 轴网部署     |
+| `grid_position` | `list[str]`   | 轴网坐标（如 `[A, "3"]`）            | 轴网部署     |
+| `row_id`        | `str`         | 排号，可作为 grid_position 第一轴    | 机房轴网部署 |
+| `bay_index`     | `int`         | 列号，可作为 grid_position 第二轴    | 机房轴网部署 |
+| `position_x_mm` | `float`       | X 坐标（mm）                         | 自由空间部署 |
+| `position_y_mm` | `float`       | Y 坐标（mm）                         | 自由空间部署 |
+| `position_z_mm` | `float`       | Z 坐标（mm）                         | 自由空间部署 |
 
 ### 连接关系
 
@@ -107,6 +110,86 @@ network:
 ```
 
 Section 名是任意的，由项目自定义。分 section 不影响解析，只是便于人类阅读和组织。
+
+## 轴网部署
+
+对于机房、建筑等存在规则网格的场景，可以用 **Grid（轴网）** 资源把符号坐标（如 `A-3`）自动解析为绝对坐标，避免手写大量 `position_x/y_mm`。
+
+### 定义轴网
+
+在项目 `grids/` 目录下创建 YAML 文件：
+
+```yaml
+# grids/room-grid.yaml
+id: ROOM-GRID
+type: orthogonal
+origin: [0, 0, 0]
+axes:
+  - direction: [0, 1, 0]
+    lines:
+      A: 0
+      B: 1200
+      C: 2400
+  - direction: [1, 0, 0]
+    lines:
+      "1": 0
+      "2": 3000
+      "3": 6000
+```
+
+- `origin`：网格原点，所有坐标在此基础上偏移。
+- `axes`：两组互相垂直的平行轴线。
+  - `direction`：该组轴线的方向向量。
+  - `lines`：轴号 → 沿方向的距离（mm）。
+
+### 在 Layout 中引用轴网
+
+```yaml
+# layouts/layout.yaml
+- instance: RACK-A03
+  grid_id: ROOM-GRID
+  grid_position: [A, "3"]
+  position_z_mm: 0
+```
+
+解析结果：`RACK-A03` 的全局坐标为 `(6000, 0, 0)`。
+
+也可以用传统的 `row_id` / `bay_index` 写法，效果等价：
+
+```yaml
+- instance: RACK-A03
+  grid_id: ROOM-GRID
+  row_id: A
+  bay_index: 3
+```
+
+### 坐标优先级
+
+在同一 LayoutEntry 中，位姿解析遵循以下优先级：
+
+1. **`parent + transform`**（ADR-013 相对坐标）最高；
+2. 否则使用**显式绝对坐标** `position_x/y/z_mm`；
+3. 缺失的 X/Y 维度从 `grid_id` + `grid_position` / `row_id` + `bay_index` 解析；
+4. 仍未指定的维度默认值为 0。
+
+因此，你可以用 Grid 生成基础坐标，再用 `position_x_mm` 等字段做局部覆盖：
+
+```yaml
+- instance: RACK-A03
+  grid_id: ROOM-GRID
+  grid_position: [A, "3"]
+  position_z_mm: 100  # 仅覆盖 Z，X/Y 仍由 Grid 解析
+```
+
+### 校验规则
+
+| 规则            | 说明                                                      |
+| --------------- | --------------------------------------------------------- |
+| `GRID-001`      | `grid_id` 引用的 Grid 必须存在                            |
+| `GRID-002`      | `grid_position` 的轴号必须在 Grid 的对应轴线中            |
+| `GRID-003`      | 填写了 `grid_position` 时必须同时指定 `grid_id`           |
+| `GRID-004`      | 引用了 Grid 时必须提供 `grid_position` 或 `row_id+bay_index` |
+| `LAYOUT-001`    | `grid_id` / `grid_position` 与 `parent` 不能同时存在      |
 
 ## 模块引用
 

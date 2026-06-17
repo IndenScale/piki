@@ -13,7 +13,8 @@ from __future__ import annotations
 from typing import Any
 
 from adl.diagnostics import Location, RelatedInformation
-from adl.models import Layout, LayoutEntry, MateGraph, MateSpec, Transform, parse_mate_ref
+from adl.geometry import GeometryProvider, Transform
+from adl.models import Layout, LayoutEntry, MateGraph, MateSpec, parse_mate_ref
 
 from .query import QuerySet, make_query_set
 from .registry import Registry
@@ -113,8 +114,29 @@ class Context:
             return []
         return layout.layout_descendants(instance_id)
 
-    def resolved_transform(self, instance_id: str) -> Transform | None:
-        """返回实例在项目全局坐标系下的解析后位姿（ADR-013）。"""
+    @property
+    def geometry_provider(self) -> GeometryProvider | None:
+        """返回几何 Provider，用于在目标输出阶段解析 Transform / BBox / 碰撞。"""
+        return self._registry.geometry_provider
+
+    def resolved_transform(
+        self,
+        instance_id: str,
+        *,
+        use_geometry: bool = False,
+    ) -> Transform | None:
+        """返回实例在项目全局坐标系下的解析后位姿（ADR-013）。
+
+        Args:
+            instance_id: 实例 ID。
+            use_geometry: 为 True 时使用 ``GeometryProvider`` 做完整几何解析
+               （含 Mate 约束、BBox 面片计算）；否则使用 Layout 的轻量声明式解析。
+        """
+        if use_geometry:
+            provider = self.geometry_provider
+            if provider is not None:
+                geom = provider.resolve(instance_id)
+                return geom.transform if geom else None
         layout = self._registry.layout
         if layout is None:
             return None

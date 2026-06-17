@@ -16,7 +16,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from adl.diagnostics import Severity
-from adl.models import GeometryAssets, Tags
+from adl.geometry import GeometryAssets
+from adl.models import Tags
 from adl.types import TypeRegistry
 from pydantic import BaseModel, Field
 

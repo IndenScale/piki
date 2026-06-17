@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from adl.models.geometry import CSGNode, InlineGeometry, Transform, Vec3
+from adl.geometry import CSGNode, InlineGeometry, Transform, Vec3
 
 from piki.ext.geometry.csg import _has_manifold, eval_csg_aabb
 

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from adl.models import ResolvedInstance
 
-from adl.models.geometry import Transform, Vec3
+from adl.geometry import Transform, Vec3
 
 
 @dataclass(frozen=True)

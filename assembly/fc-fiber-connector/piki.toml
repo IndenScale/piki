@@ -1,0 +1,12 @@
+[project]
+name = "fc-fiber-connector"
+description = "FC 光纤连接器 —— 两阶段装配演示"
+
+[plugins]
+enabled = ["assembly"]
+
+[generators]
+enabled = ["assembly-viewer"]
+
+[generators.dist]
+root = "dist"
