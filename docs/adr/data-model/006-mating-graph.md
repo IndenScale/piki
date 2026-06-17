@@ -482,6 +482,8 @@ class RackMountMate(BaseModel):
 - ❌ Connection 的替代 —— Connection 保留，Mate 补充耦合约束维度
 - ❌ Layout 的替代 —— Layout 保留空间位置职责
 
+> **修订说明（2026-06-17）：** ADR-013 已接管"接口的位置/朝向/空间坐标"，通过 Layout 的 `parent/transform` 机制实现。Mate 路径的位姿**覆盖** Layout 路径的结果。详见 [ADR-013 §9](../data-model/013-relative-coordinate-layout.md#9-layout-与-mate-的定位优先级与覆盖规则)。
+
 ---
 
 ## 8. 向后兼容
