@@ -69,3 +69,8 @@ def register_mating_defaults(
         "mating_kind": mating_kind,
         "mating_params": mating_params or {},
     }
+
+
+def reset_mating_defaults() -> None:
+    """清空配合默认值注册表。仅供测试或编译器初始化使用。"""
+    _DEFAULT_PARAMS.clear()

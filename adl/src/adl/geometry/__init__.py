@@ -42,6 +42,7 @@ from adl.geometry.interface_signature import (
     couple_signatures,
     get_signature,
     register_signature,
+    reset_signatures,
 )
 from adl.geometry.models import (
     AssetReference,
@@ -101,6 +102,7 @@ __all__ = [
     "SignatureCoupling",
     "couple_signatures",
     "register_signature",
+    "reset_signatures",
     "get_signature",
     "build_default_signatures",
     # provider

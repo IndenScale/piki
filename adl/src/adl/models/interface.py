@@ -43,6 +43,11 @@ def get_known_interface_types() -> list[str]:
     return sorted(_known_interface_types)
 
 
+def reset_known_interface_types() -> None:
+    """清空已知接口类型注册表。仅供测试或编译器初始化使用。"""
+    _known_interface_types.clear()
+
+
 class InterfaceSpec(BaseModel):
     """离散的可连接接口。
 
@@ -203,6 +208,10 @@ def get_interfaces_from_resolved(inst: Any) -> list[InterfaceSpec]:
                         direction=pin.direction,
                         description=pin.description,
                         specs=pin.specs,
+                        local_transform=pin.local_transform,
+                        mating_kind=pin.mating_kind,
+                        mating_params=pin.mating_params,
+                        signature=pin.signature,
                     )
                 )
 

@@ -6,7 +6,7 @@ piki 的 main() 或插件 register_types() 调用此模块的函数。
 
 from __future__ import annotations
 
-from adl.compiler.mating_kinds import register_mating_defaults
+from adl.compiler.mating_kinds import register_mating_defaults, reset_mating_defaults
 from adl.geometry import (
     DOF,
     DiscreteState,
@@ -14,8 +14,9 @@ from adl.geometry import (
     InterfaceSignature,
     SignatureStage,
     register_signature,
+    reset_signatures,
 )
-from adl.models.interface import register_interface_types
+from adl.models.interface import register_interface_types, reset_known_interface_types
 
 
 def register_all_builtins() -> None:
@@ -23,7 +24,12 @@ def register_all_builtins() -> None:
 
     这些是通用机械/电子领域的基础类型。
     领域特定的类型（电信、键盘等）由对应插件注册。
+
+    每次调用先清空全局注册表，确保编译器初始状态确定。
     """
+    reset_known_interface_types()
+    reset_mating_defaults()
+    reset_signatures()
     _register_interface_types()
     _register_mating_defaults()
     _register_signatures()

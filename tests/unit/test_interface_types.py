@@ -245,7 +245,10 @@ class TestInterfaceSpecValidator:
     """InterfaceSpec field_validator 测试 (RFC-001)."""
 
     def test_known_type_no_warning(self) -> None:
-        from adl.models.interface import InterfaceSpec
+        from adl.models.interface import InterfaceSpec, register_interface_type
+
+        # 确保 SFP28 已注册（不依赖模块级导入副作用）
+        register_interface_type("SFP28")
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")

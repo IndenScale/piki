@@ -167,30 +167,44 @@ class BackCompatEmitPass(Pass):
 
 
 def _hir_fields_to_dict(fields: dict) -> dict:
-    """将 HIR fields 转为普通 dict。"""
+    """将 HIR fields 递归转为普通 Python dict/list/scalar。
+
+    对 MAPPING → dict，对 LIST → list，对 LITERAL → 其值，
+    对 REFERENCE → 引用文本。
+    嵌套结构完全展开，不保留 HIRValue 包装。
+    """
     result: dict = {}
     for key, val in fields.items():
-        if not hasattr(val, "kind"):
-            result[key] = val
-        elif val.kind == HIRValueKind.LITERAL:
-            result[key] = val.data
-        elif val.kind == HIRValueKind.REFERENCE:
-            result[key] = val.data.text if hasattr(val.data, "text") else str(val.data)
-        elif val.kind == HIRValueKind.LIST:
-            result[key] = [_hir_fields_to_dict(item.data) if hasattr(item, "kind") and item.kind == HIRValueKind.MAPPING else _hir_value_flat(item) for item in (val.data or [])]
-        elif val.kind == HIRValueKind.MAPPING:
-            result[key] = {k: _hir_value_flat(v) for k, v in (val.data or {}).items()}
+        result[key] = _hir_value_to_python(val)
     return result
 
 
-def _hir_value_flat(val) -> any:
-    if not hasattr(val, "kind"):
-        return val
-    if val.kind == HIRValueKind.LITERAL:
-        return val.data
-    if val.kind == HIRValueKind.REFERENCE:
-        return val.data.text if hasattr(val.data, "text") else str(val.data)
-    return str(val)
+def _hir_value_to_python(hir_val: Any) -> Any:
+    """递归将 HIRValue 转为纯 Python 对象（dict / list / scalar）。"""
+    if not hasattr(hir_val, "kind"):
+        # 已是纯 Python 对象或普通容器
+        if isinstance(hir_val, dict):
+            return {k: _hir_value_to_python(v) for k, v in hir_val.items()}
+        if isinstance(hir_val, list):
+            return [_hir_value_to_python(item) for item in hir_val]
+        return hir_val
+
+    kind = hir_val.kind
+    if kind == HIRValueKind.LITERAL:
+        return hir_val.data
+    elif kind == HIRValueKind.REFERENCE:
+        return hir_val.data.text if hasattr(hir_val.data, "text") else str(hir_val.data)
+    elif kind == HIRValueKind.LIST:
+        return [_hir_value_to_python(item) for item in (hir_val.data or [])]
+    elif kind == HIRValueKind.MAPPING:
+        return {k: _hir_value_to_python(v) for k, v in (hir_val.data or {}).items()}
+    # Fallback for unknown kinds
+    return str(hir_val)
+
+
+def _hir_value_flat(val) -> Any:
+    """向后兼容别名：等同于 _hir_value_to_python。"""
+    return _hir_value_to_python(val)
 
 
 def _resolve_instance_from_hir(

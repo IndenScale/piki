@@ -100,6 +100,11 @@ class PassResult:
 # ---------------------------------------------------------------------------
 
 
+class DependencyCycleError(Exception):
+    """Pass 依赖图中存在环。"""
+    pass
+
+
 class PassManager:
     """Pass 管理器。
 
@@ -108,10 +113,19 @@ class PassManager:
         pm.register(YAMLParsePass())
         pm.register(LoweringPass(), after=["YAMLParsePass"])
         ctx = pm.run(ctx, up_to=PassStage.HIR)
+
+    支持：
+    - 依赖声明与串行调度
+    - 依赖环检测
+    - 错误恢复（单个 Pass 失败后继续执行后续 Pass）
+    - 命名空间级并行调度桩（当前为串行，预留 parallel=True 接口）
     """
+
+    _STAGE_ORDER = {PassStage.AST: 0, PassStage.HIR: 1, PassStage.MIR: 2}
 
     def __init__(self) -> None:
         self._passes: list[tuple[Pass, set[str]]] = []  # (pass, dependencies)
+        self._failed_passes: set[str] = set()
 
     def register(self, p: Pass, *, after: list[str] | None = None) -> None:
         """注册一个 Pass。
@@ -119,35 +133,124 @@ class PassManager:
         Args:
             p: Pass 实例
             after: 依赖的 Pass name 列表
+
+        Raises:
+            DependencyCycleError: 注册导致依赖环。
         """
         deps = set(after) if after else set()
+
+        # 依赖环检测：新 Pass 的依赖不能包含自身
+        if p.name in deps:
+            raise DependencyCycleError(
+                f"Pass '{p.name}' 不能依赖自身"
+            )
+
+        # 检查是否与已注册 Pass 形成环（简化检测：BFS 反向可达）
         self._passes.append((p, deps))
+        if self._detect_cycle():
+            self._passes.pop()
+            raise DependencyCycleError(
+                f"注册 Pass '{p.name}' 导致依赖环。依赖: {sorted(deps)}"
+            )
 
     def run(
         self,
         ctx: PassContext,
         *,
         up_to: PassStage | None = None,
+        parallel: bool = False,
     ) -> PassContext:
         """按依赖顺序运行所有注册的 Pass。
 
         Args:
             ctx: 编译上下文
             up_to: 如果指定，只运行到此阶段（含）
+            parallel: 是否启用命名空间级并行（当前为串行桩）。
+
+        Returns:
+            更新后的 PassContext。
         """
         executed: set[str] = set()
+        self._failed_passes.clear()
 
-        while True:
+        if parallel:
+            # 命名空间级并行桩：当前仅记录意图，实际串行执行
+            ctx.emit(self._make_info_diag(
+                "PASS-INFO-001",
+                "PassManager: parallel=True 当前为串行桩，命名空间级并行尚未实现。",
+            ))
+
+        max_iterations = len(self._passes) * 2  # 安全上限
+
+        for _ in range(max_iterations):
             ready = self._find_ready(executed, up_to)
             if not ready:
                 break
             # 取第一个就绪的 pass（多个就绪时按注册顺序）
             p, deps = ready[0]
-            result = p.run(ctx)
-            ctx.diagnostics.extend(result.diagnostics)
+            try:
+                result = p.run(ctx)
+                ctx.diagnostics.extend(result.diagnostics)
+            except Exception as exc:
+                # 错误恢复：记录失败，继续执行后续 Pass
+                self._failed_passes.add(p.name)
+                from adl.diagnostics import Diagnostic, Location, Severity
+                ctx.emit(
+                    Diagnostic(
+                        severity=Severity.ERROR,
+                        message=f"Pass '{p.name}' 执行失败: {exc}",
+                        location=Location(uri=str(ctx.root)),
+                        code="PASS-ERROR-001",
+                        source="adl.compiler.pass_manager",
+                    )
+                )
             executed.add(p.name)
 
+        # 报告未执行的 Pass（依赖未满足）
+        remaining = [(p, deps) for p, deps in self._passes if p.name not in executed]
+        if remaining:
+            unmet = []
+            for p, deps in remaining:
+                missing = deps - executed
+                if missing:
+                    unmet.append(f"{p.name} (缺少依赖: {sorted(missing)})")
+            if unmet:
+                ctx.emit(self._make_info_diag(
+                    "PASS-INFO-002",
+                    f"以下 Pass 因依赖未满足而未执行: {'; '.join(unmet)}",
+                ))
+
         return ctx
+
+    def _detect_cycle(self) -> bool:
+        """检测当前 Pass 图中是否存在依赖环（Kahn 算法）。"""
+        # 构建入度表和邻接表
+        in_degree: dict[str, int] = {}
+        adj: dict[str, list[str]] = {}
+
+        for p, deps in self._passes:
+            if p.name not in in_degree:
+                in_degree[p.name] = 0
+            if p.name not in adj:
+                adj[p.name] = []
+            for dep in deps:
+                adj.setdefault(dep, []).append(p.name)
+                in_degree[p.name] = in_degree.get(p.name, 0) + 1
+                if dep not in in_degree:
+                    in_degree[dep] = 0
+
+        # Kahn 拓扑排序
+        queue = [name for name, deg in in_degree.items() if deg == 0]
+        visited = 0
+        while queue:
+            node = queue.pop(0)
+            visited += 1
+            for neighbor in adj.get(node, []):
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        return visited != len(in_degree)
 
     def _find_ready(
         self,
@@ -159,10 +262,10 @@ class PassManager:
         for p, deps in self._passes:
             if p.name in executed:
                 continue
+            if p.name in self._failed_passes:
+                continue  # 已失败的 Pass 不再重试
             if up_to is not None:
-                # 阶段顺序：AST < HIR < MIR
-                stage_order = {PassStage.AST: 0, PassStage.HIR: 1, PassStage.MIR: 2}
-                if stage_order.get(p.stage, 99) > stage_order.get(up_to, 99):
+                if self._STAGE_ORDER.get(p.stage, 99) > self._STAGE_ORDER.get(up_to, 99):
                     continue
             if deps <= executed:
                 ready.append((p, deps))
@@ -175,6 +278,24 @@ class PassManager:
                 "stage": p.stage.value,
                 "description": p.description,
                 "dependencies": sorted(deps),
+                "failed": p.name in self._failed_passes,
             }
             for p, deps in self._passes
         ]
+
+    @property
+    def has_failures(self) -> bool:
+        """是否有 Pass 执行失败。"""
+        return len(self._failed_passes) > 0
+
+    @staticmethod
+    def _make_info_diag(code: str, message: str):
+        """创建信息级诊断。"""
+        from adl.diagnostics import Diagnostic, Location, Severity
+        return Diagnostic(
+            severity=Severity.INFO,
+            message=message,
+            location=Location(uri=""),
+            code=code,
+            source="adl.compiler.pass_manager",
+        )

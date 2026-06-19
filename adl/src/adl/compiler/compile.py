@@ -16,6 +16,7 @@ from .passes.mate_sugar import MateSugarResolvePass
 from .passes.toml_parse import TOMLParsePass
 from .passes.yaml_parse import YAMLParsePass
 from .symbols import SymbolTable
+from .type_registry_builtins import register_all_builtins
 from .type_system import TypeSystem
 
 
@@ -43,6 +44,9 @@ def compile_project(
         symbol_table=SymbolTable(),
     )
 
+    # 注册内置接口类型、mating 默认值和签名
+    register_all_builtins()
+
     pm = PassManager()
     pm.register(TOMLParsePass())
     pm.register(YAMLParsePass(), after=["toml-parse"])
@@ -65,6 +69,9 @@ def compile_and_get_project(
         type_system=ts,
         symbol_table=SymbolTable(),
     )
+    # 注册内置接口类型、mating 默认值和签名
+    register_all_builtins()
+
     pm = PassManager()
     pm.register(TOMLParsePass())
     pm.register(YAMLParsePass(), after=["toml-parse"])

@@ -529,3 +529,8 @@ def register_signature(interface_type: str, sig: InterfaceSignature) -> None:
 def get_signature(interface_type: str) -> InterfaceSignature | None:
     """获取接口类型的默认签名。"""
     return _SIGNATURE_REGISTRY.get(interface_type)
+
+
+def reset_signatures() -> None:
+    """清空签名注册表。仅供测试或编译器初始化使用。"""
+    _SIGNATURE_REGISTRY.clear()
