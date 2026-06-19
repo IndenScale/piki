@@ -46,9 +46,9 @@ class AssemblyPartFamily(BaseModel):
     part_type: str = Field(default="generic")
 
     # 物理尺寸（毫米），参与 BBox / 代理几何
-    width_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
-    height_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
-    depth_mm: float = Field(default=0, ge=0, json_schema_extra={"piki_non_overridable": True})
+    width_mm: float = Field(default=0, ge=0, json_schema_extra={})
+    height_mm: float = Field(default=0, ge=0, json_schema_extra={})
+    depth_mm: float = Field(default=0, ge=0, json_schema_extra={})
 
     # 空间定位（毫米），允许 Layout 覆盖
     position_x_mm: float = Field(default=0)
