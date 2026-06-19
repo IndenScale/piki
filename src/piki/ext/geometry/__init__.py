@@ -1,4 +1,10 @@
-"""基础几何算法 —— AABB、OBB、碰撞检测。
+"""piki 插件侧的基础几何工具。
+
+注意：
+- 通用碰撞检测已迁移到 ``adl.geometry.GeometryProvider``；piki 规则应优先使用
+  ``ctx.geometry_provider.collisions()`` 而不是本模块的 ``find_collisions``。
+- 本模块保留 ``AABB`` 等低层原语，供规则实现自定义几何检查（如门扫掠区、车辆路径、
+  旋转 footprint 等 ADL GeometryProvider 未直接提供的场景）。
 
 不依赖外部库，纯 Python 实现。
 """
@@ -17,7 +23,10 @@ from adl.geometry import Transform, Vec3
 
 @dataclass(frozen=True)
 class AABB:
-    """轴对齐包围盒（Axis-Aligned Bounding Box）。"""
+    """轴对齐包围盒（Axis-Aligned Bounding Box）。
+
+    坐标单位由调用方决定；piki 插件中的规则通常使用毫米（mm）。
+    """
 
     min: Vec3
     max: Vec3
@@ -102,118 +111,3 @@ class AABB:
             y=self.max.y - self.min.y,
             z=self.max.z - self.min.z,
         )
-
-
-def _mm_to_m(mm: float) -> float:
-    """毫米转米。"""
-    return mm / 1000.0
-
-
-def build_aabb_from_instance(inst: ResolvedInstance) -> AABB | None:
-    """从 ResolvedInstance 构建 AABB。
-
-    优先级：
-    1. assets.usd.inline (box) → 直接用尺寸和变换
-    2. assets.usd.procedural → 计算 CSG 结果的 AABB（需 CSG 引擎）
-    3. physical 尺寸字段 → 生成 Box 代理几何
-    4. 无尺寸信息 → 返回 None
-    """
-    # 1. 尝试 assets.usd.inline
-    assets = getattr(inst, "assets", None)
-    if assets and assets.usd and assets.usd.inline:
-        inline = assets.usd.inline
-        if inline.type == "box" and inline.size:
-            return AABB.from_box(inline.size, inline.transform)
-        # 其他 primitive 类型简化处理：用外接球近似
-        if inline.radius is not None and inline.height is not None:
-            # cylinder / capsule
-            r = inline.radius
-            h = inline.height
-            size = Vec3(x=r * 2, y=h, z=r * 2)
-            return AABB.from_box(size, inline.transform)
-        if inline.radius is not None:
-            # sphere
-            r = inline.radius * 2
-            size = Vec3(x=r, y=r, z=r)
-            return AABB.from_box(size, inline.transform)
-
-    # 2. 尝试 CSG procedural（需要 CSG 引擎支持）
-    if assets and assets.usd and assets.usd.procedural:
-        try:
-            from .csg import eval_csg_aabb
-
-            return eval_csg_aabb(assets.usd.procedural)
-        except ImportError:
-            pass  # CSG 引擎未安装，降级处理
-
-    # 3. 从 physical 尺寸字段生成代理几何
-    # 支持多种字段命名：length_mm/width_mm/height_mm 或 depth_mm/width_mm/height_mm
-    resolved = inst.resolved
-    width_mm = getattr(resolved, "width_mm", 0.0) or 0.0
-    depth_mm = getattr(resolved, "depth_mm", 0.0) or 0.0
-    length_mm = getattr(resolved, "length_mm", 0.0) or 0.0
-    height_mm = getattr(resolved, "height_mm", 0.0) or 0.0
-
-    # 深度优先使用 depth_mm，否则 length_mm
-    depth = depth_mm if depth_mm > 0 else length_mm
-    # 高度
-    height = height_mm
-    # 宽度
-    width = width_mm
-
-    if width <= 0 or height <= 0 or depth <= 0:
-        return None
-
-    # 转换为米，构建 AABB
-    size = Vec3(
-        x=_mm_to_m(width),
-        y=_mm_to_m(height),
-        z=_mm_to_m(depth),
-    )
-
-    # 如果有 position 字段，应用平移
-    pos_x = getattr(resolved, "position_x_mm", 0.0) or 0.0
-    pos_y = getattr(resolved, "position_y_mm", 0.0) or 0.0
-    pos_z = getattr(resolved, "position_z_mm", 0.0) or 0.0
-
-    # 如果 Y 位置未显式设置但有 position_u（机柜 U 位），
-    # 则从 position_u 推导 Y：1U = 44.45mm，U 位从底部向上
-    position_u = getattr(resolved, "position_u", None)
-    if pos_y == 0.0 and position_u is not None:
-        pos_y = position_u * 44.45
-
-    # 也支持嵌套 position 对象
-    position = getattr(resolved, "position", None)
-    if position is not None:
-        pos_x = getattr(position, "x", pos_x) or pos_x
-        pos_y = getattr(position, "y", pos_y) or pos_y
-        pos_z = getattr(position, "z", pos_z) or pos_z
-
-    transform = Transform(
-        translation=Vec3(
-            x=_mm_to_m(pos_x),
-            y=_mm_to_m(pos_y),
-            z=_mm_to_m(pos_z),
-        )
-    )
-
-    return AABB.from_box(size, transform)
-
-
-def find_collisions(
-    items: list[tuple[str, AABB]],
-) -> list[tuple[str, str]]:
-    """O(n²) 碰撞检测，返回碰撞对列表。
-
-    Args:
-        items: [(id, aabb), ...]
-
-    Returns:
-        [(id1, id2), ...] 碰撞的 ID 对（每对只出现一次）
-    """
-    collisions: list[tuple[str, str]] = []
-    for i, (id1, box1) in enumerate(items):
-        for id2, box2 in items[i + 1 :]:
-            if box1.intersects(box2):
-                collisions.append((id1, id2))
-    return collisions

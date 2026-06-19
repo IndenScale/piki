@@ -1,71 +1,92 @@
 # piki 路线图
 
-> 当前版本：**0.1.0（Alpha）** — 核心框架可用，CLI 五大命令完整，两个行业插件就绪。
+> 当前版本：**0.1.0（Alpha）**
+>
+> piki 已从“框架 + ADL 一体化”拆分为：
+> - **`adl/`**：独立的装配体定义语言运行时（由 adl 包自己维护）
+> - **`src/piki/`**：纯编排框架（插件发现 → ADL 加载 → 规则/生成器 → 报告）
+>
+> 因此，**piki 本仓库进入场景驱动开发阶段**：优先用真实工程场景验证框架，ADL 只修 bug、不扩功能。
 
 ---
 
-## 已实现
+## 当前阶段：场景驱动（进行中）
 
-| 模块 | 功能 | 版本 |
-|------|------|------|
-| CLI | `piki init` / `check` / `report` / `generate` / `plugins list` | 0.1.0 |
-| 核心 | Family → Model → Instance 三层声明式建模 | 0.1.0 |
-| 核心 | Instance/Layout 分离 (ADR-001) | 0.1.0 |
-| 核心 | 嵌套项目 + FQID (ADR-001) | 0.1.0 |
-| 核心 | Connection 实例化 + Interface 模型 (ADR-005) | 0.1.0 |
-| 核心 | 通用 FK-001 外键检查 + INTERFACE-COMPAT-001 接口兼容 | 0.1.0 |
-| 核心 | Tag 正交过滤（tags__discipline=compute） | 0.1.0 |
-| 核心 | Django-style QuerySet（`__gt` / `__in` / `__contains` 等 9 个操作符） | 0.1.0 |
-| 核心 | LSP 兼容诊断（severity / range / relatedInformation） | 0.1.0 |
-| 核心 | Schema 校验 + 行级错误定位 | 0.1.0 |
-| 核心 | GeneratorRegistry + GeneratorResult（独立的生成器引擎，结构化返回值） | 0.1.0 |
-| 核心 | 4 种输出格式（human / json / junit / markdown） | 0.1.0 |
-| 插件 | telecom：7 条规则 + 4 个生成器（BOM / 面板图 / 功率预算 / 线缆清单） | 0.1.0 |
-| 插件 | telecom：光纤/铜缆连接 Family + 光模块 + 光纤跳线型号库 | 0.1.0 |
-| 插件 | datacenter：5 条规则 + DC BOM CSV 生成器（方舱 / 配电 / 设备） | 0.1.0 |
-| 几何 | AABB 碰撞检测（同一机柜内设备） | 0.1.0 |
-| 几何 | CSG 布尔运算（依赖 manifold3d，可选安装） | 0.1.0 |
-| Studio | 浏览器端 3D 预览 IDE（Three.js + File System Access API） | 0.1.0 |
-| Git | `piki init` 自动安装 pre-commit hook | 0.1.0 |
+### 1. 电信场景规模化（配合 SD-HWE-Bench）
 
-### 已移除
+目标：让 telecom 插件覆盖足够多的真实设计任务，为 SD-HWE-Bench 提供可评测场景。
 
-| 模块 | 说明 | 原因 |
-|------|------|------|
-| USD 场景生成 | `piki generate usd-scene` | 核心重构后暂不兼容，待后续重新设计 |
+- [ ] 补充 telecom 示例项目到 3–5 个（覆盖扩容、新建、改造）
+- [ ] 配合 sd-hwe-bench 把电信任务集扩展到 30+ tasks
+- [ ] 补齐 6 种任务类型的难度梯度（L1 直接 / L2 推理 / L3 规划）
+- [ ] 跑通 B0/B1/B2 baseline，收集人类基线 B3/B4
+- [ ] 验证并稳定 L3/L4 规则输出（功率预算、U 位冲突、接口兼容、三维碰撞）
+
+### 2. ADL 稳定化（维护模式）
+
+ADL 功能已足够支撑当前场景，本阶段只做收敛性工作：
+
+- [ ] 收敛公共 API（`ProjectLoader` / `compile_project`）并更新文档
+- [ ] 修复场景运行中暴露的 ADL bug
+- [ ] 把 `SpatialCollisionPass` 明确接入或文档化其调用方式
+- [ ] 不新增 ADL 通用能力（不统一几何求解器、不实现任意轴旋转、不做增量编译）
+
+### 3. 文档与开发者体验
+
+- [ ] 刷新本仓库文档，明确 piki 与 ADL 的边界（README / docs / AGENTS）
+- [ ] 清理 piki 与 adl 之间的重复几何逻辑
+- [ ] 补充 datacenter / keyboard 的 minimal 示例
+- [ ] 整理插件开发指南
 
 ---
 
-## 规划中
+## 下一阶段：跨域扩展（待启动）
 
-以下特性尚未实现，按优先级排序：
+当电信场景在 SD-HWE-Bench 上证明可用后，按 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) 的域扩展协议进入新域：
 
-### 高优先级
+1. **datacenter** — 方舱、配电、冷热通道
+2. **keyboard** — PCB、键轴、外壳装配
+3. **hvac** — 管道路由、坡度、净高
+4. **building** — 房间拓扑、疏散、面积
 
-- **增量检查** (`piki check --incremental`) — 只检查发生变更的文件，大幅提升大项目性能
-- **并行检查** (`piki check --parallel N`) — 多核并行运行规则
-- **解析缓存** — 缓存 Family/Model/Instance 解析结果，避免重复计算
-- **项目级 Family 定义** — 在 `families/` 目录定义项目特有的设备族，不依赖插件
+每个域的扩展工作：
 
-### 中优先级
+- 编写该域 piki 插件（Family、Model、Mate type、Rules、Generators）
+- 提供 ≥10 个 Model 和 ≥10 个 tasks，覆盖 ≥3 种任务类型
+- 实现该域 L3 规则集（每种任务类型 ≥3 条）
+- 收集 B0 + B1 baseline 和至少 1 名人类工程师基线
 
-- **外部数据同步** (`piki sync`) — 从外部 API / 数据库拉取数据并转为 YAML
-- **数据库导入** — 从 PostgreSQL / MySQL 导入已有设计数据
-- **敏感字段加密** — `enc:` 前缀标记需要加密存储的字段
-- **`piki check --watch`** — 文件变更时自动重新检查
+---
 
-### 低优先级
+## 明确不做的方向
 
-- **Piki Studio 在线编辑** — 在浏览器中直接编辑 YAML 并回写文件系统
-- **Piki Studio 集成 check 结果** — 在 StatusBar 显示 `piki check` 输出
-- **多语言 SDK** — piki-sdk-js / piki-sdk-rust
-- **在线注册中心** — 社区共享的型号库和规则库
+为避免 ADL 过度工程化，以下特性在当前阶段明确不做：
+
+- 统一几何求解器（当前按 mate type 分支足够）
+- 完整任意轴旋转 Rodrigues 变换
+- 增量编译 / IR 序列化 / 并行 Pass
+- 外部数据同步（`piki sync`）
+- 数据库导入
+- 敏感字段加密
+- 多语言 SDK
+- Studio 在线编辑
+- 在线注册中心
+
+这些特性可能在未来由场景需求拉动，但不会 preemptively 投入。
 
 ---
 
 ## 版本策略
 
-- **0.x** — 快速迭代，API 可能变动
-- **1.0** — API 稳定，向后兼容承诺
+- **0.x** — 场景驱动快速迭代，piki 公共 API 尽量稳定，breaking change 会记录
+- **1.0** — 当 SD-HWE-Bench 电信域达到 30+ tasks 且基线稳定后，承诺向后兼容
+
+---
+
+## ADL 自身路线图
+
+ADL 的独立路线现在由 `adl/` 目录维护。本文件不再追踪 ADL 内部特性（如编译器优化、几何求解器升级）。如需了解 ADL 计划，请阅读 [adl/docs/adr/](adl/docs/adr/) 与相关 RFC。
+
+---
 
 反馈和建议：[GitHub Issues](https://github.com/indenscale/piki/issues)

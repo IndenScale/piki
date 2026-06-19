@@ -359,30 +359,37 @@ def check_equipment_container_fit(ctx):
 def check_equipment_3d_collision(ctx):
     """检查同一方舱内设备的 3D 空间碰撞。
 
-    使用 AABB 包围盒进行 O(n²) 碰撞检测。
-    无尺寸或位置信息的设备自动跳过。
+    使用 ADL GeometryProvider 进行碰撞检测，避免与 adl/geometry 重复实现
+    自定义 AABB + find_collisions 逻辑。
     """
-    from piki.ext.geometry import build_aabb_from_instance, find_collisions
+    provider = ctx.geometry_provider
+    if provider is None:
+        ctx.clear_current_file()
+        return
 
-    {c.id: c for c in ctx.query("containers")}
+    all_collisions = provider.collisions()
+    if not all_collisions:
+        ctx.clear_current_file()
+        return
 
-    for container in ctx.query("containers"):
-        devices = ctx.query("equipment", container_id=container.id)
-        items: list[tuple[str, "AABB"]] = []
+    containers = {c.id: c for c in ctx.query("containers")}
+    container_equipment_ids = {
+        container_id: {e.id for e in ctx.query("equipment", container_id=container_id)}
+        for container_id in containers
+    }
 
-        for device in devices:
-            aabb = build_aabb_from_instance(device)
-            if aabb is not None:
-                items.append((device.id, aabb))
+    container_collisions: dict[str, list[tuple[str, str]]] = {}
+    for id_a, id_b in all_collisions:
+        for container_id, equipment_ids in container_equipment_ids.items():
+            if id_a in equipment_ids and id_b in equipment_ids:
+                container_collisions.setdefault(container_id, []).append((id_a, id_b))
+                break
 
-        if len(items) < 2:
-            continue
-
-        collisions = find_collisions(items)
-        if collisions:
-            ctx.set_current_file(str(container.source))
-            pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
-            assert False, f"方舱 {container.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
+    for container_id, collisions in container_collisions.items():
+        container = containers[container_id]
+        ctx.set_current_file(str(container.source))
+        pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
+        assert False, f"方舱 {container_id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
     ctx.clear_current_file()
 
 

@@ -69,7 +69,9 @@ interfaces:
 
 然后规则引擎自动验证：PDU 功率是否超载、U 位是否冲突、接口是否兼容、三维空间是否碰撞。
 
-ADL 的三层子语言——PDL（部件定义）、PML（部件配合）、PLL（部件布局）——让设计意图、配合关系、空间位置相互独立，可分别版本控制。详细规范见 [ADL：装配体定义语言](docs/pitch/03-adl.md)。
+ADL 的三层子语言——PDL（部件定义）、PML（部件配合）、PLL（部件布局）——让设计意图、配合关系、空间位置相互独立，可分别版本控制。
+
+> **注意**：ADL 已拆分为独立的 Python 包（见本仓库 `adl/` 目录），可独立安装和使用；piki 作为编排框架，负责插件发现、规则执行和报告输出。ADL 详细规范见 [`adl/docs/`](adl/docs/)，piki 用户视角的介绍见 [ADL：装配体定义语言](docs/pitch/03-adl.md)。
 
 ---
 
@@ -102,9 +104,26 @@ piki generate bom-csv           # 导出 BOM 清单
 
 ---
 
+## 仓库结构
+
+```text
+piki/
+├── adl/                    # 独立的 ADL（Assembly Definition Language）Python 包
+│   ├── src/adl/            #   解析、模型、验证、几何运行时
+│   └── docs/               #   ADL 自身的技术规范与架构决策
+├── src/piki/               # piki 编排框架（插件、规则、CLI、报告）
+├── samples/                # 示例项目
+├── docs/                   # piki 用户文档与理念文章
+├── tests/                  # piki 框架测试
+└── studio/                 # 浏览器端 3D 预览 IDE（可选）
+```
+
+---
+
 ## 文档
 
-完整文档导航见 **[docs/index.md](docs/index.md)**。
+- piki 用户文档导航见 **[docs/index.md](docs/index.md)**。
+- ADL 技术规范与架构决策见 **[adl/docs/](adl/docs/)**。
 
 ---
 

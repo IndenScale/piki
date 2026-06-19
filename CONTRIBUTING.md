@@ -30,8 +30,11 @@ pip install -e ".[dev]"
 # 检查 piki 是否可运行
 piki --version
 
-# 运行测试
+# 运行 piki 框架测试
 pytest
+
+# 运行 ADL 包测试
+cd adl && pytest
 
 # 运行测试并生成覆盖率报告
 pytest --cov=piki --cov-report=term-missing
@@ -42,26 +45,31 @@ pytest --cov=piki --cov-report=term-missing
 ## 项目结构
 
 ```
-piki/
-├── src/piki/              # 主包
-│   ├── cli.py             # CLI 入口
-│   ├── commands/          # CLI 子命令实现
-│   ├── core/              # 框架内核
-│   │   ├── engine/        # 规则引擎、查询、注册表
-│   │   ├── models/        # 数据模型（Diagnostic、Instance 等）
-│   │   ├── parsing/       # YAML/TOML 解析
-│   │   ├── plugin.py      # 插件基类与发现
-│   │   └── project.py     # Project 类
-│   └── extensions/        # 内置插件（如 telecom）
-├── tests/                 # 测试
-│   ├── test_cli.py        # CLI E2E 测试
-│   └── ...
-├── docs/                  # 文档
-│   ├── concepts/          # 概念教程
-│   └── reference/         # 参考文档
-├── pyproject.toml         # 项目配置
+piki/                          # monorepo 根目录
+├── adl/                       # 独立的 ADL（Assembly Definition Language）Python 包
+│   ├── src/adl/               #   解析、模型、验证、几何运行时
+│   ├── tests/                 #   ADL 自身测试
+│   ├── docs/                  #   ADL 技术规范与架构决策
+│   └── pyproject.toml         #   ADL 包配置
+├── src/piki/                  # piki 编排框架
+│   ├── cli.py                 # CLI 入口
+│   ├── commands/              # CLI 子命令实现
+│   ├── core/                  # 框架内核
+│   │   ├── engine/            # 规则引擎、查询、注册表
+│   │   ├── models/            # 数据模型（Diagnostic 等）
+│   │   ├── plugin.py          # 插件基类与发现
+│   │   └── project.py         # piki 项目编排入口
+│   ├── ext/                   # 扩展能力（如 CSG 几何）
+│   └── extensions/            # 内置插件（telecom、datacenter 等）
+├── tests/                     # piki 框架测试
+├── docs/                      # piki 用户文档与理念文章
+├── samples/                   # 示例项目
+├── studio/                    # 浏览器端 3D 预览 IDE（可选）
+├── pyproject.toml             # piki 包配置
 └── README.md
 ```
+
+piki 依赖 `adl` 包。开发时两者在同一仓库，但发布周期和文档相互独立。
 
 ---
 
@@ -94,8 +102,11 @@ mypy src/piki
 ### 运行测试
 
 ```bash
-# 全部测试
+# piki 框架全部测试（在仓库根目录）
 pytest
+
+# ADL 包全部测试
+pushd adl && pytest && popd
 
 # 特定测试文件
 pytest tests/test_cli.py
@@ -166,7 +177,7 @@ git commit -m "docs: 补充 CLI 命令参考文档"
 4. 添加测试和文档
 5. 提交 PR
 
-详细指南：[docs/reference/plugin-development.md](docs/reference/plugin-development.md)（规划中）
+详细指南：参考现有插件源码（`src/piki/extensions/telecom/plugin.py`、`src/piki/extensions/datacenter/plugin.py`）和 [docs/reference/06-api.md](docs/reference/06-api.md) 中的 API 说明。独立的插件开发指南待补充。
 
 ---
 

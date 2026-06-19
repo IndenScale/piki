@@ -915,28 +915,37 @@ def check_foreign_keys(ctx):
 def check_rack_3d_collision(ctx):
     """检查同一机柜内设备的 3D 空间碰撞。
 
-    使用 AABB 包围盒进行 O(n²) 碰撞检测。
-    无尺寸信息的设备自动跳过。
+    使用 ADL GeometryProvider 进行碰撞检测，避免与 adl/geometry 重复实现
+    自定义 AABB + find_collisions 逻辑。
     """
-    from piki.ext.geometry import build_aabb_from_instance, find_collisions
+    provider = ctx.geometry_provider
+    if provider is None:
+        ctx.clear_current_file()
+        return
 
-    for rack in ctx.query("racks"):
-        devices = ctx.query("devices", rack_id=rack.id)
-        items: list[tuple[str, "AABB"]] = []
+    all_collisions = provider.collisions()
+    if not all_collisions:
+        ctx.clear_current_file()
+        return
 
-        for device in devices:
-            aabb = build_aabb_from_instance(device)
-            if aabb is not None:
-                items.append((device.id, aabb))
+    racks = {r.id: r for r in ctx.query("racks")}
+    rack_device_ids = {
+        rack_id: {d.id for d in ctx.query("devices", rack_id=rack_id)}
+        for rack_id in racks
+    }
 
-        if len(items) < 2:
-            continue
+    rack_collisions: dict[str, list[tuple[str, str]]] = {}
+    for id_a, id_b in all_collisions:
+        for rack_id, device_ids in rack_device_ids.items():
+            if id_a in device_ids and id_b in device_ids:
+                rack_collisions.setdefault(rack_id, []).append((id_a, id_b))
+                break
 
-        collisions = find_collisions(items)
-        if collisions:
-            ctx.set_current_file(str(rack.source))
-            pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
-            assert False, f"机柜 {rack.id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
+    for rack_id, collisions in rack_collisions.items():
+        rack = racks[rack_id]
+        ctx.set_current_file(str(rack.source))
+        pairs = ", ".join(f"{a} ↔ {b}" for a, b in collisions)
+        assert False, f"机柜 {rack_id} 内发现 {len(collisions)} 处设备空间冲突: {pairs}"
     ctx.clear_current_file()
 
 
@@ -2597,8 +2606,6 @@ def check_door_swing_clearance(ctx):
 
     第一阶段采用 AABB 近似：以门为中心，门宽/门深较大值的 2 倍作为扫掠包络。
     """
-    from piki.ext.geometry import find_collisions
-
     doors = [
         f
         for f in ctx.query("facilities")
@@ -2622,19 +2629,15 @@ def check_door_swing_clearance(ctx):
         sweep_span = max(width, depth) * 2
         sweep_aabb = _build_aabb_mm(door_transform, sweep_span, height, sweep_span)
 
-        items = [(f"SWEEP-{door.id}", sweep_aabb)]
         for obs in obstacles:
             obs_transform = _inst_global_transform(ctx, obs)
             obs_size = _inst_size_mm(obs)
             if obs_size is None:
                 continue
-            items.append((obs.id, _build_aabb_mm(obs_transform, *obs_size)))
-
-        collisions = find_collisions(items)
-        for id1, id2 in collisions:
-            if id1.startswith("SWEEP-"):
+            obs_aabb = _build_aabb_mm(obs_transform, *obs_size)
+            if sweep_aabb.intersects(obs_aabb):
                 ctx.set_current_file(str(door.source))
-                assert False, f"门 {door.id} 开合扫掠区与 {id2} 碰撞"
+                assert False, f"门 {door.id} 开合扫掠区与 {obs.id} 碰撞"
     ctx.clear_current_file()
 
 

@@ -6,6 +6,10 @@
 
 ---
 
+> **ADL 已独立**：ADL（装配体定义语言）运行时现在是本仓库 [`adl/`](../adl/) 目录下的独立 Python 包，拥有自己独立的文档。如果你需要了解 YAML 解析、PDL/PML/PLL 规范、编译器管线、MIR 等实现细节，请优先阅读 [adl/docs/](../adl/docs/)。本文档（`docs/`）聚焦 piki 作为编排框架的用户视角。
+
+---
+
 ## 按角色导航
 
 ### 🧐 评估 piki
@@ -13,10 +17,10 @@
 1. **[为什么需要 piki](concepts/00-why-piki.md)** — 从真实事故出发，理解问题与解决方案
 2. **[软件定义硬件（SDH）](pitch/01-why-sdh.md)** — 实体工程的必由之路
 3. **[SDH 框架的设计原则](pitch/02-agent-native.md)** — 文本原生、CLI 优先、开放格式与 Agent 友好
-4. **[ADL：装配体定义语言](pitch/03-adl.md)** — PDL + PML + PLL 三子语言
+4. **[ADL：装配体定义语言（piki 用户视角）](pitch/03-adl.md)** — PDL + PML + PLL 三子语言简介
 5. **[Engineering RLVR](pitch/04-engineering-rlvr.md)** — 可验证奖励如何驱动工程 AI
 6. **[HDA：Hardware Design Automation](pitch/07-hardware-design-automation.md)** — SDH 思想落地的产品赛道，与 EDA/CAD/BIM 的关系
-7. **[路线图](../ROADMAP.md)** — 当前进展和未来计划
+7. **[路线图](../ROADMAP.md)** — piki 当前阶段与未来计划
 
 ### 🔧 使用 piki
 
@@ -38,7 +42,7 @@
 
 ### 🎤 演讲与路演
 
-1. **[文本驱动，Agent 原生的通信设计工具链](pitch/05-text-driven-agent-native-telecom-design.md)** — 现场演讲指导稿，含完整电信扩容案例与听众互动节奏
+1. **[文本驱动，Agent 原生的通信设计工具链](pitch/05-text-driven-telecom-design.md)** — 现场演讲指导稿，含完整电信扩容案例与听众互动节奏
 
 ---
 
@@ -48,20 +52,32 @@
 
 1. **[01 - 软件定义硬件（SDH）](pitch/01-why-sdh.md)** — 范式宣言：实体工程为何必须像软件一样可定义、可校验、可协作，以及 Headless Engineering 的解决方案
 2. **[02 - SDH 框架的设计原则](pitch/02-agent-native.md)** — 文本原生、CLI 优先、开放格式、Git/CICD 与 Agent 友好
-3. **[03 - ADL：装配体定义语言](pitch/03-adl.md)** — 技术规范：PDL（部件定义）+ PML（部件配合）+ PLL（部件布局）三子语言
+3. **[03 - ADL：装配体定义语言](pitch/03-adl.md)** — piki 用户视角简介：PDL（部件定义）+ PML（部件配合）+ PLL（部件布局）三子语言；实现规范见 [adl/docs/](../adl/docs/)
 4. **[04 - Engineering RLVR](pitch/04-engineering-rlvr.md)** — 驱动引擎：分层规则引擎作为 RLVR 奖励信号，SD-HWE-Bench 基线数据
 5. **[07 - HDA：Hardware Design Automation](pitch/07-hardware-design-automation.md)** — 赛道定位：SDH 思想如何落地为产品，与 EDA/CAD/BIM 的边界
 
 ### Pitch 延伸阅读
 
-- **[05 - 文本驱动，Agent 原生的通信设计工具链](pitch/05-text-driven-agent-native-telecom-design.md)** — 现场演讲指导稿，含完整电信扩容案例与听众互动节奏
+- **[05 - 文本驱动，Agent 原生的通信设计工具链](pitch/05-text-driven-telecom-design.md)** — 现场演讲指导稿，含完整电信扩容案例与听众互动节奏
 - **[工程领域 AI Benchmark 形态与缺口调研](pitch/06-engineering-ai-benchmark-landscape.md)** — 支撑 SD-HWE-Bench 定位的现有 benchmark 调研
+
+---
+
+## ADL 独立文档
+
+ADL（装配体定义语言）的详细技术规范、概念解释和架构决策记录保存在 [`adl/docs/`](../adl/docs/) 目录，与本目录相互独立：
+
+- **概念**：PDL/PML/PLL 三子语言、接口签名、配合图、参数化定位链
+- **架构决策**：编译器架构（AST/HIR/MIR）、接口优先配合、独立包拆分
+- **指南**：如何使用 ADL 独立包加载和验证项目
+
+piki 用户通常不需要深入这些文档；插件开发者或需要扩展 ADL 能力的贡献者才需要阅读。
 
 ---
 
 ## 架构决策记录 (ADR)
 
-记录 piki 的关键技术决策及其理由，按核心主线到辅助体验的顺序排列：
+记录 piki 框架层的关键技术决策及其理由。与 ADL 实现相关的决策（如编译器架构、MIR 设计）已迁移到 [adl/docs/adr/](../adl/docs/adr/)，本目录保留 piki 编排框架层面的决策：
 
 - **[ADR-001: 项目组织模型](adr/data-model/001-project-organization.md)** — Instance/Layout 分离、嵌套项目、正交 Tag
 - **[ADR-002: 插件架构](adr/engine-and-plugins/002-plugin-architecture.md)** — 为什么用 Python 插件而非配置或硬编码
@@ -95,9 +111,10 @@
 ## 参考文档
 
 - **[CLI 命令参考](reference/07-cli.md)** — 所有命令、参数、示例
-- **[API 参考](reference/06-api.md)** — 核心类与装饰器接口
+- **[API 参考](reference/06-api.md)** — piki 框架核心类与装饰器接口
 - **[项目配置参考](reference/01-configuration.md)** — `piki.toml` 完整字段说明
 - **[项目目录结构](reference/00-project-layout.md)** — 初始化后的目录与文件说明
+- **[ADL 运行时参考](../adl/docs/)** — ADL 独立包的概念、API 与架构决策
 
 ---
 
