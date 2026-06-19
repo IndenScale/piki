@@ -1,0 +1,20 @@
+id: DOVETAIL-BASE
+family: AssemblyPartFamily
+name: 燕尾槽底座
+part_type: dovetail-base
+width_mm: 50
+height_mm: 25
+depth_mm: 200
+color: "#606060"
+interfaces:
+  - id: dovetail-slot
+    interface_type: generic-slot
+    mating_kind: slot
+    mating_params:
+      slot_dir: [0, 0, 1]
+      angle_deg: 60
+      width_top_mm: 30
+      width_bottom_mm: 20
+      depth_mm: 10
+    local_transform:
+      translation: [0, 20, 100]

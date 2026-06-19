@@ -1,0 +1,17 @@
+id: ACCESS-SW
+family: AssemblyPartFamily
+name: 接入交换机
+part_type: network-switch
+width_mm: 440
+height_mm: 44
+depth_mm: 250
+color: "#2C3E50"
+interfaces:
+  - id: sfp28-port-25
+    interface_type: SFP28-cage
+    local_transform:
+      translation: [0, 22, 125]
+  - id: sfp28-port-26
+    interface_type: SFP28-cage
+    local_transform:
+      translation: [20, 22, 125]

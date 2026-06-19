@@ -1,0 +1,20 @@
+id: SHAFT-25
+family: AssemblyPartFamily
+name: 传动轴 Ø25h7
+part_type: shaft
+width_mm: 25
+height_mm: 25
+depth_mm: 150
+color: "#B87333"
+interfaces:
+  - id: bearing-journal
+    interface_type: generic-axis
+    mating_kind: axis
+    mating_params:
+      axis: [0, 0, 1]
+      diameter_mm: 24.98
+      tolerance: h7
+      clearance_min_um: 0
+      clearance_max_um: 41
+    local_transform:
+      translation: [0, 0, 75]

@@ -1,0 +1,17 @@
+id: ODF-PANEL
+family: AssemblyPartFamily
+name: 光配线架
+part_type: odf-panel
+width_mm: 482
+height_mm: 44
+depth_mm: 120
+color: "#7F8C8D"
+interfaces:
+  - id: sc-port-01
+    interface_type: generic-face
+    local_transform:
+      translation: [0, 22, 0]
+  - id: sc-port-02
+    interface_type: generic-face
+    local_transform:
+      translation: [15, 22, 0]

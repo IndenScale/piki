@@ -1,0 +1,13 @@
+id: BOLT-M16-4
+family: AssemblyPartFamily
+name: M16×80 螺栓 #4
+part_type: bolt
+width_mm: 16
+height_mm: 16
+depth_mm: 80
+color: "#C0C0C0"
+interfaces:
+  - id: thread
+    interface_type: screw-thread
+    local_transform:
+      translation: [0, 0, 40]

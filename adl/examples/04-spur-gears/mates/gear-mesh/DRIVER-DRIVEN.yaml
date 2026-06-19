@@ -1,0 +1,9 @@
+type: face-on-face
+parent: GEAR-DRIVER/teeth
+child: GEAR-DRIVEN/teeth
+at:
+  center_distance_mm: 60
+  module: 2
+  teeth_driver: 20
+  teeth_driven: 40
+  ratio: 2

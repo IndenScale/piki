@@ -1,0 +1,8 @@
+type: slot
+parent: PCB-MAIN/usb-a-receptacle
+child: USB-A-DEVICE/plug-a
+at:
+  t:
+    default: 0
+    min: 0
+    max: 14

@@ -1,0 +1,3 @@
+type: face-on-face
+parent: SFP28-MOD-A/lc-port
+child: LC-DUPLEX-PATCH/end-a-tx

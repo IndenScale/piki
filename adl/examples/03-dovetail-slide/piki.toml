@@ -1,0 +1,7 @@
+[project]
+name = "dovetail-slide"
+version = "1.0.0"
+description = "燕尾槽滑块：60° 燕尾槽底座 + 滑块，线性导轨行程 120mm"
+
+[plugins]
+enabled = ["assembly"]

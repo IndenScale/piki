@@ -1,0 +1,9 @@
+- instance: GEAR-DRIVER
+  position_x_mm: 0
+  position_y_mm: 0
+  position_z_mm: 0
+
+- instance: GEAR-DRIVEN
+  position_x_mm: 62
+  position_y_mm: 0
+  position_z_mm: 0

@@ -96,31 +96,30 @@ class ProjectLoader:
 
     def load(self) -> Project:
         """加载项目并返回 ``Project`` 对象。"""
-        project = Project(
-            root=self.root,
-            config=self.config,
+        # 新编译器管线负责 Model / Catalog / Layout / Grid / Instance / Mate / 子项目
+        from adl.compiler.compile import compile_and_get_project
+
+        project = compile_and_get_project(
+            self.root,
             type_registry=self.type_registry,
-            parent=self.parent,
-            project_name=self.config.get("project", {}).get("name", self.root.name),
-            allowed_tags=set(self.config.get("tags", {}).get("allowed", [])),
+            extra_model_dirs=self.extra_model_dirs,
+            extra_catalog_dirs=self.extra_catalog_dirs,
         )
+        if project is None:
+            # 编译器彻底失败时回退到空项目
+            project = Project(
+                root=self.root,
+                config=self.config,
+                type_registry=self.type_registry,
+                project_name=self.config.get("project", {}).get("name", self.root.name),
+            )
+
+        project.parent = self.parent
+        project.config = self.config
+        project.allowed_tags = set(self.config.get("tags", {}).get("allowed", []))
+
+        # 外部项目合并仍由加载器负责（编译器当前不处理 external 配置）
         self._load_externals(project)
-
-        # 加载顺序很重要：Model -> Catalog -> Layout -> Grid -> Instance -> Mate
-        self.load_models_into(project, [self.root / "models"] + self.extra_model_dirs)
-        self.load_catalogs_into(
-            project,
-            [(self.root / "catalogs", "project")]
-            + self._enterprise_catalog_dirs()
-            + [(extra_dir, "public") for extra_dir in self.extra_catalog_dirs],
-        )
-        self.load_layout_into(project, self.root)
-        self.load_grids_into(project, self.root)
-        self._load_instances(project)
-        self.load_mates_into(project, self.root)
-
-        # 嵌套子项目
-        self._load_children(project)
 
         return project
 

@@ -1,0 +1,7 @@
+[project]
+name = "usb-interfaces"
+version = "1.0.0"
+description = "USB 接口：USB-C 母座 + 插头（正插/反插/拔出三态）+ USB-A 母座"
+
+[plugins]
+enabled = ["assembly"]

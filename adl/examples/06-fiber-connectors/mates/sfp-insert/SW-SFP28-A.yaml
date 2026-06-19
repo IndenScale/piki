@@ -1,0 +1,8 @@
+type: slot
+parent: ACCESS-SW/sfp28-port-25
+child: SFP28-MOD-A/cage-interface
+at:
+  t:
+    default: 0
+    min: 0
+    max: 56

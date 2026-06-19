@@ -1,0 +1,5 @@
+type: face-on-face
+parent: HOUSING/bore-seat
+child: BUSHING-BRONZE/outer-surface
+at:
+  interference_fit: H7p6

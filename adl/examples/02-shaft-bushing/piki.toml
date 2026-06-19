@@ -1,0 +1,7 @@
+[project]
+name = "shaft-in-bushing"
+version = "1.0.0"
+description = "轴-套配合：Ø25h7 轴 + Ø25H7 铜套，间隙配合 H7/h7"
+
+[plugins]
+enabled = ["assembly"]

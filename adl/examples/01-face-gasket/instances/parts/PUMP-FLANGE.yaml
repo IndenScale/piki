@@ -1,0 +1,33 @@
+id: PUMP-FLANGE
+family: AssemblyPartFamily
+name: 泵出口法兰
+part_type: flange
+width_mm: 165
+height_mm: 165
+depth_mm: 25
+color: "#4682B4"
+interfaces:
+  - id: face-seal
+    interface_type: generic-face
+    mating_kind: face
+    mating_params:
+      normal: [0, 0, 1]
+      tolerance_mm: 0.1
+    local_transform:
+      translation: [0, 0, 12.5]
+  - id: bolt-hole-1
+    interface_type: screw-hole
+    local_transform:
+      translation: [62.5, 62.5, 0]
+  - id: bolt-hole-2
+    interface_type: screw-hole
+    local_transform:
+      translation: [-62.5, 62.5, 0]
+  - id: bolt-hole-3
+    interface_type: screw-hole
+    local_transform:
+      translation: [-62.5, -62.5, 0]
+  - id: bolt-hole-4
+    interface_type: screw-hole
+    local_transform:
+      translation: [62.5, -62.5, 0]

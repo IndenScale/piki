@@ -1,0 +1,22 @@
+id: WORM
+family: AssemblyPartFamily
+name: 单头蜗杆 m2
+part_type: worm
+width_mm: 20
+height_mm: 20
+depth_mm: 60
+color: "#E67E22"
+interfaces:
+  - id: worm-thread
+    interface_type: generic-axis
+    mating_kind: axis
+    mating_params:
+      axis: [0, 0, 1]
+      lead_mm: 6.28
+      pitch_diameter_mm: 28
+    local_transform:
+      translation: [0, 0, 30]
+  - id: input-shaft
+    interface_type: generic-axis
+    local_transform:
+      translation: [0, 0, 0]

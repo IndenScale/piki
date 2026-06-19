@@ -1,0 +1,7 @@
+[project]
+name = "worm-drive"
+version = "1.0.0"
+description = "蜗轮蜗杆减速器：单头蜗杆 + Z30 蜗轮，速比 30:1"
+
+[plugins]
+enabled = ["assembly"]

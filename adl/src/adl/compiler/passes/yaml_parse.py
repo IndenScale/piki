@@ -219,20 +219,42 @@ class YAMLParsePass(Pass):
 
     def run(self, ctx: PassContext) -> PassResult:
         result = PassResult()
-        yaml_files = list(ctx.root.rglob("*.yaml"))
-        # 排除 dist/ 和 .git/
-        yaml_files = [
-            f
-            for f in yaml_files
-            if "dist/" not in str(f)
-            and ".git/" not in str(f)
-            and "__pycache__" not in str(f)
-            and ".piki" not in str(f)
-        ]
+        yaml_files: list[tuple[Path, FileKind | None]] = []
 
-        for fpath in sorted(yaml_files):
+        # 项目主目录：按目录名推断类型
+        for fpath in ctx.root.rglob("*.yaml"):
+            if self._is_excluded(fpath):
+                continue
+            yaml_files.append((fpath, None))
+
+        # 插件/额外型号库：强制为 MODEL
+        for extra_dir in ctx.extra_model_dirs:
+            if not extra_dir.exists():
+                continue
+            for fpath in extra_dir.rglob("*.yaml"):
+                if self._is_excluded(fpath):
+                    continue
+                yaml_files.append((fpath, FileKind.MODEL))
+
+        # 插件/额外 Catalog：强制为 CATALOG
+        for extra_dir in ctx.extra_catalog_dirs:
+            if not extra_dir.exists():
+                continue
+            for fpath in extra_dir.rglob("*.yaml"):
+                if self._is_excluded(fpath):
+                    continue
+                yaml_files.append((fpath, FileKind.CATALOG))
+
+        for fpath, forced_kind in sorted(yaml_files, key=lambda t: str(t[0])):
             try:
                 sf = _parse_file(fpath)
+                if forced_kind is not None:
+                    sf.kind = forced_kind
+                    # 当 kind 被强制改变时，同步修正第一条 Declaration 的 kind
+                    if sf.declarations and sf.kind == FileKind.MODEL:
+                        sf.declarations[0].kind = DeclKind.MODEL
+                    elif sf.declarations and sf.kind == FileKind.CATALOG:
+                        sf.declarations[0].kind = DeclKind.CATALOG_ENTRY
                 ctx.source_files[fpath] = sf
             except Exception as exc:
                 from adl.diagnostics import Diagnostic, Location, Severity
@@ -249,3 +271,9 @@ class YAMLParsePass(Pass):
 
         result.modified = len(ctx.source_files) > 0
         return result
+
+    @staticmethod
+    def _is_excluded(fpath: Path) -> bool:
+        s = str(fpath)
+        return "dist/" in s or ".git/" in s or "__pycache__" in s or ".piki" in s
+

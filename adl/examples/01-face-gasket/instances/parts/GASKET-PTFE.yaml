@@ -1,0 +1,41 @@
+id: GASKET-PTFE
+family: AssemblyPartFamily
+name: PTFE 垫片 DN50
+part_type: gasket
+width_mm: 165
+height_mm: 165
+depth_mm: 3
+color: "#E8E8E8"
+interfaces:
+  - id: face-pump-side
+    interface_type: generic-face
+    mating_kind: face
+    mating_params:
+      normal: [0, 0, 1]
+      tolerance_mm: 0.1
+    local_transform:
+      translation: [0, 0, -1.5]
+  - id: face-pipe-side
+    interface_type: generic-face
+    mating_kind: face
+    mating_params:
+      normal: [0, 0, 1]
+      tolerance_mm: 0.1
+    local_transform:
+      translation: [0, 0, 1.5]
+  - id: bolt-hole-1
+    interface_type: screw-hole
+    local_transform:
+      translation: [62.5, 62.5, 0]
+  - id: bolt-hole-2
+    interface_type: screw-hole
+    local_transform:
+      translation: [-62.5, 62.5, 0]
+  - id: bolt-hole-3
+    interface_type: screw-hole
+    local_transform:
+      translation: [-62.5, -62.5, 0]
+  - id: bolt-hole-4
+    interface_type: screw-hole
+    local_transform:
+      translation: [62.5, -62.5, 0]

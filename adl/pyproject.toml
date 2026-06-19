@@ -87,3 +87,7 @@ disable_error_code = [
     "misc",
     "no-redef",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,17 @@
+id: HOUSING
+family: AssemblyPartFamily
+name: 轴承座
+part_type: housing
+width_mm: 80
+height_mm: 60
+depth_mm: 80
+color: "#708090"
+interfaces:
+  - id: bore-seat
+    interface_type: generic-face
+    mating_kind: face
+    mating_params:
+      normal: [1, 0, 0]
+      tolerance_mm: 0.05
+    local_transform:
+      translation: [40, 0, 40]

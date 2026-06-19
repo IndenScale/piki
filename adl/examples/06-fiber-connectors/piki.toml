@@ -1,0 +1,7 @@
+[project]
+name = "fiber-connectors"
+version = "1.0.0"
+description = "光纤接口：SFP28 光模块插入交换机笼子 + LC 双工跳线连接光配线架 SC 端口"
+
+[plugins]
+enabled = ["assembly"]

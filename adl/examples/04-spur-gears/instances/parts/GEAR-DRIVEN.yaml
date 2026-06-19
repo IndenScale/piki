@@ -1,0 +1,21 @@
+id: GEAR-DRIVEN
+family: AssemblyPartFamily
+name: 从动齿轮 Z40 m2
+part_type: spur-gear
+width_mm: 84
+height_mm: 84
+depth_mm: 20
+color: "#3498DB"
+interfaces:
+  - id: teeth
+    interface_type: generic-face
+    mating_kind: face
+    mating_params:
+      normal: [0, 1, 0]
+    local_transform:
+      translation: [0, 42, 10]
+  - id: shaft-bore
+    interface_type: generic-axis
+    mating_kind: axis
+    local_transform:
+      translation: [0, 0, 10]

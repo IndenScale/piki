@@ -1,0 +1,8 @@
+# M16 螺栓穿过三个法兰 + 垫片的螺栓孔
+# 配合链: PUMP-FLANGE/bolt-hole-1 → GASKET-PTFE/bolt-hole-1 → PIPE-FLANGE/bolt-hole-1
+# BOLT-M16-1 的螺纹配合到最外侧法兰孔
+type: face-on-face
+parent: PUMP-FLANGE/bolt-hole-1
+child: GASKET-PTFE/bolt-hole-1
+at:
+  bolt_axis_aligned: true

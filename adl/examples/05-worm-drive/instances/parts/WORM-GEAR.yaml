@@ -1,0 +1,20 @@
+id: WORM-GEAR
+family: AssemblyPartFamily
+name: 蜗轮 Z30 m2
+part_type: worm-gear
+width_mm: 66
+height_mm: 66
+depth_mm: 20
+color: "#1ABC9C"
+interfaces:
+  - id: worm-teeth
+    interface_type: generic-face
+    mating_kind: face
+    mating_params:
+      normal: [0, 1, 0]
+    local_transform:
+      translation: [0, 33, 10]
+  - id: output-shaft
+    interface_type: generic-axis
+    local_transform:
+      translation: [0, 0, 10]

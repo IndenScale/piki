@@ -1,0 +1,13 @@
+id: USB-A-DEVICE
+family: AssemblyPartFamily
+name: USB-A 设备
+part_type: usb-device
+width_mm: 20
+height_mm: 8
+depth_mm: 50
+color: "#37474F"
+interfaces:
+  - id: plug-a
+    interface_type: generic-face
+    local_transform:
+      translation: [0, 4, 0]

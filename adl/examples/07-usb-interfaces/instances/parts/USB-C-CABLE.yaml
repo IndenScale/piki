@@ -1,0 +1,13 @@
+id: USB-C-CABLE
+family: AssemblyPartFamily
+name: USB-C 数据线
+part_type: usb-cable
+width_mm: 12
+height_mm: 6
+depth_mm: 1000
+color: "#ECEFF1"
+interfaces:
+  - id: plug-c
+    interface_type: USB-C-plug
+    local_transform:
+      translation: [0, 3, 6]

@@ -1,0 +1,24 @@
+id: BUSHING-BRONZE
+family: AssemblyPartFamily
+name: 铜套 Ø25H7
+part_type: bushing
+width_mm: 35
+height_mm: 35
+depth_mm: 40
+color: "#CD7F32"
+interfaces:
+  - id: bore
+    interface_type: generic-axis
+    mating_kind: axis
+    mating_params:
+      axis: [0, 0, 1]
+      diameter_mm: 25.00
+      tolerance: H7
+      clearance_min_um: 0
+      clearance_max_um: 41
+    local_transform:
+      translation: [0, 0, 20]
+  - id: outer-surface
+    interface_type: generic-face
+    local_transform:
+      translation: [17.5, 0, 0]

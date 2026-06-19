@@ -1,0 +1,8 @@
+type: axis
+parent: BUSHING-BRONZE/bore
+child: SHAFT-25/bearing-journal
+at:
+  fit: H7h7
+  clearance_min_um: 0
+  clearance_max_um: 41
+  rotation_free: true

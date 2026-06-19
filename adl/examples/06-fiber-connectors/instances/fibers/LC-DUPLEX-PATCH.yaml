@@ -1,0 +1,29 @@
+id: LC-DUPLEX-PATCH
+family: AssemblyPartFamily
+name: LC-LC 双工单模跳线 3m
+part_type: fiber-patch-cord
+width_mm: 12
+height_mm: 8
+depth_mm: 3000
+color: "#F1C40F"
+interfaces:
+  - id: end-a-tx
+    interface_type: generic-face
+    direction: output
+    local_transform:
+      translation: [0, 4, 0]
+  - id: end-a-rx
+    interface_type: generic-face
+    direction: input
+    local_transform:
+      translation: [0, -4, 0]
+  - id: end-b-tx
+    interface_type: generic-face
+    direction: output
+    local_transform:
+      translation: [0, 4, 3000]
+  - id: end-b-rx
+    interface_type: generic-face
+    direction: input
+    local_transform:
+      translation: [0, -4, 3000]

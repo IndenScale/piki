@@ -1,0 +1,7 @@
+[project]
+name = "flange-face-gasket"
+version = "1.0.0"
+description = "DN50 法兰面密封：泵出口法兰 + PTFE 垫片 + 管道法兰，8×M16 螺栓"
+
+[plugins]
+enabled = ["assembly"]

@@ -1,0 +1,5 @@
+type: face-on-face
+parent: GASKET-PTFE/face-pipe-side
+child: PIPE-FLANGE/face-seal
+at:
+  distance: 0

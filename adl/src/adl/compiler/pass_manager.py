@@ -48,6 +48,10 @@ class PassContext:
     # MIR 阶段
     resolved: Any = None  # ResolvedCompilation
 
+    # 额外目录（插件提供的型号库 / 公共 Catalog）
+    extra_model_dirs: list[Path] = field(default_factory=list)
+    extra_catalog_dirs: list[Path] = field(default_factory=list)
+
     # 贯穿
     diagnostics: list[Any] = field(default_factory=list)  # list[Diagnostic]
 

@@ -1,0 +1,17 @@
+id: PCB-MAIN
+family: AssemblyPartFamily
+name: 主板
+part_type: pcb
+width_mm: 100
+height_mm: 1.6
+depth_mm: 80
+color: "#1B5E20"
+interfaces:
+  - id: usb-c-receptacle
+    interface_type: USB-C-receptacle
+    local_transform:
+      translation: [0, 0.8, 40]
+  - id: usb-a-receptacle
+    interface_type: generic-face
+    local_transform:
+      translation: [30, 0.8, 40]

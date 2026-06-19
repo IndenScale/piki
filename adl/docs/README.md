@@ -4,6 +4,14 @@
 
 与 `piki/docs/`（piki 框架、概念、ADL 语言规范）不同，本目录专用于 ADL 包的内核设计决策。
 
+## 核心概念
+
+1. [ADL 核心概念索引](concepts/README.md)
+2. [ADL 分层概念模型](concepts/01-layered-model.md) — PDL / PML / PLL 三子语言、每层概念与全局位姿计算链
+3. [接口与坐标系](concepts/02-interface-and-coordinate-system.md) — Interface、local_transform、坐标系约定、Footprint
+4. [配合类型与自由度](concepts/03-mating-kinds-and-dof.md) — MatingKind、InterfaceSignature、DOF、签名耦合
+5. [布局与参数化定位链](concepts/04-layout-and-placement-chain.md) — Layout、坐标优先级、Mate 与 Layout 关系、全局坐标
+
 ## 内核设计文档
 
 | 编号 | 标题 | 状态 |

@@ -1,0 +1,8 @@
+type: slot
+parent: DOVETAIL-BASE/dovetail-slot
+child: DOVETAIL-SLIDE/dovetail-tenon
+at:
+  t:
+    default: 60
+    min: 0
+    max: 120

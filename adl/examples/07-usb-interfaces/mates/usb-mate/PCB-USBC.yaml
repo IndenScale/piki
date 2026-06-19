@@ -1,0 +1,13 @@
+type: slot
+parent: PCB-MAIN/usb-c-receptacle
+child: USB-C-CABLE/plug-c
+at:
+  t:
+    default: 0
+    min: 0
+    max: 12
+# USB-C-receptacle signature:
+#   discrete_states: [removed, inserted(default), reversed]
+# USB-C-plug signature:
+#   discrete_states: [removed, inserted(default), reversed]
+# Coupling: union = [removed, inserted, reversed]

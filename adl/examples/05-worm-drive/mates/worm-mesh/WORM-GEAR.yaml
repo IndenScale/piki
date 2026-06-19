@@ -1,0 +1,10 @@
+type: face-on-face
+parent: WORM/worm-thread
+child: WORM-GEAR/worm-teeth
+at:
+  center_distance_mm: 47
+  module: 2
+  worm_starts: 1
+  gear_teeth: 30
+  ratio: 30
+  lead_angle_deg: 4.09

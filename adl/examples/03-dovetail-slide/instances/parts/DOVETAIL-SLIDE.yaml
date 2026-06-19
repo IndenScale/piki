@@ -1,0 +1,19 @@
+id: DOVETAIL-SLIDE
+family: AssemblyPartFamily
+name: 燕尾滑块
+part_type: dovetail-slide
+width_mm: 30
+height_mm: 10
+depth_mm: 80
+color: "#A0A0A0"
+interfaces:
+  - id: dovetail-tenon
+    interface_type: generic-slot
+    mating_kind: slot
+    mating_params:
+      slot_dir: [0, 0, 1]
+      angle_deg: 60
+      width_top_mm: 30
+      width_bottom_mm: 20
+    local_transform:
+      translation: [0, -5, 40]

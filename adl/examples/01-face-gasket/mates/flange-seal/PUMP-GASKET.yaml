@@ -1,0 +1,5 @@
+type: face-on-face
+parent: PUMP-FLANGE/face-seal
+child: GASKET-PTFE/face-pump-side
+at:
+  distance: 0

@@ -1,0 +1,7 @@
+[project]
+name = "spur-gears"
+version = "1.0.0"
+description = "直齿轮副：20 齿驱动轮 m=2 + 40 齿从动轮 m=2，速比 2:1"
+
+[plugins]
+enabled = ["assembly"]

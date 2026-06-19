@@ -1,0 +1,21 @@
+id: GEAR-DRIVER
+family: AssemblyPartFamily
+name: 驱动齿轮 Z20 m2
+part_type: spur-gear
+width_mm: 44
+height_mm: 44
+depth_mm: 20
+color: "#E74C3C"
+interfaces:
+  - id: teeth
+    interface_type: generic-face
+    mating_kind: face
+    mating_params:
+      normal: [0, 1, 0]
+    local_transform:
+      translation: [0, 22, 10]
+  - id: shaft-bore
+    interface_type: generic-axis
+    mating_kind: axis
+    local_transform:
+      translation: [0, 0, 10]
