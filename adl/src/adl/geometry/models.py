@@ -387,6 +387,9 @@ def bbox_from_resolved(resolved: dict) -> BBox:
     w = float(resolved.get("width_mm", 0) or 0)
     h = float(resolved.get("height_mm", 0) or 0)
     d = float(resolved.get("depth_mm", 0) or 0)
+    # 部分领域使用 length_mm 表示深度（Z 轴），例如方舱/设备
+    if d == 0:
+        d = float(resolved.get("length_mm", 0) or 0)
 
     # 机柜/设备用 total_u 推算高度
     if h == 0:

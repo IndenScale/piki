@@ -22,6 +22,8 @@ from adl.compiler.pass_manager import (
 from adl.compiler.passes.back_compat import BackCompatEmitPass
 from adl.compiler.passes.lowering import LoweringPass
 from adl.compiler.passes.mate_sugar import MateSugarResolvePass
+from adl.compiler.passes.model_merge import ModelMergePass
+from adl.compiler.passes.symbol_resolve import SymbolResolvePass
 from adl.compiler.passes.yaml_parse import YAMLParsePass
 from adl.compiler.symbols import SymbolTable
 from adl.compiler.type_registry_builtins import register_all_builtins
@@ -345,6 +347,8 @@ interfaces:
             YAMLParsePass().run(ctx)
             LoweringPass().run(ctx)
             MateSugarResolvePass().run(ctx)
+            SymbolResolvePass().run(ctx)
+            ModelMergePass().run(ctx)
             BackCompatEmitPass().run(ctx)
 
             project = ctx.extra.get("project")
@@ -372,6 +376,8 @@ interfaces:
             YAMLParsePass().run(ctx)
             LoweringPass().run(ctx)
             MateSugarResolvePass().run(ctx)
+            SymbolResolvePass().run(ctx)
+            ModelMergePass().run(ctx)
             BackCompatEmitPass().run(ctx)
 
             from adl.models.interface import get_interfaces_from_resolved
@@ -411,6 +417,8 @@ child: SOCKET
             YAMLParsePass().run(ctx)
             LoweringPass().run(ctx)
             MateSugarResolvePass().run(ctx)
+            SymbolResolvePass().run(ctx)
+            ModelMergePass().run(ctx)
             BackCompatEmitPass().run(ctx)
 
             project = ctx.extra["project"]

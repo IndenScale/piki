@@ -136,10 +136,26 @@ class _Resolver:
         # 第二遍：解析接口（接口可能引用其它实例，但通常只引用自身）
         for unit in self.comp.instances.values():
             inst = self._instances[unit.id]
-            for iface_hir in unit.interfaces:
+
+            # 合并 Model 中声明的接口（Instance 未覆盖时继承）
+            merged_interfaces = list(unit.interfaces)
+            merged_footprints = list(unit.footprints)
+            if unit.model_ref is not None:
+                model = self.comp.models.get(unit.model_ref.text)
+                if model is not None:
+                    existing_iface_ids = {iface.id for iface in merged_interfaces}
+                    for iface_hir in model.interfaces:
+                        if iface_hir.id not in existing_iface_ids:
+                            merged_interfaces.append(iface_hir)
+                    existing_fp_ids = {fp.id for fp in merged_footprints}
+                    for fp_hir in model.footprints:
+                        if fp_hir.id not in existing_fp_ids:
+                            merged_footprints.append(fp_hir)
+
+            for iface_hir in merged_interfaces:
                 iface = self._make_interface(iface_hir, inst)
                 inst.interfaces[iface.id] = iface
-            for fp_hir in unit.footprints:
+            for fp_hir in merged_footprints:
                 pins: list[ResolvedInterfaceIR] = []
                 for pin_hir in fp_hir.pins:
                     pin = self._make_interface(pin_hir, inst)
@@ -223,6 +239,7 @@ class _Resolver:
             pdu=pdu,
             parent=parent,
             grid=grid,
+            position_u=entry_hir.position_u,
             grid_position=entry_hir.grid_position,
             row_id=entry_hir.row_id,
             bay_index=entry_hir.bay_index,
@@ -292,10 +309,10 @@ class _Resolver:
             active_type=getattr(iface_hir, "active_type", None),
             direction=getattr(iface_hir, "direction", "bidirectional"),
             description=getattr(iface_hir, "description", ""),
-            specs=dict(getattr(iface_hir, "specs", {})),
+            specs=dict(getattr(iface_hir, "specs", {}) or {}),
             local_transform=local_transform,
             mating_kind=getattr(iface_hir, "mating_kind", None),
-            mating_params=dict(getattr(iface_hir, "mating_params", {})),
+            mating_params=dict(getattr(iface_hir, "mating_params", None) or {}),
             signature=signature,
             span=iface_hir.span,
         )

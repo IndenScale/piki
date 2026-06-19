@@ -31,6 +31,7 @@ from ..pass_manager import Pass, PassContext, PassResult, PassStage
 from ..span import Span
 from ..symbols import RefKind, Symbol, SymbolKind, SymbolRef
 from ..type_system import TypeSystem
+from adl.diagnostics import Diagnostic, Location, Severity
 
 
 def _ast_value_to_hir(value: ASTValue) -> HIRValue:
@@ -58,6 +59,7 @@ def _is_ref_field(key: str) -> RefKind | None:
     _REF_FIELDS: dict[str, RefKind] = {
         "family": RefKind.FAMILY,
         "model": RefKind.MODEL,
+        "model_ref": RefKind.MODEL,
         "rack_id": RefKind.RACK,
         "pdu_id": RefKind.PDU,
         "parent": RefKind.INSTANCE,
@@ -168,6 +170,12 @@ def _hir_to_interface(item: HIRValue) -> InterfaceHIR:
             return str(v.data) if v.data is not None else ""
         return ""
 
+    def _get_value(key: str) -> Any:
+        v = data.get(key)
+        if v is None:
+            return None
+        return _hir_value_to_python(v)
+
     def _get_specs() -> dict[str, Any]:
         specs_val = data.get("specs")
         if isinstance(specs_val, HIRValue) and specs_val.kind == HIRValueKind.MAPPING:
@@ -187,6 +195,8 @@ def _hir_to_interface(item: HIRValue) -> InterfaceHIR:
         direction=_get_str("direction") or "bidirectional",
         description=_get_str("description"),
         specs=_get_specs(),
+        local_transform=_get_value("local_transform"),
+        mating_params=_get_value("mating_params"),
     )
 
 
@@ -234,6 +244,20 @@ def _lower_model(
     family_val = fields.get("family")
     if family_val and family_val.kind == HIRValueKind.REFERENCE:
         unit.family_ref = family_val.as_ref()
+
+    # Models 也可以声明接口（被 Instance 继承）
+    ifaces_val = fields.get("interfaces")
+    if ifaces_val and ifaces_val.kind == HIRValueKind.LIST:
+        for item in ifaces_val.data:
+            if isinstance(item, HIRValue) and item.kind == HIRValueKind.MAPPING:
+                unit.interfaces.append(_hir_to_interface(item))
+
+    fps_val = fields.get("footprints")
+    if fps_val and fps_val.kind == HIRValueKind.LIST:
+        for item in fps_val.data:
+            if isinstance(item, HIRValue) and item.kind == HIRValueKind.MAPPING:
+                unit.footprints.append(_hir_to_footprint(item))
+
     return unit
 
 
@@ -332,6 +356,20 @@ def _lower_mate(
     child_val = fields.get("child")
     if child_val and child_val.kind == HIRValueKind.REFERENCE:
         unit.child_ref = child_val.as_ref()
+
+    # 附加字段：约束、接口配对、控制参数
+    at_val = fields.get("at")
+    if at_val and at_val.kind == HIRValueKind.MAPPING:
+        unit.at = _hir_value_to_python(at_val) or {}
+
+    constraints_val = fields.get("constrains")
+    if constraints_val and constraints_val.kind == HIRValueKind.LIST:
+        unit.constraints = _hir_value_to_python(constraints_val) or []
+
+    pairings_val = fields.get("interface_pairings")
+    if pairings_val and pairings_val.kind == HIRValueKind.LIST:
+        unit.interface_pairings = _hir_value_to_python(pairings_val) or []
+
     return unit
 
 
@@ -347,6 +385,19 @@ def _lower_grid(sf: SourceFile, decl: Any, namespace: str) -> GridUnit:
 
 
 # Helpers
+
+def _hir_value_to_python(value: HIRValue) -> Any:
+    """把 HIRValue 递归转换为普通 Python 对象。"""
+    if value.kind == HIRValueKind.LITERAL:
+        return value.data
+    if value.kind == HIRValueKind.LIST:
+        return [_hir_value_to_python(item) for item in (value.data or [])]
+    if value.kind == HIRValueKind.MAPPING:
+        return {k: _hir_value_to_python(v) for k, v in (value.data or {}).items()}
+    if value.kind == HIRValueKind.REFERENCE:
+        return value.data.text if hasattr(value.data, "text") else str(value.data)
+    return value.data
+
 
 def _get_str_field(fields: dict[str, HIRValue], key: str) -> str:
     v = fields.get(key)
@@ -420,6 +471,29 @@ class LoweringPass(Pass):
         result.modified = True
         return result
 
+    def _safe_define(
+        self,
+        symbol: Symbol,
+        ctx: PassContext,
+    ) -> bool:
+        """安全地向符号表注册符号；重复时发出诊断并跳过。"""
+        try:
+            ctx.symbol_table.define(symbol)
+            return True
+        except NameError as exc:
+            ctx.emit(
+                Diagnostic(
+                    severity=Severity.WARNING,
+                    message=str(exc),
+                    location=Location.from_path(symbol.span.source)
+                    if symbol.span and symbol.span.source
+                    else Location(uri=""),
+                    code="LOWERING-001",
+                    source="adl.compiler.lowering",
+                )
+            )
+            return False
+
     def _lower_file(
         self,
         sf: SourceFile,
@@ -437,65 +511,70 @@ class LoweringPass(Pass):
 
             if sf.kind == FileKind.MODEL:
                 unit = _lower_model(sf, decl, hir_unit_id, namespace)
-                comp.add_unit(unit)
-                ctx.symbol_table.define(
+                if self._safe_define(
                     Symbol(
                         name=unit.id,
                         kind=SymbolKind.MODEL,
                         namespace=namespace,
                         definition_node=unit,
                         span=unit.span,
-                    )
-                )
+                    ),
+                    ctx,
+                ):
+                    comp.add_unit(unit)
 
             elif sf.kind == FileKind.CATALOG:
                 unit = _lower_catalog(sf, decl, hir_unit_id, namespace)
-                comp.add_unit(unit)
-                ctx.symbol_table.define(
+                if self._safe_define(
                     Symbol(
                         name=unit.id,
                         kind=SymbolKind.CATALOG,
                         namespace=namespace,
                         definition_node=unit,
                         span=unit.span,
-                    )
-                )
+                    ),
+                    ctx,
+                ):
+                    comp.add_unit(unit)
 
             elif sf.kind == FileKind.INSTANCE:
                 unit = _lower_instance(sf, decl, hir_unit_id, namespace)
-                comp.add_unit(unit)
-                ctx.symbol_table.define(
+                if self._safe_define(
                     Symbol(
                         name=unit.id,
                         kind=SymbolKind.INSTANCE,
                         namespace=namespace,
                         definition_node=unit,
                         span=unit.span,
-                    )
-                )
+                    ),
+                    ctx,
+                ):
+                    comp.add_unit(unit)
 
             elif sf.kind == FileKind.MATE:
                 unit = _lower_mate(sf, decl, namespace)
-                comp.add_unit(unit)
-                ctx.symbol_table.define(
+                if self._safe_define(
                     Symbol(
                         name=unit.id,
                         kind=SymbolKind.MATE,
                         namespace=namespace,
                         definition_node=unit,
                         span=unit.span,
-                    )
-                )
+                    ),
+                    ctx,
+                ):
+                    comp.add_unit(unit)
 
             elif sf.kind == FileKind.GRID:
                 unit = _lower_grid(sf, decl, namespace)
-                comp.add_unit(unit)
-                ctx.symbol_table.define(
+                if self._safe_define(
                     Symbol(
                         name=unit.id,
                         kind=SymbolKind.GRID,
                         namespace=namespace,
                         definition_node=unit,
                         span=unit.span,
-                    )
-                )
+                    ),
+                    ctx,
+                ):
+                    comp.add_unit(unit)

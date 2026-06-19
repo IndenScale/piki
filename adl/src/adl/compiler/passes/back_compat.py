@@ -107,6 +107,9 @@ class BackCompatEmitPass(Pass):
         for inst in resolved.resolved_instances.values():
             project.instances[inst.id] = _build_resolved_instance(inst, project)
 
+        # 5a. Collections: 按 instances/<subdir>/ 路径分组（兼容旧 Registry API）
+        _group_instances_into_collections(project)
+
         # 6. Mates
         for mate in resolved.resolved_mates.values():
             project.mates.append(_build_mate(mate))
@@ -154,6 +157,22 @@ class BackCompatEmitPass(Pass):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _group_instances_into_collections(project: Project) -> None:
+    """把 instances/ 下按子目录存放的实例分组到 project.collections。"""
+    for inst in project.instances.values():
+        source = inst.source
+        if source is None:
+            continue
+        try:
+            rel = source.relative_to(project.root)
+        except ValueError:
+            continue
+        parts = rel.parts
+        if len(parts) >= 3 and parts[0] == "instances":
+            collection_name = parts[1]
+            project.collections.setdefault(collection_name, {})[inst.id] = inst
 
 
 def _mir_fields_to_dict(fields: dict[str, MIRValue]) -> dict[str, Any]:

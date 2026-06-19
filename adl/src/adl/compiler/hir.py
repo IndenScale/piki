@@ -89,6 +89,8 @@ class InterfaceHIR:
     direction: str = "bidirectional"
     description: str = ""
     specs: dict[str, Any] = field(default_factory=dict)
+    local_transform: dict[str, Any] | None = None
+    mating_params: dict[str, Any] = None
     span: Span = field(default_factory=Span.synthetic)
 
 
@@ -129,6 +131,8 @@ class ModelUnit:
     ast_source: Path | None = None
     family_ref: SymbolRef | None = None
     fields: dict[str, HIRValue] = field(default_factory=dict)
+    interfaces: list[InterfaceHIR] = field(default_factory=list)
+    footprints: list[FootprintHIR] = field(default_factory=list)
 
 
 @dataclass
